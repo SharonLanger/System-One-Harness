@@ -29,4 +29,4 @@ loading or inference is counted in the results below.
 - [Phase 18B](phases/phase-18b.md): COMPLETE, independent verification;395 Python +26 Node pass; bounded same-file flow/hook context.
 - [Phase 19A](phases/phase-19a.md): COMPLETE, independent verification;408 Python +53 Node pass; confined project helper/bridge.
 - [Phase 19B](phases/phase-19b.md): COMPLETE, independent verification;415 Python +53 Node pass; bounded project context through the hook.
-- Phase 20: blocked; real runtime/checkpoints/settings validation not performed.
+- [Phase20 readiness](phases/phase-20-readiness.md): preparation verified (427 Python +53 Node), explicit real-call entry point and Mac guide; real runtime/checkpoints/settings validation remains blocked and unrun.

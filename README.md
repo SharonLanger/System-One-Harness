@@ -200,3 +200,9 @@ future manual project-local enable/disable recipe and remaining live-validation
 gates. Complete scenarios also cover tracked-source fidelity, rejected/malformed
 predictions, failures and separate process lifetimes. Actual Claude delivery
 remains unverified.
+
+For an explicit first real call on your Apple Silicon Mac, follow
+[the Mac setup and evidence guide](docs/real-laya-mac.md). The entry point is
+`python -m laya_context_router.live_check --real --output /your/new/result.json`.
+It defaults to one checkpoint; additional checkpoint/temperature checks require
+confirmed user-supplied values. Phase20 live compatibility remains pending.

@@ -287,3 +287,12 @@ on2026-10-29: https://code.claude.com/docs/en/hooks . UserPromptSubmit emits exi
 JSON with hookSpecificOutput.hookEventName and string additionalContext, or
 exit0 with empty stdout for no-op. Diagnostics use stderr. The reference and
 subprocess tests are protocol evidence, not proof of actual harness delivery.
+
+## Phase20 preparation
+
+The explicit `python -m laya_context_router.live_check` entry point now prepares
+single-checkpoint and optional confirmed-settings real probes. Follow
+[Mac setup](real-laya-mac.md) for commands and sanitized evidence return. Its
+readiness tests inject only a fake SDK boundary; this Linux preparation performs
+no real SDK import/load/inference. Phase20 and actual Claude delivery remain
+blocked until the required real-environment evidence is obtained.
