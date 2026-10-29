@@ -1,0 +1,13 @@
+[
+  {
+    "name": "method",
+    "type": "choice",
+    "instructions": "Select exactly one callable that the request asks to explain. Choose none_or_unclear when no single callable is appropriate.",
+    "criteria": {"none_or_unclear": "No single matching callable, or unclear request."}
+  },
+  {
+    "name": "multiple_relevant",
+    "type": "noul",
+    "instructions": "Does the request require explaining more than one candidate callable?"
+  }
+]

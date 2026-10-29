@@ -100,3 +100,12 @@ so Unicode does not depend on Python indexing. Leading attached comments and
 trailing comments are excluded; interior comments remain. Raw code retains source
 line endings. Separate `display_code` adds line numbers with LF display newlines.
 Dependency context is still incomplete.
+
+The [method selection block](src/laya_context_router/building_blocks/questions/method_selection/README.md)
+constructs dynamic ID/signature choices from a real outline and asks `method` plus
+`multiple_relevant` in one shared block call. Its source map stays outside the
+model payload. Accepted no-match, multiple methods, rejection and explicit input
+budget overflow return no selection. The signature questions/policies are a new
+provisional baseline; mocks verify processing and source mapping, not accuracy.
+`QuestionBlock.run(..., question_payloads=...)` accepts an optional copied/validated
+payload override with exactly the block's question names for dynamic definitions.

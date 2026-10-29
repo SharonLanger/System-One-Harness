@@ -18,5 +18,6 @@ externally, and the next phase starts from the matching published tree.
 - [Phase 09](phases/phase-09.md): COMPLETE, independent verification; 216 tests pass.
 - [Phase 10](phases/phase-10.md): COMPLETE, independent verification; 237 Python +4 Node tests pass; fresh compiler build.
 - [Phase 11](phases/phase-11.md): COMPLETE, independent verification; 243 Python +6 Node tests pass; exact UTF16-safe source.
-- Phases 12–19: pending, authorized continuation.
+- [Phase 12](phases/phase-12.md): COMPLETE, independent verification; 252 Python +6 Node tests pass; installed block resources verified.
+- Phases 13–19: pending, authorized continuation.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.

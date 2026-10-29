@@ -1,0 +1,16 @@
+{
+  "rules_by_question": {
+    "method": {
+      "name": "method-selection",
+      "conditions": [{"field": "answer_confidence", "op": "gte", "value": 0.5}],
+      "conditions_by_type": {"choice": [{"field": "probability_gap", "op": "gte", "value": 0.15}]}
+    },
+    "multiple_relevant": {
+      "name": "multiple-methods",
+      "conditions": [
+        {"field": "answer_confidence", "op": "gte", "value": 0.5},
+        {"field": "distance_from_boundary", "op": "gte", "value": 0.15}
+      ]
+    }
+  }
+}
