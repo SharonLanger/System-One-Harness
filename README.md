@@ -87,7 +87,12 @@ parser through a JSON CLI. Support includes ordinary named top-level functions
 and members with bodies of named top-level class declarations: constructors,
 instance/static/private methods, accessors, async/generator methods and overload
 implementations. Signature-only declarations and remaining callable forms produce
-explicit diagnostics; see [the exact Phase17A matrix](docs/phases/phase-17a.md). Parse errors
+explicit diagnostics. Direct top-level variable-bound arrows/function expressions,
+object literal members and class expression members are also supported, including
+direct callable fields. Binding-aware signatures include the immediate variable/
+property header; exact raw extraction remains the callable expression alone. See
+[Phase17A](docs/phases/phase-17a.md) and [Phase17B](docs/phases/phase-17b.md) for
+the exact matrices and deferred nested/computed/wrapped forms. Parse errors
 fail. The helper parses source without importing or executing it. Signatures and
 UTF16 source ranges retain provenance; dependency collection remains a later stage. The Python bridge uses argv and a bounded process timeout,
 validates schema1 output, and raises `TypeScriptError` for helper/protocol errors.

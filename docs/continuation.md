@@ -1,16 +1,13 @@
-# Implementation handoff through Phase 17A
+# API and implementation status through Phase 17B
 
-User authorized mock-first Phases01–19, public publication, direct main, no routine
-approval gates. Phases01–16H and17A are complete in this tree; continue17B/C–19. The sole
-Phase17 implementation writer is /root/phase17_builder. Do not redo completed
-phases or write concurrently with this owner. Wait for exact-tree publication
-acknowledgment before the next increment.
-Do not stop the overall task here. Phase20 remains blocked: Linux x86_64, no mlx or
-laya_mlx (stdlib discovery only). No SDK imports, installs, weights, downloads,
-model calls or real harness activation are authorized on this host. All inference
-boundaries so far are explicit mocks; every supporting pipeline layer executes.
+Phases01–16H and17A/B are implemented and independently verified with the Laya
+SDK boundary mocked. Phase17C and dependency-context Phases18–19 remain pending.
+Phase20 live integration is blocked: the verification environment is Linux x86_64
+without MLX or laya_mlx. No real model loading, inference or Claude activation has
+been performed. Mock results establish pipeline behavior, not live compatibility,
+selection accuracy, policy calibration or token savings.
 
-## Exact current contracts
+## Current API contracts
 
 - `laya.predict.predict(text,named_payloads,model=DEFAULT_MODEL,loader=None,
   real=False,config=None,registry=None)` deep-copies raw JSON after membership,
@@ -33,7 +30,7 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   with answer/decided/reason; preserves raw. Rejections undecided; accepted
   none_or_unclear distinct. Score uses Python round, clamp, zero-based legend.
 - `blocks.QuestionBlock(directory).run(text,config=...,registry=...,
-  question_payloads=None)`: default reads questions/rules, one real adapter call,
+  question_payloads=None)`: default reads questions/rules, one adapter invocation,
   real interpreter. Optional dynamic override requires exact same names, validates
   through Question.from_dict and copies payloads. Errors propagate to flow.
 - `building_blocks.file_reference_utils.detect_file_references(text,pattern)`:
@@ -58,8 +55,12 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   locations 1-based. Ordinary named top-level functions and named top-level class
   declaration members with bodies supported (including constructor/accessor/async/
   generator/overload implementations). Member names retain source spelling; IDs
-  distinguish scope. Signature-only, nested, computed, arrow/expression and other
-  special function forms remain diagnostics pending17B/C.
+  distinguish scope. Direct top-level identifier-bound function/arrow expressions,
+  object members/class expression members and direct callable class fields are
+  supported. Their binding-aware signatures use the immediate binding/property
+  header, but raw ranges/code remain the callable expression alone. Signature-only,
+  nested, computed, wrapped and special function declarations remain diagnostics
+  pending17C.
   Parser errors fail, never trust recovery outlines. No source import/execute.
 - `typescript.extract_callable(path,callable_id,node=...,helper=...,timeout=5.0)`:
   JSON extract action with id; same one-read snapshot supplies hash/outline/code.
@@ -118,13 +119,14 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   additionalContext:<HEADER + compact JSON context string>}}. HEADER is
   'Selected TypeScript context (partial):\n'. Safe no-op/errors exit0 empty
   stdout and stderr diagnostics; argparse errors never exit2. Pipeline Python
-  stdout redirects to stderr; native SDK stdio remains unverified.
+  stdout and synchronous file-descriptor-1 output redirect to stderr. Tests
+  cover simulated native writes; actual backend output remains unverified.
   --deadline defaults10s, explicit finite >0<=300s; helper remains5s. Default and
   max are administrative bounds, not measured Laya latency. SIGALRM covers Python
   stdin/import/load/flow path but cannot guarantee interrupting native C. Future
   outer harness timeout must exceed explicit deadline with grace (example+5s).
-  Astra high reviewed this pre-implementation before relaxing the old20s cap;
-  21/300 quick mocks and invalid finite/nonfinite bounds covered. Live cold load,
+  Fast mocked calls cover explicit21/300-second bounds and invalid
+  finite/nonfinite values. Live cold load,
   inference and cancellation need Phase20 observations. No activation happened.
 - Phase 16 `examples/user_prompt_submit_scenario.py` creates a disposable source
   fixture and SDK shim, launches real hook via Bash/Python, validates fixed mock
@@ -138,18 +140,11 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   after accepted selection causing real extractor_error. Tracked fixture and
   request fixture bytes remain unchanged; only SDK is mocked.
 
-## Phase17 progress
+## Reproduce the mock validation
 
-17A independently verified: fresh TS build/typecheck, Node10/10 and Python354/354
-(all zero skips/xfail), plus exact-budget full hook scenario for a new async class
-method with only laya_mlx mocked. See docs/phases/phase-17a.md. Next17B covers
-bound expressions/objects/class expressions;17C completes recursive/special forms.
-No dependency collection or live-model evidence is claimed yet.
-
-## Commands and execution evidence
-
-Source checkout: Python3.12.14/pytest9.2.0; Node24.22.1/npm11.9.0. Helper package
-pins TypeScript5.9.3 and @types/node24.10.1 with package-lock.json.
+Verified environment: Python3.12.14, pytest9.2.0, Node24.22.1 and npm11.9.0.
+The helper pins TypeScript5.9.3 and @types/node24.10.1 in its lockfile.
+Run from the repository root:
 
 ```bash
 python -m pip install -e '.[test]'
@@ -162,127 +157,86 @@ PYTHONPATH=src python examples/file_method_context.py
 PYTHONPATH=src python examples/user_prompt_submit_scenario.py
 ```
 
-Build/typecheck + all 6 Node and 345 Python tests pass at Phase 16 candidate;
-independent Luna reviewer final evidence is recorded in docs/phases/phase-16.md.
-No required test is skipped or xfailed. Phase 15 published fac696fa3ddca2e1aa477dacf2705ba396d1f5ee;
-Phase 16 follows in this commit; use git log after publication for its API SHA. Python suite
-includes wheel build/resource-byte checks and isolated installed imports of both
-blocks. Repeat fresh build and all suites at every phase; npm ci needed when
-setting up/dependencies change. Serialize all dependency/build/suite operations
-between implementer and reviewer. A concurrent npm ci in Phase14 temporarily
-removed shared node_modules, causing MODULE_NOT_FOUND failures; Astra independently
-diagnosed the environmental race. Serial reruns passed without source/test/timeout
-changes. Never run npm ci or a build while another agent validates the shared tree. No repository-required formatter/linter/CI extras.
+Run dependency installation, builds and suites sequentially when sharing one
+checkout, because reinstalling dependencies during validation can remove files
+being tested. A fresh build is required before the Python-to-Node integration
+suite. The Python suite includes isolated wheel/resource checks for both blocks.
+No required mock test is skipped or xfailed.
 
-Offline example prompt: Explain `tests/fixtures/typescript/basic.ts`: how does greet
-work? Mock explicitly selects first fixture candidate; output exact greet source,
-raw provenance and coverage partial. It does not infer an answer from prompt or
-claim actual selection accuracy. All original163 tests preserved through extensions.
+Phase17A: fresh build/typecheck, Node10/10 and Python354/354 passed, including an
+exact-budget hook scenario for an async class method. Phase17B: fresh build,
+Node14/14 and Python356/356 passed. Independent verification reran those suites
+and reviewed the implementation and test matrix; its Phase17B Python run took
+92.22seconds. See [17A](phases/phase-17a.md) and [17B](phases/phase-17b.md).
 
-## Mandatory workflow and publication
+Example prompt:
 
-Each next phase: separate low-cost planner BEFORE implementation; baseline all
-suites; TDD missing-behavior red; smallest implementation; final full accumulated
-suite; independent verifier rereads actual diff and reruns all; VERIFIED before
-focused commit including phase/progress/README. No required skips/xfail. Unexpected
-bugs or review blockers require heavy reasoning diagnose+fix, then full re-run and
-re-review. Expected TDD reds are planned. User explicitly requested low-cost easy
-agents: gpt-6-luna/medium fork-none planner/reviewer; gpt-6-astra/high fork-none
-repair. If a substantive change to the agreed phase design, public contract, test
-gate or scope is needed, Astra/high must reason through it BEFORE implementation;
-preserve roadmap unless justified change is documented. Routine implementation
-choices need no escalation. Root will hand17–19 to fresh Sol/medium after16 is
-verified and published. Reusable agents currently /root/flow_builder/phase_reviews
-(Luna medium) and /root/flow_builder/source_repairs (Astra high); root may reuse
-or assign fresh equivalents.
+```text
+Explain `tests/fixtures/typescript/basic.ts`: how does greet work?
+```
+The offline example explicitly configures a mock to select the fixture's first
+candidate. It returns exact source/provenance with partial coverage; it does not
+infer an answer in the mock or establish actual model-selection accuracy.
 
-Git CLI has no remote credentials. /root/publisher owns authenticated GitHub API
-publication to main. Send each verified local commit/test counts/verdict to root
-and publisher, then WAIT exact-tree + local-HEAD sync acknowledgment before next
-phase. Publisher creates server commit IDs, fetches and synchronizes clean main.
-Never force push/discard files. Phase12 published62922776cfa00f6b9bf643252fd061c24c681362;
-Phase13 published8a46ea56ea75dad5ed4ad37e2566d5ec58123da6;
-Phase14 published01a29ac69a2a53d0ade128fea2f150723e2a930e;
-Phase15 publishedfac696fa3ddca2e1aa477dacf2705ba396d1f5ee. Phase16 was
-independently verified in local candidate f44e7dd; check remote main for its
-server-assigned ID. A handoff-driven hook hardening increment follows Phase16;
-check progress and git log before starting 17.
+## Remaining technical work
 
-No AGENTS found in repo/ancestors by root; no old runner/framework added. Keep
-model/SDK/harness evidence honest: mocks establish mechanics, never live support.
+Phase17C completes recursive/special callable discovery with an advertised
+fixture matrix. Preserve source hash:start:end identity, UTF16 positions, exact
+raw slices, separate display text, parser-error failure and explicit unsupported
+diagnostics. Existing unsupported-form expectations may change only when replaced
+with positive source-fidelity coverage for the deliberately promoted form.
 
-## Remaining authorized phases
+Phase18 adds bounded same-file context using TypeScript symbol identity rather
+than spelling matches. Preserve raw dependency statements, deterministic order,
+deduplication, depth/size bounds and explicit gaps for closures, mutable state,
+side effects and unresolved/dynamic references. Keep selected code intact.
 
-17: broaden callable forms with advertised fixture matrix and source fidelity;
-small groups/subphases allowed, each independent planner/review/full-suite/commit.
-18: symbol-aware bounded same-file dependencies, raw statements, explicit gaps.
-19: project/tsconfig-aware cross-file resolution, boundary/budgets/side effects,
-external/declaration/dynamic/missing config gaps; partial caller coverage honest.
-20: BLOCKED on host, do not install/import/load/infer. Real checkpoints/settings,
-model compatibility and actual harness delivery remain unverified separately.
-The final isolated Claude check must capture version, commit, actual command and
-settings, `/hooks` registration, debug parsing/timeout/overflow evidence, and
-a fresh unpredictable hook-only marker returned without alternate tool/source
-access plus a disabled-hook control in a fresh session. The marker test is a
-diagnostic path, removed afterward; report actual Claude receipt separately
-from actual Laya response compatibility and mock protocol/full-flow results.
-Missing MLX/SDK or harness access is a blocked/unrun check, never mock success.
+Phase19 uses actual tsconfig-aware project/module resolution for relative paths,
+aliases and reexports. Enforce repository boundaries and identify external,
+declaration-only, missing-config/module and dynamic/inherited gaps. Do not execute
+project modules or load arbitrary package implementations. Caller coverage remains
+explicitly partial where it cannot be established reliably.
 
-Read docs/implementation-plan.md entire for exact tests/gates; don't redo01–16.
-Initial source subset deliberately narrow; no broad dependency completeness claim.
+Keep three budgets separate: model question input, source/dependency collection,
+and the final rendered hook additionalContext string. Deliver complete selected
+code or the documented no-op. Never truncate code or silently imply omitted
+dependencies were included. Exercise final rendering with oversized local and
+cross-file bundles, provenance and gap metadata.
 
-## Provenance and research
+Each implementation increment requires independent preimplementation test
+planning, tests-first missing-behavior checks, a complete fresh build and all
+accumulated suites, then independent diff review and a separate full rerun.
+Required skips/xfails do not satisfy the gate. Preserve these gates when modifying
+source coverage. The full roadmap and phase criteria are in
+[implementation-plan.md](implementation-plan.md).
 
-Original read-only source outside repo:
-/workspace/scratch/aae8a6a84dee/laya-source/LAYA/code/runner/.
-Reusable pure helpers extracted, never old workflow/TestCase/report engine.
-Uploaded script AST-literal-extracted, never executed. Fixtures retain full supplied
-request/raw JSON, choice pair, separate enrichment from original pure helper with
-SHA in fixture README. Requested captured model aac6fef/laya-mlx differs from source
-default deliberately; raw label laya-rl-agent is not proven checkpoint identity.
-SDK/revision unknown; no private archive/source committed. Synthetic TS fixtures
-and raw variants clearly labelled, original captures unchanged.
+## Live integration and harness evidence still needed
 
-Official TypeScript Compiler API wiki/Architectural Overview and compiler source
-checked2026-10-29 for parser APIs/token starts/UTF16 positions. Hook protocol
-reverified by implementer and independent planner on2026-10-29:
-https://code.claude.com/docs/en/hooks (unversioned, root fetched2026-10-29).
-UserPromptSubmit input session_id,cwd,hook_event_name,prompt; exit0 JSON
-hookSpecificOutput:{hookEventName:'UserPromptSubmit',additionalContext:'...'};
-exit0 empty stdout no-op. stderr logs only; errors must not unintentionally block.
-No active Claude harness installed/tested; official protocol not actual delivery.
-The handoff at /workspace/scratch/c0679bf67556/laya-hook-integration-handoff.md
-clarifies additional context versus prompt replacement, complete rendered-budget
-behavior, native stdout isolation, and separate delivery evidence. The hook
-hardening increment adds regression cases for native fd1 output, missing and
-ambiguous files, extra input fields, load/predict deadlines, Unicode and metadata
-budget, and a tested synthetic usage example. Preserve these when expanding
-source context in 17–19; test the final hook budget with new dependency bundles.
+Phase20 requires a supported runtime and compatible checkpoints/settings. Verify
+actual SDK response compatibility and independently calculate processing results
+from actual returned data; different valid model answers are allowed. Record
+observed model/settings metadata and its limits separately from requested values.
+Missing prerequisites remain blocked checks, never substituted mock successes.
 
-## Fresh builder entry checklist after publication
+Actual Claude delivery needs a separate isolated harness check. Record version,
+commit, exact command/settings, registration and debug parsing/timeout/overflow
+evidence. A fresh unpredictable hook-only marker and a disabled-hook control in
+a fresh session test delivery without alternate source/tool access. Remove the
+diagnostic marker path afterward. Report mock protocol, mock full flow, actual
+Claude receipt and live Laya compatibility separately; delivery does not prove
+selection accuracy or use of every code line. No such harness check has run.
 
-1. Confirm remote main/local HEAD exact tree and clean worktree with root/publisher.
-2. Read this handoff and full implementation-plan; inspect TypeScript helper,
-   bridge validation and accumulated tests. No code owner overlaps.
-3. Have separate Luna medium plan Phase17 or17a BEFORE tests/implementation; run
-   complete baseline (fresh TS build/typecheck, all Node, all Python), serialized.
-4. Advertise exact callable fixture matrix. Preserve old unsupported-form regression
-   expectations unless the documented phase intentionally promotes those forms;
-   replace with positive source-fidelity coverage and explicit remaining gaps.
-   Broad AST discovery must retain hash:start:end identities, UTF16 ranges, parser
-   error failure, exact raw slices and separate display text. Group17a/17b/17c
-   if useful, each its own verified/published commit.
-5. Phase18 needs real TypeScript symbol identity, not text/name matching. Bound
-   depth/size/order and disclose closures, mutable/side-effect/dynamic omissions.
-6. Phase19 needs actual tsconfig-aware program/module resolution, aliases and
-   reexports; repository boundary, budgets, external/declaration gaps explicit.
-   Preserve selected callable even when dependencies partial. Do not execute
-   project modules or load arbitrary external implementations. Partial caller
-   coverage must stay honest.
-7. Design/public-contract/gate changes or unexpected failures: Astra high reasoning
-   BEFORE implementation; planned TDD red is expected. Every final candidate gets
-   independent Luna diff inspection + full rerun after implementer full suite.
-8. Commit focused code/tests/README/progress/phase evidence then send SHA to root
-   and publisher. WAIT exact-tree remote/local sync ACK before next increment.
-9. Root reports after19; do not silently stop before19. Phase20 remains blocked
-   on current host; no live SDK install/import/weights/inference/harness activation.
+## Fixture provenance and protocol reference
+
+Fixtures preserve the supplied request/raw-response JSON and separate enriched
+output, with provenance recorded in their README. Synthetic TypeScript fixtures
+and raw variants are labelled; original captures remain unchanged. The captured
+requested model aac6fef/laya-mlx differs from the source default deliberately.
+The raw label laya-rl-agent does not prove checkpoint identity; SDK/revision
+metadata remain unknown. Private archives and project source are not fixtures.
+
+The documented hook contract was checked against the official hooks reference
+on2026-10-29: https://code.claude.com/docs/en/hooks . UserPromptSubmit emits exit0
+JSON with hookSpecificOutput.hookEventName and string additionalContext, or
+exit0 with empty stdout for no-op. Diagnostics use stderr. The reference and
+subprocess tests are protocol evidence, not proof of actual harness delivery.

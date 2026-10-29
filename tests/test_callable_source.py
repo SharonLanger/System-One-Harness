@@ -49,9 +49,9 @@ def test_changed_source_invalid_ids_and_unsupported_forms(tmp_path):
     for bad_id in [candidate["id"], "unknown", "0" * 64 + ":0:1"]:
         with pytest.raises(TypeScriptError, match="stale|unknown"):
             extract_callable(source, bad_id)
-    source.write_text("class C { method() {} } const f = () => 1;")
+    source.write_text("class C { method() {} [key]() {} } const f = () => 1;")
     result = outline(source)
-    assert [c["name"] for c in result["callables"]] == ["method"]
+    assert [c["name"] for c in result["callables"]] == ["method", "f"]
     assert extract_callable(source, result["callables"][0]["id"])["code"] == "method() {}"
     assert len(result["diagnostics"]) == 1
     unsupported = result["diagnostics"][0]

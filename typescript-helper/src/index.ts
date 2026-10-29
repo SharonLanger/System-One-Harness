@@ -26,6 +26,25 @@ function readOutline(path: string): {outline: Outline; source: string} {
   const diagnostics: Diagnostic[] = [];
   const overloaded = new Set(sf.statements.filter(ts.isFunctionDeclaration)
     .filter(n => !n.body && n.name).map(n => n.name!.text));
+  const topVariable = (node: ts.Node): node is ts.VariableDeclaration =>
+    ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) &&
+    ts.isVariableDeclarationList(node.parent) && ts.isVariableStatement(node.parent.parent) &&
+    node.parent.parent.parent === sf;
+  const boundContainer = (node: ts.Node): boolean =>
+    topVariable(node.parent) && node.parent.initializer === node;
+  const classContainer = (node: ts.Node): boolean =>
+    (ts.isClassDeclaration(node) && !!node.name && node.parent === sf) ||
+    (ts.isClassExpression(node) && boundContainer(node));
+  const objectContainer = (node: ts.Node): boolean =>
+    ts.isObjectLiteralExpression(node) && boundContainer(node);
+  const bindingFor = (node: ts.Node): ts.VariableDeclaration | ts.PropertyDeclaration | ts.PropertyAssignment | undefined => {
+    const parent = node.parent;
+    if (topVariable(parent) && parent.initializer === node) return parent;
+    if ((ts.isPropertyDeclaration(parent) && classContainer(parent.parent) ||
+         ts.isPropertyAssignment(parent) && objectContainer(parent.parent)) &&
+        parent.initializer === node && !ts.isComputedPropertyName(parent.name)) return parent;
+    return undefined;
+  };
   const visit = (node: ts.Node): void => {
     const callable = ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node) ||
       ts.isArrowFunction(node) || ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) ||
@@ -37,16 +56,20 @@ function readOutline(path: string): {outline: Outline; source: string} {
         !overloaded.has(node.name.text);
       const classMember = (ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) ||
         ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) &&
-        ts.isClassDeclaration(node.parent) && !!node.parent.name && node.parent.parent === sf &&
-        (!node.name || !ts.isComputedPropertyName(node.name));
-      const supported = (ordinaryFunction || classMember) && !!node.body;
+        classContainer(node.parent) && (!node.name || !ts.isComputedPropertyName(node.name));
+      const objectMember = (ts.isMethodDeclaration(node) || ts.isGetAccessorDeclaration(node) ||
+        ts.isSetAccessorDeclaration(node)) && objectContainer(node.parent) &&
+        !ts.isComputedPropertyName(node.name);
+      const binding = ts.isFunctionExpression(node) || ts.isArrowFunction(node) ? bindingFor(node) : undefined;
+      const supported = (ordinaryFunction || classMember || objectMember || !!binding) && !!node.body;
       const start = node.getStart(sf), end = node.getEnd();
       if (supported && node.body) {
         const pos = sf.getLineAndCharacterOfPosition(start);
         callables.push({id: `${hash}:${start}:${end}`,
-          name: ts.isConstructorDeclaration(node) ? 'constructor'
-            : ts.isFunctionDeclaration(node) ? node.name!.text : node.name!.getText(sf),
-          signature: source.slice(start, node.body.getStart(sf)).trimEnd(), start, end,
+          name: binding ? binding.name.getText(sf) : ts.isConstructorDeclaration(node) ? 'constructor'
+            : ts.isFunctionDeclaration(node) ? node.name!.text
+            : ('name' in node && node.name ? node.name.getText(sf) : ''),
+          signature: source.slice(binding ? binding.getStart(sf) : start, node.body.getStart(sf)).trimEnd(), start, end,
           location: {line: pos.line + 1, column: pos.character + 1}});
       } else {
         const name = 'name' in node && node.name ? (node.name as ts.Node).getText(sf) : '';
@@ -59,8 +82,9 @@ function readOutline(path: string): {outline: Outline; source: string} {
   };
   visit(sf);
   return {source, outline: {schema_version: 1, path: canonical, source_hash: hash, callables, diagnostics,
-    limitations: ['Supported: ordinary named top-level functions and named top-level class declaration members with bodies. Computed members, expressions and nested callables remain unsupported.',
+    limitations: ['Supported: ordinary named top-level functions, class declaration members, and directly top-level-bound expressions, objects and class expressions. Computed, wrapped and nested callable forms remain unsupported.',
       'Locations and ranges use UTF-16 code units; comments before declarations are excluded.',
+      'Bound expression signatures include their immediate binding header; raw code is only the callable expression.',
       'Dependency context is not collected.']}};
 }
 

@@ -144,3 +144,24 @@ def test_class_method_full_hook_source_and_complete_render_budget(tmp_path, budg
         assert 'attached' not in context['code'] and 'trailing' not in context['code']
         assert 'synthetic SDK noise' in result.stderr and 'synthetic SDK noise' not in result.stdout
     assert len(events(case))==2 and case['path'].read_bytes()==before
+
+
+@pytest.mark.parametrize('source,name,signature,raw', [
+    ('const ignored=0, selected = (x: string) => { return x + "😀"; };', 'selected',
+     'selected = (x: string) =>', '(x: string) => { return x + "😀"; }'),
+    ('const object = { selected: function inside() { return "🙃"; } };', 'selected',
+     'selected: function inside()', 'function inside() { return "🙃"; }'),
+])
+def test_bound_expression_full_hook_labels_binding_extracts_only_callable(tmp_path, source, name, signature, raw):
+    case=hook_case(tmp_path,text=source); before=case['path'].read_bytes()
+    candidate=case['data']['callables'][0]
+    assert candidate['name']==name and candidate['signature']==signature
+    result=invoke(case)
+    assert result.returncode==0
+    output=json.loads(result.stdout)['hookSpecificOutput']
+    assert output['hookEventName']=='UserPromptSubmit'
+    context=json.loads(output['additionalContext'].split('\n',1)[1])
+    assert context['code']==raw and context['callable']==candidate
+    assert context['coverage']=='partial' and context['path']==str(case['path'])
+    assert events(case)[1]['questions']['method']['criteria'][candidate['id']]==signature
+    assert case['path'].read_bytes()==before

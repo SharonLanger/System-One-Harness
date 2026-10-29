@@ -62,8 +62,8 @@ test('class coverage keeps deferred forms diagnostic and parser errors fatal', (
   try {
     fs.writeFileSync(file, 'class C { field=()=>1; [key]() {} } const C2=class { m() {} }; function f() { class Nested { n() {} } }');
     const result=outline(file);
-    assert.deepEqual(result.callables.map(x=>x.name),['f']);
-    assert.equal(result.diagnostics.length,4);
+    assert.deepEqual(result.callables.map(x=>x.name),['field','m','f']);
+    assert.equal(result.diagnostics.length,2);
     fs.writeFileSync(file, 'class C { broken( {');
     assert.throws(()=>outline(file), /parse/i);
   } finally { fs.rmSync(dir,{recursive:true}); }
