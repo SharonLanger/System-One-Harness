@@ -109,3 +109,25 @@ budget overflow return no selection. The signature questions/policies are a new
 provisional baseline; mocks verify processing and source mapping, not accuracy.
 `QuestionBlock.run(..., question_payloads=...)` accepts an optional copied/validated
 payload override with exactly the block's question names for dynamic definitions.
+
+Run the first complete offline flow (after building the helper):
+
+```bash
+PYTHONPATH=src python examples/file_method_context.py
+```
+
+It uses the real source parser, dynamic questions, rules, interpretation and exact
+retrieval, with only Laya's SDK boundary mocked. The initial trigger is deliberately
+narrow: `Explain`, a backtick-quoted production `.ts` path, colon, then a nonempty
+question. Exactly one file mention must match that target. For example:
+
+```text
+Explain `src/service.ts`: how does calculate work?
+```
+
+`flows.file_method_context.run(prompt, cwd=..., repository_root=..., config=...,
+registry=...)` returns `{status, reason, context}`. Context includes exact source
+and provenance with `coverage="partial"`; dependency context is incomplete.
+Unmatched prompts, ambiguous/missing/excluded files, budget refusal, rejected
+predictions and source/model failures return a reasoned no-op. The prompt and
+source remain unchanged. No hook has been installed or activated.

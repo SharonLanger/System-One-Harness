@@ -1,0 +1,78 @@
+"""Narrow explanation request -> one exact callable, with explicit no-op reasons."""
+from pathlib import Path
+import re
+
+from ..building_blocks.file_reference_utils import detect_file_references
+from ..building_blocks.resolve_file import resolve_file
+from ..building_blocks.typescript import DEFAULT_HELPER, TypeScriptError, outline, extract_callable
+from ..building_blocks.questions.method_selection.block import run as select_method
+
+DEFAULT_REFERENCE_PATTERN = re.compile(r'''(?P<quote>["'`])?(?P<path>(?(quote)[^"'`\r\n]+|[^\s"'`<>:,;!?()]+)\.[A-Za-z0-9]+)(?(quote)(?P=quote))(?::\d+(?::\d+)?)?''')
+ELIGIBLE = re.compile(r'^\s*Explain\s+`(?P<target>[^`\r\n]+)`\s*:\s*(?P<question>\S[\s\S]*)$', re.IGNORECASE)
+
+
+def _noop(reason):
+    return {'status': 'noop', 'reason': reason, 'context': None}
+
+
+def _confined(path, root):
+    canonical = path.resolve(strict=True)
+    return canonical == path and canonical.is_relative_to(root)
+
+
+def run(prompt, *, cwd, repository_root, config, registry,
+        reference_pattern=DEFAULT_REFERENCE_PATTERN, node='node', helper=DEFAULT_HELPER,
+        timeout=5.0, max_candidates=64, max_input_chars=16000):
+    """Only `Explain `backtick path`: question` qualifies for this first flow.
+
+    Exactly one lexical file mention must equal that target. This is an explicit
+    trigger, not a general intent classifier. All source work is read-only; only
+    SDK load/predict is injected for offline use. Dependency context is partial.
+    """
+    if not isinstance(prompt, str) or not re.match(r'^\s*Explain\b', prompt, re.IGNORECASE):
+        return _noop('ineligible_request')
+    try:
+        references = detect_file_references(prompt, reference_pattern)
+    except (ValueError, TypeError):
+        return _noop('invalid_reference')
+    if not references:
+        return _noop('no_file')
+    if len(references) != 1:
+        return _noop('multiple_files')
+    eligible = ELIGIBLE.fullmatch(prompt)
+    reference = references[0]
+    if not eligible or reference.path != eligible.group('target'):
+        return _noop('unsupported_request')
+    if reference.kind != 'production_code' or not reference.path.endswith('.ts'):
+        return _noop('excluded')
+    try:
+        resolution = resolve_file(reference, cwd=cwd, repository_root=repository_root)
+        if resolution.status != 'resolved':
+            return _noop(resolution.status)
+        path = resolution.selected_path
+        root = Path(repository_root).resolve(strict=True)
+        if not _confined(path, root):
+            return _noop('source_changed')
+        source_outline = outline(path, node=node, helper=helper, timeout=timeout)
+    except (OSError, ValueError, TypeError, TypeScriptError):
+        return _noop('extractor_error')
+    try:
+        selection = select_method(prompt, source_outline, config=config, registry=registry,
+                                  max_candidates=max_candidates, max_input_chars=max_input_chars)
+    except Exception:
+        return _noop('model_error')
+    if selection['selected_id'] is None:
+        return _noop(selection['reason'])
+    try:
+        if not _confined(path, root):
+            return _noop('source_changed')
+        context = extract_callable(path, selection['selected_id'], node=node, helper=helper, timeout=timeout)
+        mapped = selection['candidate_map'][selection['selected_id']]
+        if (context['path'] != mapped['path'] or context['source_hash'] != mapped['source_hash']
+                or context['callable'] != {k: v for k, v in mapped.items() if k not in {'path', 'source_hash'}}
+                or not isinstance(context['code'], str) or not context['code']):
+            return _noop('extractor_error')
+        context['coverage'] = 'partial'
+        return {'status': 'context', 'reason': None, 'context': context}
+    except (OSError, ValueError, TypeError, KeyError, TypeScriptError):
+        return _noop('extractor_error')
