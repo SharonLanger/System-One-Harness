@@ -1,0 +1,47 @@
+{
+  "model": "aac6fef/laya-mlx",
+  "temperature": null,
+  "lang": "en",
+  "text": "\nSubject: Charged AGAIN after cancellation - this is unacceptable\nBody: I cancelled my subscription on the 3rd. I was charged again on the 5th.\nThis is the second time this has happened. If this is not refunded by tomorrow,\nI am disputing the charge with my bank and leaving a public review.\n",
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which department should handle this?",
+      "criteria": {
+        "billing": "invoices, charges, refunds, cancellations",
+        "technical": "bugs, outages, login issues",
+        "sales": "upgrades, pricing, new accounts"
+      }
+    },
+    "urgency": {
+      "type": "score",
+      "instructions": "How urgent is this ticket?",
+      "criteria": [
+        "low — general question, no time pressure",
+        "medium — issue needs resolving within a few days",
+        "high — customer is blocked or very frustrated",
+        "critical — customer threatening to leave or escalate"
+      ]
+    },
+    "churn_risk": {
+      "type": "noul",
+      "instructions": "Is the customer at risk of churning (cancelling or leaving)?"
+    },
+    "sentiment": {
+      "type": "choice",
+      "instructions": "What is the overall sentiment of this message?",
+      "criteria": {
+        "positive": "satisfied, happy, grateful",
+        "neutral": "informational, no strong emotion",
+        "negative": "frustrated, upset, disappointed",
+        "hostile": "angry, threatening, abusive"
+      }
+    },
+    "contains_threat": {
+      "type": "noul",
+      "instructions": "Does the customer threaten a chargeback, legal action, or public review?"
+    }
+  },
+  "sdk_version": "unknown",
+  "revision": "unknown"
+}

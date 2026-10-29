@@ -1,0 +1,19 @@
+{
+  "model": "aac6fef/laya-mlx",
+  "temperature": null,
+  "lang": "en",
+  "text": "\nSubject: Charged AGAIN after cancellation - this is unacceptable\nBody: I cancelled my subscription on the 3rd. I was charged again on the 5th.\nThis is the second time this has happened. If this is not refunded by tomorrow,\nI am disputing the charge with my bank and leaving a public review.\n",
+  "questions": {
+    "department": {
+      "type": "choice",
+      "instructions": "Which department should handle this?",
+      "criteria": {
+        "billing": "invoices, charges, refunds, cancellations",
+        "technical": "bugs, outages, login issues",
+        "sales": "upgrades, pricing, new accounts"
+      }
+    }
+  },
+  "sdk_version": "unknown",
+  "revision": "unknown"
+}

@@ -1,0 +1,27 @@
+{
+  "model": "laya-rl-agent",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "billing",
+      "probabilities": {
+        "billing": 0.9719,
+        "technical": 0.0108,
+        "sales": 0.0173
+      },
+      "confidence": 0.8663,
+      "answer_confidence": 0.9719,
+      "action": {
+        "act_probability": 1.0
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 588,
+    "output_tokens": 0,
+    "state_tokens": 70,
+    "state_tokens_dropped": 0,
+    "truncated": false,
+    "truncated_questions": []
+  }
+}
