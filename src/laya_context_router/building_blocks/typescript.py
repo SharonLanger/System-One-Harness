@@ -125,7 +125,11 @@ def collect_local_context(path: str | Path, callable_id: str, *, max_depth: int 
     data = _request(path, {"action": "collect_local_context", "id": callable_id,
         "max_depth": max_depth, "max_dependency_chars": max_dependency_chars},
         node=node, helper=helper, timeout=timeout)
-    _validate_extraction(data, Path(path).resolve(), callable_id)
+    return _validate_context(data, Path(path).resolve(), callable_id, max_depth, max_dependency_chars)
+
+
+def _validate_context(data, path, callable_id, max_depth, max_dependency_chars, repository_root=None):
+    _validate_extraction(data, path, callable_id)
     if (data.get("coverage") != "partial" or not isinstance(data.get("dependencies"), list)
             or not isinstance(data.get("gaps"), list) or not isinstance(data.get("collection"), dict)):
         raise TypeScriptError("invalid local context schema")
@@ -138,17 +142,22 @@ def collect_local_context(path: str | Path, callable_id: str, *, max_depth: int 
     total, previous, ids = 0, None, set()
     hash_prefix = data["source_hash"] + ":"
     for item in data["dependencies"]:
-        if (not isinstance(item, dict) or item.get("path") != data["path"]
-                or item.get("source_hash") != data["source_hash"]
+        if (not isinstance(item, dict) or not isinstance(item.get("path"), str)
+                or not isinstance(item.get("source_hash"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", item["source_hash"])
+                or (repository_root is None and (item["path"] != data["path"]
+                    or item["source_hash"] != data["source_hash"]))
+                or (repository_root is not None and not _project_path(item["path"], repository_root))
                 or not _integer(item.get("start")) or not _integer(item.get("end"))
                 or item["end"] <= item["start"] or not isinstance(item.get("kind"), str)
                 or not item["kind"] or not isinstance(item.get("code"), str)
                 or not isinstance(item.get("location"), dict)
                 or not all(_integer(item["location"].get(k), 1) for k in ("line", "column"))
-                or item.get("id") != f'{hash_prefix}{item["start"]}:{item["end"]}'
-                or item["id"] in ids or not isinstance(item.get("symbol_ids"), list)
+                or item.get("id") != f'{item["source_hash"]}:{item["start"]}:{item["end"]}'
+                or (item["path"], item["id"]) in ids or not isinstance(item.get("symbol_ids"), list)
                 or not item["symbol_ids"]):
             raise TypeScriptError("invalid local context schema: dependency")
+        hash_prefix = item["source_hash"] + ":"
         for symbol_id in item["symbol_ids"]:
             if not isinstance(symbol_id, str) or not re.fullmatch(re.escape(hash_prefix) + r"[0-9]+:[0-9]+", symbol_id):
                 raise TypeScriptError("invalid local context schema: symbol")
@@ -161,13 +170,71 @@ def collect_local_context(path: str | Path, callable_id: str, *, max_depth: int 
             length = len(item["code"].encode("utf-16-le")) // 2
         except UnicodeError as exc:
             raise TypeScriptError("invalid local context schema: Unicode") from exc
-        position = (item["start"], item["end"])
+        position = (item["path"], item["start"], item["end"])
         if length != item["end"] - item["start"] or (previous is not None and position <= previous):
             raise TypeScriptError("invalid local context schema: source range/order")
         previous = position
-        ids.add(item["id"])
+        ids.add((item["path"], item["id"]))
         total += length
     _validate_outline({**data, "callables": [], "diagnostics": data["gaps"]}, Path(path).resolve())
     if total != limits["dependency_chars"] or total > max_dependency_chars:
         raise TypeScriptError("invalid local context schema: source budget")
+    return data
+
+
+def _project_path(value, repository_root):
+    if not isinstance(value, str):
+        return False
+    path = Path(value)
+    return path.is_absolute() and path.resolve() == path and path.is_relative_to(repository_root)
+
+
+def collect_project_context(path: str | Path, callable_id: str, *, repository_root: str | Path,
+                            max_depth: int = 2, max_dependency_chars: int = 12000,
+                            node: str = "node", helper: str | Path = DEFAULT_HELPER,
+                            timeout: float = 5.0) -> dict:
+    """Collect confined tsconfig-aware partial context; never execute project code."""
+    if (not _integer(max_depth) or max_depth > 20 or not _integer(max_dependency_chars, 1)
+            or max_dependency_chars > 1000000):
+        raise ValueError("invalid collection limits")
+    root = Path(repository_root).resolve()
+    data = _request(path, {"action": "collect_project_context", "id": callable_id,
+        "repository_root": str(root), "max_depth": max_depth,
+        "max_dependency_chars": max_dependency_chars}, node=node, helper=helper, timeout=timeout)
+    _validate_context(data, Path(path).resolve(), callable_id, max_depth, max_dependency_chars, root)
+    project = data.get("project")
+    if (not _project_path(data["path"], root) or not isinstance(project, dict)
+            or project.get("repository_root") != str(root)
+            or not isinstance(project.get("config_sources"), list)):
+        raise TypeScriptError("invalid project context schema")
+    config_path, config_hash = project.get("config_path"), project.get("config_hash")
+    if config_path is not None and (not _project_path(config_path, root)
+            or not isinstance(config_hash, str) or not re.fullmatch(r"[0-9a-f]{64}", config_hash)):
+        raise TypeScriptError("invalid project context schema: configuration")
+    if config_path is None and config_hash is not None:
+        raise TypeScriptError("invalid project context schema: configuration")
+    config_paths = []
+    for item in project["config_sources"]:
+        if (not isinstance(item, dict) or not _project_path(item.get("path"), root)
+                or not isinstance(item.get("source_hash"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", item["source_hash"])):
+            raise TypeScriptError("invalid project context schema: configuration source")
+        config_paths.append(item["path"])
+    if config_paths != sorted(set(config_paths)):
+        raise TypeScriptError("invalid project context schema: configuration order")
+    if config_path is not None and not any(item["path"] == config_path and item["source_hash"] == config_hash
+                                         for item in project["config_sources"]):
+        raise TypeScriptError("invalid project context schema: configuration identity")
+    source_hashes = {data["path"]: data["source_hash"]}
+    for dependency in data["dependencies"]:
+        existing = source_hashes.setdefault(dependency["path"], dependency["source_hash"])
+        if existing != dependency["source_hash"]:
+            raise TypeScriptError("invalid project context schema: inconsistent source snapshot")
+    for gap in data["gaps"]:
+        if (not _project_path(gap.get("path"), root) or not isinstance(gap.get("source_hash"), str)
+                or not re.fullmatch(r"[0-9a-f]{64}", gap["source_hash"])):
+            raise TypeScriptError("invalid project context schema: gap provenance")
+        existing = source_hashes.setdefault(gap["path"], gap["source_hash"])
+        if existing != gap["source_hash"]:
+            raise TypeScriptError("invalid project context schema: inconsistent gap snapshot")
     return data

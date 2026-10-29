@@ -11,7 +11,7 @@ export interface Outline {
   schema_version: number; path: string; source_hash: string; callables: Callable[];
   diagnostics: Diagnostic[]; limitations: string[];
 }
-function readOutline(path: string): {outline: Outline; source: string; sf: ts.SourceFile} {
+export function readOutline(path: string): {outline: Outline; source: string; sf: ts.SourceFile} {
   const canonical = realpathSync(path);
   const source = readFileSync(canonical, 'utf8');
   const sf = ts.createSourceFile(canonical, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -239,3 +239,5 @@ export function collectLocalContext(path: string, id: string,
     gaps: gaps.sort((a, b) => a.start - b.start || a.end - b.end || a.code.localeCompare(b.code)),
     collection: {max_depth: maxDepth, max_dependency_chars: maxChars, dependency_chars: chars}};
 }
+
+export {collectProjectContext} from './project';

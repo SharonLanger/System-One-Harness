@@ -1,7 +1,8 @@
-# API and implementation status through Phase 18
+# API and implementation status through Phase 19A
 
 Phases01–18 are implemented and independently verified with the Laya
-SDK boundary mocked. Cross-file Phase19 remains pending.
+SDK boundary mocked. Phase19A project helper/bridge is independently verified;
+project flow/hook integration remains pending.
 Phase20 live integration is blocked: the verification environment is Linux x86_64
 without MLX or laya_mlx. No real model loading, inference or Claude activation has
 been performed. Mock results establish pipeline behavior, not live compatibility,
@@ -87,6 +88,22 @@ selection accuracy, policy calibration or token savings.
   metadata are excluded. Depth0–20, positive budget<=1,000,000. External/runtime
   state, callers and other module initialization remain partial. Phase18B integrates
   this collector into the flow/hook with independent model/final-render budgets.
+- Phase19A `typescript.collect_project_context(path,callable_id,
+  repository_root=...,max_depth=2,max_dependency_chars=12000,node=...,helper=...,
+  timeout=5.0)` adds confined project context as a separate API. TypeScript parses
+  the nearest tsconfig and resolves Classic/Node10 relative/path aliases and
+  named/default/star/local reexport routes by requested name plus symbol identity.
+  Modern modes, missing/broken config and project mismatch retain local context
+  with explicit gaps. Per-file path/hash/ranges qualify units/symbols and gaps;
+  project metadata records consumed JSON configuration/module metadata hashes.
+  Canonical confinement covers config/source/module/reference/symlink origins;
+  package implementations are never loaded, including internal package symlinks.
+  Namespace/property dispatch, ambiguity, declarations, ambient state, callers,
+  libraries, referenced projects and module effects remain partial gaps. Graph
+  loading separately caps64 unique source attempts (including failures),4,000,000
+  cumulative foreign pre-read bytes and1,000,000 admitted foreign UTF16 units.
+  Source emission retains whole-unit depth/size bounds. Phase19B flow/hook
+  integration remains pending; direct local/extract APIs remain available.
 - `building_blocks.questions.method_selection.block.run(text,source_outline,
   config=...,registry=...,max_candidates=64,max_input_chars=16000)` returns
   selected_id/reason/decisions/candidate_map. Four files questions/rules/block/README
