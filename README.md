@@ -159,3 +159,16 @@ internal deadline with grace (for example, deadline plus 5 seconds); its current
 UserPromptSubmit default is 30 seconds. Longer cold model loads require explicit
 timeout configuration and actual Phase20 measurements. No global/session
 configuration is changed.
+
+Run the complete disposable hook example:
+
+```bash
+PYTHONPATH=src python examples/user_prompt_submit_scenario.py
+```
+
+It launches the actual hook through Bash/Python and injects only a fixed fake SDK
+boundary. No settings are written. See [hook usage](docs/hook-usage.md) for the
+future manual project-local enable/disable recipe and remaining live-validation
+gates. Complete scenarios also cover tracked-source fidelity, rejected/malformed
+predictions, failures and separate process lifetimes. Actual Claude delivery
+remains unverified.

@@ -1,8 +1,10 @@
-# Implementation handoff after Phase 13
+# Implementation handoff after Phase 16
 
 User authorized mock-first Phases01–19, public publication, direct main, no routine
-approval gates. Phases01–13 are complete in this tree; continue14–19. Root will
-assign a fresh sole implementation writer after Phase13 publication acknowledgment.
+approval gates. Phases 01–16 are complete in this tree; continue 17–19. Root will
+assign a fresh sole implementation writer after Phase 16 exact-tree publication
+acknowledgment. Do not redo the completed phases or write concurrently with the
+new owner. The outgoing sole writer is /root/flow_builder.
 Do not stop the overall task here. Phase20 remains blocked: Linux x86_64, no mlx or
 laya_mlx (stdlib discovery only). No SDK imports, installs, weights, downloads,
 model calls or real harness activation are authorized on this host. All inference
@@ -79,7 +81,8 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   unavailable. Accuracy and policy calibration unmeasured.
 - `flows.file_method_context.run(prompt,cwd=...,repository_root=...,config=...,
   registry=...,reference_pattern=DEFAULT_REFERENCE_PATTERN,node='node',
-  helper=DEFAULT_HELPER,timeout=5.0,max_candidates=64,max_input_chars=16000)`:
+  helper=DEFAULT_HELPER,timeout=5.0,max_candidates=64,max_input_chars=16000,
+  fallback_config=None,fallback_max_input_chars=16000)`:
   case-insensitive explicit `Explain`, one backtick-quoted production .ts path,
   colon, nonempty question. Requires exactly one lexical mention equal to target;
   default regex detects quoted spaces and plain extra file mentions. Filename only,
@@ -89,6 +92,48 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   checks confinement before outline/extract and validates mapped path/hash/callable.
   Source/model failures are safe no-ops. Prompt/source unchanged. No dependencies
   collected; exact callable is useful but context explicitly partial.
+- Phase 14 opt-in `fallback_config` only triggers when method is policy-rejected
+  and multiple_relevant is accepted `no`. Appends a fixed snapshot ID/signature
+  summary to the original text, unchanged question choices. Independent positive
+  fallback input budget counts Unicode text plus compact questions JSON; refuses
+  without truncation. Invalid second budget no-ops before work. Max two model
+  calls, no exceptions/explicit no-match/multi/unclear-multi/second rejection retry.
+  Default None disables changed-input fallback; no benefit/accuracy evaluation.
+  Actual method_selection + ticket_triage blocks compose with independently bound
+  policies and registry A/B/A object reuse in test_flow_branches.py.
+- `hooks/user_prompt_submit.py` is the only adapter, standalone POSIX command.
+  Required `--repository-root` absolute path, optional `--config` using RunConfig,
+  `--real` explicit lazy opt-in. Omit --real => safe no-op, no SDK import. No
+  runtime mock mode; tests supply child-only sitecustomize fake laya_mlx.load.
+  stdin object requires string hook_event_name/cwd/prompt, exact UserPromptSubmit;
+  different events silently no-op. Cwd must canonicalize to existing directory
+  within root. Duplicate JSON keys reject. Unknown extra event fields preserved
+  outside pipeline; only prompt goes to flow unchanged. Session_id is not needed
+  by this adapter. stdin max65,536 Unicode chars, additionalContext max8,000
+  (lower with --max-context-chars); refuses, never truncates. Accepted output is
+  exactly {hookSpecificOutput:{hookEventName:'UserPromptSubmit',
+  additionalContext:<HEADER + compact JSON context string>}}. HEADER is
+  'Selected TypeScript context (partial):\n'. Safe no-op/errors exit0 empty
+  stdout and stderr diagnostics; argparse errors never exit2. Pipeline Python
+  stdout redirects to stderr; native SDK stdio remains unverified.
+  --deadline defaults10s, explicit finite >0<=300s; helper remains5s. Default and
+  max are administrative bounds, not measured Laya latency. SIGALRM covers Python
+  stdin/import/load/flow path but cannot guarantee interrupting native C. Future
+  outer harness timeout must exceed explicit deadline with grace (example+5s).
+  Astra high reviewed this pre-implementation before relaxing the old20s cap;
+  21/300 quick mocks and invalid finite/nonfinite bounds covered. Live cold load,
+  inference and cancellation need Phase20 observations. No activation happened.
+- Phase 16 `examples/user_prompt_submit_scenario.py` creates a disposable source
+  fixture and SDK shim, launches real hook via Bash/Python, validates fixed mock
+  request/response, emits actual protocol JSON. No Claude/settings writes.
+  `docs/hook-usage.md` gives a future manual project-local settings recipe after
+  live prerequisites; tests parse it and run its command only with fake SDK,
+  including omission of --real as opt-out. Actual reload/delivery/disable behavior
+  remains unverified. Scenarios cover actual tracked basic.ts greet/twice in
+  distinct invocations, exact source/provenance/partial context, stdout purity,
+  rejected/abstained/malformed/model-error no-ops and deliberate temp-source edit
+  after accepted selection causing real extractor_error. Tracked fixture and
+  request fixture bytes remain unchanged; only SDK is mocked.
 
 ## Commands and execution evidence
 
@@ -103,14 +148,20 @@ npm --prefix typescript-helper test
 python -m pytest -q
 PYTHONPATH=src python examples/basic_question.py
 PYTHONPATH=src python examples/file_method_context.py
+PYTHONPATH=src python examples/user_prompt_submit_scenario.py
 ```
 
-Build/typecheck + all6 Node and272 Python tests pass at Phase13 candidate;
-independent Luna reviewer reran all and returned VERIFIED. Final evidence is in
-docs/phases/phase-13.md. Python suite
+Build/typecheck + all 6 Node and 345 Python tests pass at Phase 16 candidate;
+independent Luna reviewer final evidence is recorded in docs/phases/phase-16.md.
+No required test is skipped or xfailed. Phase 15 published fac696fa3ddca2e1aa477dacf2705ba396d1f5ee;
+Phase 16 follows in this commit; use git log after publication for its API SHA. Python suite
 includes wheel build/resource-byte checks and isolated installed imports of both
 blocks. Repeat fresh build and all suites at every phase; npm ci needed when
-setting up/dependencies change. No repository-required formatter/linter/CI extras.
+setting up/dependencies change. Serialize all dependency/build/suite operations
+between implementer and reviewer. A concurrent npm ci in Phase14 temporarily
+removed shared node_modules, causing MODULE_NOT_FOUND failures; Astra independently
+diagnosed the environmental race. Serial reruns passed without source/test/timeout
+changes. Never run npm ci or a build while another agent validates the shared tree. No repository-required formatter/linter/CI extras.
 
 Offline example prompt: Explain `tests/fixtures/typescript/basic.ts`: how does greet
 work? Mock explicitly selects first fixture candidate; output exact greet source,
@@ -129,30 +180,26 @@ agents: gpt-6-luna/medium fork-none planner/reviewer; gpt-6-astra/high fork-none
 repair. If a substantive change to the agreed phase design, public contract, test
 gate or scope is needed, Astra/high must reason through it BEFORE implementation;
 preserve roadmap unless justified change is documented. Routine implementation
-choices need no escalation. Root will hand14–19 to fresh Sol/medium after13 is
-verified and published. Reusable agents currently /root/source_builder/phase_reviews and
-/root/source_builder/source_repairs; root may reuse or assign fresh equivalents.
+choices need no escalation. Root will hand17–19 to fresh Sol/medium after16 is
+verified and published. Reusable agents currently /root/flow_builder/phase_reviews
+(Luna medium) and /root/flow_builder/source_repairs (Astra high); root may reuse
+or assign fresh equivalents.
 
 Git CLI has no remote credentials. /root/publisher owns authenticated GitHub API
 publication to main. Send each verified local commit/test counts/verdict to root
 and publisher, then WAIT exact-tree + local-HEAD sync acknowledgment before next
 phase. Publisher creates server commit IDs, fetches and synchronizes clean main.
 Never force push/discard files. Phase12 published62922776cfa00f6b9bf643252fd061c24c681362;
-Phase13 follows in this commit; use git log after publication for server-assigned ID.
+Phase13 published8a46ea56ea75dad5ed4ad37e2566d5ec58123da6;
+Phase14 published01a29ac69a2a53d0ade128fea2f150723e2a930e;
+Phase15 publishedfac696fa3ddca2e1aa477dacf2705ba396d1f5ee. Phase16 follows in
+this commit; use git log after publication for server-assigned ID.
 
 No AGENTS found in repo/ancestors by root; no old runner/framework added. Keep
 model/SDK/harness evidence honest: mocks establish mechanics, never live support.
 
 ## Remaining authorized phases
 
-14: bounded second round/multiple distinct block composition, max2 rounds, explicit
-input budget; existing first round unchanged; changed-input fallback disabled by
-default until separately evaluated. Require A/B/A reuse and correct policy binding.
-15: only hooks/user_prompt_submit.py; official documented stdin/additionalContext
-protocol, subprocess/mock Laya, safe no-op/errors, stdout purity. No activation.
-16: complete isolated subprocess scenarios through actual helper/flow, mock only
-Laya. Document enable/disable path without session/global changes. Actual Claude
-context delivery remains unverified until supported final environment.
 17: broaden callable forms with advertised fixture matrix and source fidelity;
 small groups/subphases allowed, each independent planner/review/full-suite/commit.
 18: symbol-aware bounded same-file dependencies, raw statements, explicit gaps.
@@ -161,7 +208,7 @@ external/declaration/dynamic/missing config gaps; partial caller coverage honest
 20: BLOCKED on host, do not install/import/load/infer. Real checkpoints/settings,
 model compatibility and actual harness delivery remain unverified separately.
 
-Read docs/implementation-plan.md entire for exact tests/gates; don't redo01–13.
+Read docs/implementation-plan.md entire for exact tests/gates; don't redo01–16.
 Initial source subset deliberately narrow; no broad dependency completeness claim.
 
 ## Provenance and research
@@ -177,9 +224,38 @@ SDK/revision unknown; no private archive/source committed. Synthetic TS fixtures
 and raw variants clearly labelled, original captures unchanged.
 
 Official TypeScript Compiler API wiki/Architectural Overview and compiler source
-checked2026-10-29 for parser APIs/token starts/UTF16 positions. For15 reverify:
+checked2026-10-29 for parser APIs/token starts/UTF16 positions. Hook protocol
+reverified by implementer and independent planner on2026-10-29:
 https://code.claude.com/docs/en/hooks (unversioned, root fetched2026-10-29).
 UserPromptSubmit input session_id,cwd,hook_event_name,prompt; exit0 JSON
 hookSpecificOutput:{hookEventName:'UserPromptSubmit',additionalContext:'...'};
 exit0 empty stdout no-op. stderr logs only; errors must not unintentionally block.
 No active Claude harness installed/tested; official protocol not actual delivery.
+
+## Fresh builder entry checklist after publication
+
+1. Confirm remote main/local HEAD exact tree and clean worktree with root/publisher.
+2. Read this handoff and full implementation-plan; inspect TypeScript helper,
+   bridge validation and accumulated tests. No code owner overlaps.
+3. Have separate Luna medium plan Phase17 or17a BEFORE tests/implementation; run
+   complete baseline (fresh TS build/typecheck, all Node, all Python), serialized.
+4. Advertise exact callable fixture matrix. Preserve old unsupported-form regression
+   expectations unless the documented phase intentionally promotes those forms;
+   replace with positive source-fidelity coverage and explicit remaining gaps.
+   Broad AST discovery must retain hash:start:end identities, UTF16 ranges, parser
+   error failure, exact raw slices and separate display text. Group17a/17b/17c
+   if useful, each its own verified/published commit.
+5. Phase18 needs real TypeScript symbol identity, not text/name matching. Bound
+   depth/size/order and disclose closures, mutable/side-effect/dynamic omissions.
+6. Phase19 needs actual tsconfig-aware program/module resolution, aliases and
+   reexports; repository boundary, budgets, external/declaration gaps explicit.
+   Preserve selected callable even when dependencies partial. Do not execute
+   project modules or load arbitrary external implementations. Partial caller
+   coverage must stay honest.
+7. Design/public-contract/gate changes or unexpected failures: Astra high reasoning
+   BEFORE implementation; planned TDD red is expected. Every final candidate gets
+   independent Luna diff inspection + full rerun after implementer full suite.
+8. Commit focused code/tests/README/progress/phase evidence then send SHA to root
+   and publisher. WAIT exact-tree remote/local sync ACK before next increment.
+9. Root reports after19; do not silently stop before19. Phase20 remains blocked
+   on current host; no live SDK install/import/weights/inference/harness activation.
