@@ -16,5 +16,6 @@ externally, and the next phase starts from the matching published tree.
 - [Continuation handoff](continuation.md): current APIs, source provenance and execution workflow.
 - [Phase 08](phases/phase-08.md): COMPLETE, independent verification; 189 mock/lexical tests pass.
 - [Phase 09](phases/phase-09.md): COMPLETE, independent verification; 216 tests pass.
-- Phases 10–19: pending, authorized continuation.
+- [Phase 10](phases/phase-10.md): COMPLETE, independent verification; 237 Python +4 Node tests pass; fresh compiler build.
+- Phases 11–19: pending, authorized continuation.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.
