@@ -37,3 +37,10 @@ conditions. Operators are `gt/gte/lt/lte/eq`; dotted fields resolve dictionaries
 Legacy semantics: missing and explicit null both resolve to `None`, so `eq None`
 passes both. Any failed upper/lower bound retains `below_threshold:<field>`;
 missing/null failures use `field_missing:<field>`. The block envelope arrives next.
+
+`answers.interpret.interpret(raw, named_question_payloads, named_policies)` returns
+all requested decisions as `{answer, decided, reason}`. Policy rejection and invalid
+predictions become `undecided`; accepted `none_or_unclear` stays a distinct answer.
+It ignores extra unrequested answers and preserves raw data. Score extraction uses
+Python `round(score)`, clamps to legend bounds, then indexes zero-based string keys.
+It never uses expected answers or probability argmax for score extraction.

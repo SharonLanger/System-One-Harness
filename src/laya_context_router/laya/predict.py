@@ -15,15 +15,26 @@ def real_loader(model, **kwargs):
 
 
 def validate_questions(questions):
+    from ..questions.models import Question
     if not isinstance(questions, dict) or not questions:
         raise ValueError('questions must be a nonempty named mapping')
     for name, question in questions.items():
         if not isinstance(name, str) or not name or not isinstance(question, dict):
             raise ValueError('invalid question name or definition')
-        if question.get('type') not in ('choice', 'noul', 'score'):
-            raise ValueError('unsupported question type')
-        if not isinstance(question.get('instructions'), str):
-            raise ValueError('question instructions must be a string')
+        Question.from_dict({**question, 'name': name})
+
+
+def _finite(value):
+    return isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value)
+
+
+def _probabilities(probs, keys, name):
+    if not isinstance(probs, dict) or set(probs) != set(keys):
+        raise ResponseError(f'invalid probability keys: {name}')
+    if not all(_finite(v) and 0 <= v <= 1 for v in probs.values()):
+        raise ResponseError(f'invalid probability: {name}')
+    if not math.isclose(sum(probs.values()), 1, abs_tol=0.001):
+        raise ResponseError(f'probabilities must sum to one: {name}')
 
 
 def validate_response(raw, questions):
@@ -37,15 +48,34 @@ def validate_response(raw, questions):
         answer = raw['answers'].get(name)
         if not isinstance(answer, dict) or answer.get('type') != question['type']:
             raise ResponseError(f'invalid answer type: {name}')
-        if answer['type'] == 'choice':
-            criteria = question.get('criteria', {})
-            probs = answer.get('probabilities')
-            if answer.get('choice') not in criteria or not isinstance(probs, dict) or set(probs) != set(criteria):
-                raise ResponseError(f'invalid choice/probabilities: {name}')
-            if not all(isinstance(v, (int,float)) and not isinstance(v,bool) and math.isfinite(v) and 0 <= v <= 1 for v in probs.values()):
-                raise ResponseError(f'invalid probability: {name}')
-            if not math.isclose(sum(probs.values()), 1, abs_tol=0.001):
-                raise ResponseError(f'probabilities must sum to one: {name}')
+        for field in ('confidence', 'answer_confidence'):
+            if field in answer and not (_finite(answer[field]) and 0 <= answer[field] <= 1):
+                raise ResponseError(f'invalid {field}: {name}')
+        if 'action' in answer:
+            action = answer['action']
+            if not isinstance(action, dict):
+                raise ResponseError(f'invalid action: {name}')
+            if 'act_probability' in action and not (_finite(action['act_probability']) and 0 <= action['act_probability'] <= 1):
+                raise ResponseError(f'invalid action probability: {name}')
+        kind = answer['type']
+        if kind == 'choice':
+            criteria = question['criteria']
+            if not isinstance(answer.get('choice'), str) or answer['choice'] not in criteria:
+                raise ResponseError(f'invalid choice: {name}')
+            _probabilities(answer.get('probabilities'), criteria, name)
+        elif kind == 'noul':
+            value = answer.get('noul')
+            if not (_finite(value) and 0 <= value <= 1):
+                raise ResponseError(f'invalid noul: {name}')
+        elif kind == 'score':
+            if not _finite(answer.get('score')):
+                raise ResponseError(f'invalid score: {name}')
+            legend = {str(i): label for i, label in enumerate(question['criteria'])}
+            if answer.get('legend') != legend:
+                raise ResponseError(f'invalid score legend: {name}')
+            _probabilities(answer.get('probabilities'), legend, name)
+        else:
+            raise ResponseError(f'unsupported prediction type: {name}')
     return raw
 
 
