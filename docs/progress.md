@@ -10,5 +10,6 @@ externally, and the next phase starts from the matching published tree.
 - [Phase 02](phases/phase-02.md): COMPLETE, independent verification; 29 mock tests pass.
 - [Phase 03](phases/phase-03.md): COMPLETE, independent verification; 48 mock tests pass.
 - [Phase 04](phases/phase-04.md): COMPLETE, independent verification; 85 mock tests pass.
-- Phases 05–19: pending.
+- [Phase 05](phases/phase-05.md): COMPLETE, independent verification; 123 mock tests pass.
+- Phases 06–19: pending.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.

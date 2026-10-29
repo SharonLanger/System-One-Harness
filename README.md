@@ -30,3 +30,10 @@ submitting an empty question request is rejected by the adapter.
 original four-decimal gap/entropy (choice/score) or midpoint distance (noul).
 Malformed numbers fail explicitly. Missing distributions or noul values receive
 no derived fields; enrichment alone does not establish a usable answer.
+
+`RulesConfig.from_dict` loads an inner policy; `accepts(prediction, rules)` returns
+`(decided, reason)` and must be unpacked. Universal conditions precede type-specific
+conditions. Operators are `gt/gte/lt/lte/eq`; dotted fields resolve dictionaries.
+Legacy semantics: missing and explicit null both resolve to `None`, so `eq None`
+passes both. Any failed upper/lower bound retains `below_threshold:<field>`;
+missing/null failures use `field_missing:<field>`. The block envelope arrives next.
