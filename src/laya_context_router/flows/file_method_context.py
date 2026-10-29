@@ -22,13 +22,16 @@ def _confined(path, root):
 
 def run(prompt, *, cwd, repository_root, config, registry,
         reference_pattern=DEFAULT_REFERENCE_PATTERN, node='node', helper=DEFAULT_HELPER,
-        timeout=5.0, max_candidates=64, max_input_chars=16000):
+        timeout=5.0, max_candidates=64, max_input_chars=16000,
+        fallback_config=None, fallback_max_input_chars=16000):
     """Only `Explain `backtick path`: question` qualifies for this first flow.
 
     Exactly one lexical file mention must equal that target. This is an explicit
     trigger, not a general intent classifier. All source work is read-only; only
     SDK load/predict is injected for offline use. Dependency context is partial.
     """
+    if (type(fallback_max_input_chars) is not int or fallback_max_input_chars <= 0):
+        return _noop('invalid_fallback_budget')
     if not isinstance(prompt, str) or not re.match(r'^\s*Explain\b', prompt, re.IGNORECASE):
         return _noop('ineligible_request')
     try:
@@ -59,6 +62,15 @@ def run(prompt, *, cwd, repository_root, config, registry,
     try:
         selection = select_method(prompt, source_outline, config=config, registry=registry,
                                   max_candidates=max_candidates, max_input_chars=max_input_chars)
+        multiple = selection['decisions'].get('multiple_relevant', {})
+        if (fallback_config is not None and selection['reason'] == 'method_undecided'
+                and multiple.get('decided') is True and multiple.get('answer') == 'no'):
+            # Fixed, opt-in representation experiment; never retry an explicit
+            # negative/multi signal, failure, or a second-round rejection.
+            second_text = prompt + '\n\nFallback candidate signatures (same source snapshot):\n' + '\n'.join(
+                f"{candidate['id']}: {candidate['signature']}" for candidate in source_outline['callables'])
+            selection = select_method(second_text, source_outline, config=fallback_config, registry=registry,
+                                      max_candidates=max_candidates, max_input_chars=fallback_max_input_chars)
     except Exception:
         return _noop('model_error')
     if selection['selected_id'] is None:

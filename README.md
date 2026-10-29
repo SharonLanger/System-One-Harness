@@ -131,3 +131,12 @@ and provenance with `coverage="partial"`; dependency context is incomplete.
 Unmatched prompts, ambiguous/missing/excluded files, budget refusal, rejected
 predictions and source/model failures return a reasoned no-op. The prompt and
 source remain unchanged. No hook has been installed or activated.
+
+An optional `fallback_config=RunConfig(...)` enables one further selection round
+only after a rejected method plus an accepted single-method signal. It appends a
+fixed ID/signature summary to the original text and reuses the same source snapshot.
+`fallback_max_input_chars=16000` separately bounds this second request. Explicit
+no-match/multiple signals, errors and second rejection terminate. Default `None`
+keeps this changed-input experiment disabled; no measured selection benefit is
+claimed. Distinct blocks share the invocation registry while retaining their own
+named rules. There are never more than two model calls per flow invocation.
