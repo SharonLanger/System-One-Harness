@@ -1,0 +1,92 @@
+#!/usr/bin/env python3
+"""Opt-in POSIX command hook; protocol only, no installation or activation."""
+import argparse
+from contextlib import redirect_stdout
+import json
+import math
+from pathlib import Path
+import signal
+import sys
+
+MAX_INPUT_CHARS = 65536
+MAX_CONTEXT_CHARS = 8000
+HEADER = 'Selected TypeScript context (partial):\n'
+
+
+def _expired(signum, frame):
+    raise TimeoutError('hook deadline exceeded')
+
+
+def main(argv=None):
+    output = None
+    previous_handler = None
+    try:
+        # Imports/model Python output belong on stderr, never hook context stdout.
+        with redirect_stdout(sys.stderr):
+            parser = argparse.ArgumentParser(description=__doc__)
+            parser.add_argument('--repository-root', required=True)
+            parser.add_argument('--config')
+            parser.add_argument('--real', action='store_true', help='explicit lazy live adapter opt-in; unverified until Phase20')
+            parser.add_argument('--deadline', type=float, default=10.0)
+            parser.add_argument('--max-context-chars', type=int, default=MAX_CONTEXT_CHARS)
+            args = parser.parse_args(argv)
+            if (not math.isfinite(args.deadline) or not 0 < args.deadline <= 300
+                    or not 0 < args.max_context_chars <= MAX_CONTEXT_CHARS):
+                raise ValueError('invalid hook budget')
+            previous_handler = signal.signal(signal.SIGALRM, _expired)
+            signal.setitimer(signal.ITIMER_REAL, args.deadline)
+            text = sys.stdin.read(MAX_INPUT_CHARS + 1)
+            if len(text) > MAX_INPUT_CHARS:
+                raise ValueError('input_budget_exceeded')
+            from laya_context_router.json_utils import _unique_pairs
+            event = json.loads(text, object_pairs_hook=_unique_pairs)
+            if not isinstance(event, dict):
+                raise ValueError('hook input must be an object')
+            if not isinstance(event.get('hook_event_name'), str):
+                raise ValueError('invalid hook_event_name')
+            if event['hook_event_name'] != 'UserPromptSubmit':
+                return 0
+            if not isinstance(event.get('prompt'), str) or not isinstance(event.get('cwd'), str):
+                raise ValueError('invalid prompt or cwd')
+            root = Path(args.repository_root)
+            cwd = Path(event['cwd'])
+            if not root.is_absolute() or not cwd.is_absolute():
+                raise ValueError('repository root and cwd must be absolute')
+            root = root.resolve(strict=True)
+            cwd = cwd.resolve(strict=True)
+            if not root.is_dir() or not cwd.is_dir() or not cwd.is_relative_to(root):
+                raise ValueError('cwd outside repository or not a directory')
+            if not args.real:
+                raise ValueError('model disabled: explicit --real required; live compatibility unverified')
+            from laya_context_router.laya.config import RunConfig, load_config
+            from laya_context_router.laya.registry import AgentRegistry
+            from laya_context_router.flows.file_method_context import run
+            config = load_config(args.config) if args.config else RunConfig()
+            result = run(event['prompt'], cwd=cwd, repository_root=root, config=config,
+                         registry=AgentRegistry(real=True))
+            if result['status'] != 'context':
+                print(f"laya hook noop: {result['reason']}", file=sys.stderr)
+                return 0
+            context = HEADER + json.dumps(result['context'], ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+            if len(context) > args.max_context_chars:
+                raise ValueError('context_budget_exceeded')
+            output = json.dumps({'hookSpecificOutput': {
+                'hookEventName': 'UserPromptSubmit', 'additionalContext': context}},
+                ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+    except SystemExit:
+        # argparse uses exit2 for errors, which would block the user's prompt.
+        return 0
+    except Exception as exc:
+        print(f'laya hook noop: {type(exc).__name__}: {exc}', file=sys.stderr)
+        return 0
+    finally:
+        if previous_handler is not None:
+            signal.setitimer(signal.ITIMER_REAL, 0)
+            signal.signal(signal.SIGALRM, previous_handler)
+    if output is not None:
+        print(output)
+    return 0
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

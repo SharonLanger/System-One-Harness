@@ -21,5 +21,6 @@ externally, and the next phase starts from the matching published tree.
 - [Phase 12](phases/phase-12.md): COMPLETE, independent verification; 252 Python +6 Node tests pass; installed block resources verified.
 - [Phase 13](phases/phase-13.md): COMPLETE, independent verification; 272 Python +6 Node tests pass; real offline flow with mocked Laya.
 - [Phase 14](phases/phase-14.md): COMPLETE, independent verification; 290 Python +6 Node tests pass; bounded opt-in second round, distinct-block A/B/A composition.
-- Phases 15–19: pending, authorized continuation after Phase14 publication.
+- [Phase 15](phases/phase-15.md): COMPLETE, independent verification; 336 Python +6 Node tests pass; documented prompt hook protocol, no activation.
+- Phases 16–19: pending, authorized continuation after Phase15 publication.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.

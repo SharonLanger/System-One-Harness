@@ -140,3 +140,22 @@ no-match/multiple signals, errors and second rejection terminate. Default `None`
 keeps this changed-input experiment disabled; no measured selection benefit is
 claimed. Distinct blocks share the invocation registry while retaining their own
 named rules. There are never more than two model calls per flow invocation.
+
+`hooks/user_prompt_submit.py` implements the documented Claude Code
+`UserPromptSubmit` stdin JSON / `hookSpecificOutput.additionalContext` protocol.
+It has been tested through Bash/Python subprocesses with an injected fake SDK;
+actual Claude context delivery remains unverified. No hook is installed or active.
+`--repository-root /absolute/project` confines reads, optional `--config path.json`
+uses `RunConfig` JSON. Explicit `--real` is required to permit the lazy live
+adapter; leave it out to get a no-op without loading the SDK. Live Laya remains
+unverified until Phase20. Tests inject the SDK boundary independently.
+
+The POSIX adapter exits 0 on handled errors and no-ops, logs only to stderr, and
+emits only protocol JSON for accepted context. Input is bounded to 65,536 Unicode
+characters, context to 8,000 (lower with `--max-context-chars`); nothing is truncated.
+`--deadline` defaults to 10 seconds (maximum 300, explicitly opted in) around Python processing; native
+SDK interruption is unverified. The outer harness timeout must exceed this
+internal deadline with grace (for example, deadline plus 5 seconds); its current
+UserPromptSubmit default is 30 seconds. Longer cold model loads require explicit
+timeout configuration and actual Phase20 measurements. No global/session
+configuration is changed.
