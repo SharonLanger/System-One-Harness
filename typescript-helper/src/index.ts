@@ -24,25 +24,19 @@ function readOutline(path: string): {outline: Outline; source: string} {
   const hash = createHash('sha256').update(source, 'utf8').digest('hex');
   const callables: Callable[] = [];
   const diagnostics: Diagnostic[] = [];
-  const overloaded = new Set(sf.statements.filter(ts.isFunctionDeclaration)
-    .filter(n => !n.body && n.name).map(n => n.name!.text));
-  const topVariable = (node: ts.Node): node is ts.VariableDeclaration =>
-    ts.isVariableDeclaration(node) && ts.isIdentifier(node.name) &&
-    ts.isVariableDeclarationList(node.parent) && ts.isVariableStatement(node.parent.parent) &&
-    node.parent.parent.parent === sf;
-  const boundContainer = (node: ts.Node): boolean =>
-    topVariable(node.parent) && node.parent.initializer === node;
-  const classContainer = (node: ts.Node): boolean =>
-    (ts.isClassDeclaration(node) && !!node.name && node.parent === sf) ||
-    (ts.isClassExpression(node) && boundContainer(node));
-  const objectContainer = (node: ts.Node): boolean =>
-    ts.isObjectLiteralExpression(node) && boundContainer(node);
-  const bindingFor = (node: ts.Node): ts.VariableDeclaration | ts.PropertyDeclaration | ts.PropertyAssignment | undefined => {
-    const parent = node.parent;
-    if (topVariable(parent) && parent.initializer === node) return parent;
-    if ((ts.isPropertyDeclaration(parent) && classContainer(parent.parent) ||
-         ts.isPropertyAssignment(parent) && objectContainer(parent.parent)) &&
-        parent.initializer === node && !ts.isComputedPropertyName(parent.name)) return parent;
+  // A binding can own a callable through syntax-only wrappers, never through a
+  // call, conditional, binary expression or arbitrary ancestor.
+  const bindingFor = (node: ts.Expression): ts.VariableDeclaration | ts.PropertyDeclaration | ts.PropertyAssignment | undefined => {
+    let expression: ts.Expression = node;
+    while (expression.parent &&
+      (ts.isParenthesizedExpression(expression.parent) || ts.isAsExpression(expression.parent) ||
+       ts.isSatisfiesExpression(expression.parent) || ts.isNonNullExpression(expression.parent) ||
+       ts.isTypeAssertionExpression(expression.parent)) && expression.parent.expression === expression) {
+      expression = expression.parent;
+    }
+    const parent = expression.parent;
+    if ((ts.isVariableDeclaration(parent) || ts.isPropertyDeclaration(parent) ||
+         ts.isPropertyAssignment(parent)) && parent.initializer === expression) return parent;
     return undefined;
   };
   const visit = (node: ts.Node): void => {
@@ -50,31 +44,24 @@ function readOutline(path: string): {outline: Outline; source: string} {
       ts.isArrowFunction(node) || ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) ||
       ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node);
     if (callable) {
-      const ordinaryFunction = ts.isFunctionDeclaration(node) && node.parent === sf &&
-        !!node.name && !!node.body && !node.asteriskToken &&
-        !node.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) &&
-        !overloaded.has(node.name.text);
-      const classMember = (ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) ||
-        ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) &&
-        classContainer(node.parent) && (!node.name || !ts.isComputedPropertyName(node.name));
-      const objectMember = (ts.isMethodDeclaration(node) || ts.isGetAccessorDeclaration(node) ||
-        ts.isSetAccessorDeclaration(node)) && objectContainer(node.parent) &&
-        !ts.isComputedPropertyName(node.name);
       const binding = ts.isFunctionExpression(node) || ts.isArrowFunction(node) ? bindingFor(node) : undefined;
-      const supported = (ordinaryFunction || classMember || objectMember || !!binding) && !!node.body;
+      const destructuring = !!binding && ts.isVariableDeclaration(binding) && !ts.isIdentifier(binding.name);
+      const supported = !!node.body && !destructuring;
       const start = node.getStart(sf), end = node.getEnd();
       if (supported && node.body) {
         const pos = sf.getLineAndCharacterOfPosition(start);
-        callables.push({id: `${hash}:${start}:${end}`,
-          name: binding ? binding.name.getText(sf) : ts.isConstructorDeclaration(node) ? 'constructor'
-            : ts.isFunctionDeclaration(node) ? node.name!.text
-            : ('name' in node && node.name ? node.name.getText(sf) : ''),
+        const anonymous = `<anonymous@${pos.line + 1}:${pos.character + 1}>`;
+        const name = binding ? binding.name.getText(sf) : ts.isConstructorDeclaration(node) ? 'constructor'
+          : ts.isFunctionDeclaration(node) ? (node.name?.text ??
+            (node.modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword) ? '<default>' : anonymous))
+          : ('name' in node && node.name ? node.name.getText(sf) : anonymous);
+        callables.push({id: `${hash}:${start}:${end}`, name,
           signature: source.slice(binding ? binding.getStart(sf) : start, node.body.getStart(sf)).trimEnd(), start, end,
           location: {line: pos.line + 1, column: pos.character + 1}});
       } else {
         const name = 'name' in node && node.name ? (node.name as ts.Node).getText(sf) : '';
         diagnostics.push({code: 'unsupported_callable',
-          message: `Unsupported ${ts.SyntaxKind[node.kind]}${name ? ' ' + name : ''}`,
+          message: `Unsupported ${ts.SyntaxKind[node.kind]}${name ? ' ' + name : ''}${destructuring ? ' (destructuring binding)' : ''}`,
           start, end});
       }
     }
@@ -82,9 +69,10 @@ function readOutline(path: string): {outline: Outline; source: string} {
   };
   visit(sf);
   return {source, outline: {schema_version: 1, path: canonical, source_hash: hash, callables, diagnostics,
-    limitations: ['Supported: ordinary named top-level functions, class declaration members, and directly top-level-bound expressions, objects and class expressions. Computed, wrapped and nested callable forms remain unsupported.',
+    limitations: ['Runtime callable bodies are discovered recursively; destructuring-bound callable expressions remain unsupported.',
       'Locations and ranges use UTF-16 code units; comments before declarations are excluded.',
-      'Bound expression signatures include their immediate binding header; raw code is only the callable expression.',
+      'Bound expression signatures include their immediate binding header and transparent wrappers; raw code is only the callable expression.',
+      'Type-only signatures are not runtime implementation candidates; computed names are source text, never evaluated.',
       'Dependency context is not collected.']}};
 }
 

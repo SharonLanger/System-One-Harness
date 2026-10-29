@@ -23,5 +23,6 @@ model loading or inference is counted in the results below.
 - [Phase 16H](phases/phase-16h.md): COMPLETE, independent verification; 352 Python +6 Node pass; native stdout isolation and final-delivery criteria.
 - [Phase 17A](phases/phase-17a.md): COMPLETE, independent verification; 354 Python +10 Node pass; named class callables and full hook scenario.
 - [Phase 17B](phases/phase-17b.md): COMPLETE, independent verification; 356 Python +14 Node pass; bound expression signatures and full hook cases.
-- Phases 17C–19: pending.
+- [Phase 17C](phases/phase-17c.md): COMPLETE, independent verification; 358 Python +19 Node pass; recursive/special callable matrix and full hook cases.
+- Phases 18–19: pending.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.

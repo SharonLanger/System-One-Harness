@@ -165,3 +165,24 @@ def test_bound_expression_full_hook_labels_binding_extracts_only_callable(tmp_pa
     assert context['coverage']=='partial' and context['path']==str(case['path'])
     assert events(case)[1]['questions']['method']['criteria'][candidate['id']]==signature
     assert case['path'].read_bytes()==before
+
+
+@pytest.mark.parametrize('source,index,name,signature,raw', [
+    ('function outer() { const local = () => { return "😀"; }; return local; }', 1, 'local',
+     'local = () =>', '() => { return "😀"; }'),
+    ('export default function () { return "🙃"; }', 0, '<default>',
+     'export default function ()', 'export default function () { return "🙃"; }'),
+])
+def test_recursive_and_anonymous_default_full_hook(tmp_path, source, index, name, signature, raw):
+    case=hook_case(tmp_path,text=source); configure(case,case['path'],index=index)
+    before=case['path'].read_bytes(); candidate=case['data']['callables'][index]
+    result=invoke(case)
+    assert result.returncode==0
+    output=json.loads(result.stdout)['hookSpecificOutput']
+    context=json.loads(output['additionalContext'].split('\n',1)[1])
+    assert output['hookEventName']=='UserPromptSubmit'
+    assert context['code']==raw and context['callable']==candidate
+    assert candidate['name']==name and candidate['signature']==signature
+    assert context['path']==str(case['path']) and context['coverage']=='partial'
+    assert events(case)[1]['questions']['method']['criteria'][candidate['id']]==signature
+    assert case['path'].read_bytes()==before and len(events(case))==2

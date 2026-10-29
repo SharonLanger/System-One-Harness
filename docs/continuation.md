@@ -1,7 +1,7 @@
-# API and implementation status through Phase 17B
+# API and implementation status through Phase 17C
 
-Phases01–16H and17A/B are implemented and independently verified with the Laya
-SDK boundary mocked. Phase17C and dependency-context Phases18–19 remain pending.
+Phases01–17 are implemented and independently verified with the Laya
+SDK boundary mocked. Dependency-context Phases18–19 remain pending.
 Phase20 live integration is blocked: the verification environment is Linux x86_64
 without MLX or laya_mlx. No real model loading, inference or Claude activation has
 been performed. Mock results establish pipeline behavior, not live compatibility,
@@ -52,15 +52,18 @@ selection accuracy, policy calibration or token savings.
   canonical path, source_hash SHA256 decoded UTF8, callables each id/name/signature/
   start/end/location, diagnostics list(code/message/start/end), limitations list.
   IDs are hash:start:end. Ranges/end exclusive/columns are UTF16 code units;
-  locations 1-based. Ordinary named top-level functions and named top-level class
-  declaration members with bodies supported (including constructor/accessor/async/
-  generator/overload implementations). Member names retain source spelling; IDs
-  distinguish scope. Direct top-level identifier-bound function/arrow expressions,
-  object members/class expression members and direct callable class fields are
-  supported. Their binding-aware signatures use the immediate binding/property
-  header, but raw ranges/code remain the callable expression alone. Signature-only,
-  nested, computed, wrapped and special function declarations remain diagnostics
-  pending17C.
+  locations 1-based. Runtime implementation bodies are discovered recursively:
+  functions, arrows/function expressions, methods/constructors/accessors, object
+  and class members, callbacks, async/generator forms, overload implementations,
+  anonymous defaults and computed members. Member names retain source spelling;
+  declared function names retain semantic identifier names. IDs distinguish scope.
+  Binding-aware signatures include immediate variable/property headers and
+  transparent wrappers; raw ranges/code remain the callable expression alone.
+  Bodyless runtime declarations and destructuring-bound expressions remain
+  explicit diagnostics. Type-only signatures are not implementation candidates.
+  Computed names are never evaluated. Binding inference never crosses calls,
+  conditional/binary expressions or arbitrary ancestors. Unbound anonymous names
+  use <anonymous@line:column>; anonymous default functions use <default>.
   Parser errors fail, never trust recovery outlines. No source import/execute.
 - `typescript.extract_callable(path,callable_id,node=...,helper=...,timeout=5.0)`:
   JSON extract action with id; same one-read snapshot supplies hash/outline/code.
@@ -167,7 +170,10 @@ Phase17A: fresh build/typecheck, Node10/10 and Python354/354 passed, including a
 exact-budget hook scenario for an async class method. Phase17B: fresh build,
 Node14/14 and Python356/356 passed. Independent verification reran those suites
 and reviewed the implementation and test matrix; its Phase17B Python run took
-92.22seconds. See [17A](phases/phase-17a.md) and [17B](phases/phase-17b.md).
+92.22seconds. Phase17C independently verified the complete advertised17A/B/C
+matrix with fresh build/typecheck, Node19/19 and Python358/358 in74.94seconds;
+zero failures/skips/xfail. See [17A](phases/phase-17a.md),
+[17B](phases/phase-17b.md) and [17C](phases/phase-17c.md).
 
 Example prompt:
 
@@ -180,8 +186,8 @@ infer an answer in the mock or establish actual model-selection accuracy.
 
 ## Remaining technical work
 
-Phase17C completes recursive/special callable discovery with an advertised
-fixture matrix. Preserve source hash:start:end identity, UTF16 positions, exact
+Phase17 callable discovery is complete for the advertised matrix. Preserve
+source hash:start:end identity, UTF16 positions, exact
 raw slices, separate display text, parser-error failure and explicit unsupported
 diagnostics. Existing unsupported-form expectations may change only when replaced
 with positive source-fidelity coverage for the deliberately promoted form.

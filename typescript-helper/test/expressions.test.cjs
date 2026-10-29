@@ -62,14 +62,14 @@ test('binding header comments/newlines are exact, excluded from raw callable',()
     assert.deepEqual(c.location,{line:4,column:2});
   } finally {fs.rmSync(dir,{recursive:true});}
 });
-test('deferred wrappers/computed/nested binding forms remain diagnostics',()=>{
+test('recursive wrappers/computed/nested forms promote while destructuring stays diagnostic',()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'laya-deferred-')),file=path.join(dir,'a.ts');
   const source='const wrapped=(()=>1); const asserted=(()=>2) as unknown; const sat=(()=>3) satisfies unknown; const nonnull=(()=>4)!; const {bad}=()=>5; const object={ [key]() {}, nested:{ deep() {} }, value:42 }; function outer() { const local=()=>6; const object={m(){}}; } consume(()=>7); const cls=class { [key](){} };';
   fs.writeFileSync(file,source);
   try {
     const result=outline(file);
-    assert.deepEqual(result.callables.map(c=>c.name),['outer']);
-    assert.equal(result.diagnostics.length,11);
+    assert.deepEqual(result.callables.map(c=>c.name),['wrapped','asserted','sat','nonnull','[key]','deep','outer','local','m',`<anonymous@1:${source.indexOf('()=>7')+1}>`,'[key]']);
+    assert.equal(result.diagnostics.length,1);
     for(const d of result.diagnostics) assert.equal(d.code,'unsupported_callable');
     fs.writeFileSync(file,'const invalid = { method( {');
     assert.throws(()=>outline(file), /parse/i);

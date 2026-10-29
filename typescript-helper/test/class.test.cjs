@@ -57,13 +57,13 @@ for (const newline of ['\n', '\r\n']) test('class callable matrix and source fid
     assert.throws(()=>extractCallable(file,result.callables[0].id), /stale|unknown/);
   } finally { fs.rmSync(dir,{recursive:true}); }
 });
-test('class coverage keeps deferred forms diagnostic and parser errors fatal', () => {
+test('class coverage includes computed/nested members and parser errors remain fatal', () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'laya-class-')), file = path.join(dir, 'a.ts');
   try {
     fs.writeFileSync(file, 'class C { field=()=>1; [key]() {} } const C2=class { m() {} }; function f() { class Nested { n() {} } }');
     const result=outline(file);
-    assert.deepEqual(result.callables.map(x=>x.name),['field','m','f']);
-    assert.equal(result.diagnostics.length,2);
+    assert.deepEqual(result.callables.map(x=>x.name),['field','[key]','m','f','n']);
+    assert.equal(result.diagnostics.length,0);
     fs.writeFileSync(file, 'class C { broken( {');
     assert.throws(()=>outline(file), /parse/i);
   } finally { fs.rmSync(dir,{recursive:true}); }
