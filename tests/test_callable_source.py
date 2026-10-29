@@ -51,7 +51,9 @@ def test_changed_source_invalid_ids_and_unsupported_forms(tmp_path):
             extract_callable(source, bad_id)
     source.write_text("class C { method() {} } const f = () => 1;")
     result = outline(source)
-    assert not result["callables"] and len(result["diagnostics"]) == 2
+    assert [c["name"] for c in result["callables"]] == ["method"]
+    assert extract_callable(source, result["callables"][0]["id"])["code"] == "method() {}"
+    assert len(result["diagnostics"]) == 1
     unsupported = result["diagnostics"][0]
     with pytest.raises(TypeScriptError, match="unknown"):
         extract_callable(source, f'{result["source_hash"]}:{unsupported["start"]}:{unsupported["end"]}')

@@ -120,3 +120,27 @@ def test_documented_enable_disable_recipe_with_mock_only(tmp_path):
     disabled=subprocess.run(['bash','-c',command.replace(' --real','')],input=json.dumps(case['event']),text=True,capture_output=True,env=env,timeout=15)
     assert_noop(disabled); assert len(events(case))==2
     assert list(case['repo'].rglob('*'))==before and not (case['repo']/'.claude').exists()
+
+
+@pytest.mark.parametrize('budget_delta', [0, -1])
+def test_class_method_full_hook_source_and_complete_render_budget(tmp_path, budget_delta):
+    raw='public async greet(name: string): Promise<string> {\n    // interior 😀\n    return name;\n  }'
+    source='// 🙃 prefix\nexport class Greeter {\n  /** attached excluded */\n  '+raw+' // trailing excluded\n}\n'
+    case=hook_case(tmp_path,text=source)
+    before=case['path'].read_bytes()
+    assert case['data']['callables'][0]['name']=='greet'
+    full=expected_context(case)
+    result=invoke(case,args=case['args']+['--max-context-chars',str(len(full)+budget_delta)])
+    if budget_delta < 0:
+        assert_noop(result); assert 'context_budget_exceeded' in result.stderr
+    else:
+        output=json.loads(result.stdout)
+        assert output=={'hookSpecificOutput':{'hookEventName':'UserPromptSubmit','additionalContext':full}}
+        context=json.loads(output['hookSpecificOutput']['additionalContext'].split('\n',1)[1])
+        assert context['code']==raw and context['coverage']=='partial'
+        assert context['callable']['signature']=='public async greet(name: string): Promise<string>'
+        assert context['callable']['location']=={'line':4,'column':3}
+        assert context['path']==str(case['path'])
+        assert 'attached' not in context['code'] and 'trailing' not in context['code']
+        assert 'synthetic SDK noise' in result.stderr and 'synthetic SDK noise' not in result.stdout
+    assert len(events(case))==2 and case['path'].read_bytes()==before

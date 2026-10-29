@@ -83,11 +83,13 @@ python -m pytest -q
 ```
 
 `building_blocks.typescript.outline(path)` calls the real pinned TypeScript5.9.3
-parser through a JSON CLI. Initial support is ordinary named top-level function
-implementations; other callable forms produce explicit diagnostics. Parse errors
+parser through a JSON CLI. Support includes ordinary named top-level functions
+and members with bodies of named top-level class declarations: constructors,
+instance/static/private methods, accessors, async/generator methods and overload
+implementations. Signature-only declarations and remaining callable forms produce
+explicit diagnostics; see [the exact Phase17A matrix](docs/phases/phase-17a.md). Parse errors
 fail. The helper parses source without importing or executing it. Signatures and
-UTF16 source ranges retain provenance; dependency collection and exact retrieval
-are later stages. The Python bridge uses argv and a bounded process timeout,
+UTF16 source ranges retain provenance; dependency collection remains a later stage. The Python bridge uses argv and a bounded process timeout,
 validates schema1 output, and raises `TypeScriptError` for helper/protocol errors.
 Its default helper path is for this source checkout; installed applications must
 supply `helper=` pointing to a built helper with its pinned dependency available.

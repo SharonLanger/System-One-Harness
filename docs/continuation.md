@@ -1,10 +1,10 @@
-# Implementation handoff after Phase 16
+# Implementation handoff through Phase 17A
 
 User authorized mock-first Phases01–19, public publication, direct main, no routine
-approval gates. Phases 01–16 are complete in this tree; continue 17–19. Root will
-assign a fresh sole implementation writer after Phase 16 exact-tree publication
-acknowledgment. Do not redo the completed phases or write concurrently with the
-new owner. The outgoing sole writer is /root/flow_builder.
+approval gates. Phases01–16H and17A are complete in this tree; continue17B/C–19. The sole
+Phase17 implementation writer is /root/phase17_builder. Do not redo completed
+phases or write concurrently with this owner. Wait for exact-tree publication
+acknowledgment before the next increment.
 Do not stop the overall task here. Phase20 remains blocked: Linux x86_64, no mlx or
 laya_mlx (stdlib discovery only). No SDK imports, installs, weights, downloads,
 model calls or real harness activation are authorized on this host. All inference
@@ -55,8 +55,11 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   canonical path, source_hash SHA256 decoded UTF8, callables each id/name/signature/
   start/end/location, diagnostics list(code/message/start/end), limitations list.
   IDs are hash:start:end. Ranges/end exclusive/columns are UTF16 code units;
-  locations 1-based. Only ordinary named top-level implementations supported.
-  Nested/class/arrow/expression/async/generator/overload forms explicit diagnostics.
+  locations 1-based. Ordinary named top-level functions and named top-level class
+  declaration members with bodies supported (including constructor/accessor/async/
+  generator/overload implementations). Member names retain source spelling; IDs
+  distinguish scope. Signature-only, nested, computed, arrow/expression and other
+  special function forms remain diagnostics pending17B/C.
   Parser errors fail, never trust recovery outlines. No source import/execute.
 - `typescript.extract_callable(path,callable_id,node=...,helper=...,timeout=5.0)`:
   JSON extract action with id; same one-read snapshot supplies hash/outline/code.
@@ -134,6 +137,14 @@ boundaries so far are explicit mocks; every supporting pipeline layer executes.
   rejected/abstained/malformed/model-error no-ops and deliberate temp-source edit
   after accepted selection causing real extractor_error. Tracked fixture and
   request fixture bytes remain unchanged; only SDK is mocked.
+
+## Phase17 progress
+
+17A independently verified: fresh TS build/typecheck, Node10/10 and Python354/354
+(all zero skips/xfail), plus exact-budget full hook scenario for a new async class
+method with only laya_mlx mocked. See docs/phases/phase-17a.md. Next17B covers
+bound expressions/objects/class expressions;17C completes recursive/special forms.
+No dependency collection or live-model evidence is claimed yet.
 
 ## Commands and execution evidence
 

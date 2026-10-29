@@ -31,14 +31,21 @@ function readOutline(path: string): {outline: Outline; source: string} {
       ts.isArrowFunction(node) || ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) ||
       ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node);
     if (callable) {
-      const supported = ts.isFunctionDeclaration(node) && node.parent === sf &&
+      const ordinaryFunction = ts.isFunctionDeclaration(node) && node.parent === sf &&
         !!node.name && !!node.body && !node.asteriskToken &&
         !node.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) &&
         !overloaded.has(node.name.text);
+      const classMember = (ts.isMethodDeclaration(node) || ts.isConstructorDeclaration(node) ||
+        ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node)) &&
+        ts.isClassDeclaration(node.parent) && !!node.parent.name && node.parent.parent === sf &&
+        (!node.name || !ts.isComputedPropertyName(node.name));
+      const supported = (ordinaryFunction || classMember) && !!node.body;
       const start = node.getStart(sf), end = node.getEnd();
-      if (supported && ts.isFunctionDeclaration(node) && node.name && node.body) {
+      if (supported && node.body) {
         const pos = sf.getLineAndCharacterOfPosition(start);
-        callables.push({id: `${hash}:${start}:${end}`, name: node.name.text,
+        callables.push({id: `${hash}:${start}:${end}`,
+          name: ts.isConstructorDeclaration(node) ? 'constructor'
+            : ts.isFunctionDeclaration(node) ? node.name!.text : node.name!.getText(sf),
           signature: source.slice(start, node.body.getStart(sf)).trimEnd(), start, end,
           location: {line: pos.line + 1, column: pos.character + 1}});
       } else {
@@ -52,7 +59,7 @@ function readOutline(path: string): {outline: Outline; source: string} {
   };
   visit(sf);
   return {source, outline: {schema_version: 1, path: canonical, source_hash: hash, callables, diagnostics,
-    limitations: ['Only ordinary named top-level function implementations are supported.',
+    limitations: ['Supported: ordinary named top-level functions and named top-level class declaration members with bodies. Computed members, expressions and nested callables remain unsupported.',
       'Locations and ranges use UTF-16 code units; comments before declarations are excluded.',
       'Dependency context is not collected.']}};
 }

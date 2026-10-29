@@ -43,10 +43,10 @@ test('unsupported callable forms remain visible diagnostics', () => {
   const {file,dir} = fixture(text);
   try {
     const result = outline(file);
-    assert.deepEqual(result.callables.map(f=>f.name), ['outer']);
-    for (const name of ['inner','m','af','gen','ov']) assert.ok(result.diagnostics.some(d=>d.message.includes(name)), name);
+    assert.deepEqual(result.callables.map(f=>f.name), ['outer','m']);
+    for (const name of ['inner','af','gen','ov']) assert.ok(result.diagnostics.some(d=>d.message.includes(name)), name);
     assert.ok(result.diagnostics.some(d=>d.message.includes('ArrowFunction')));
-    assert.equal(result.diagnostics.length, 7);
+    assert.equal(result.diagnostics.length, 6);
   } finally { fs.rmSync(dir,{recursive:true}); }
 });
 test('JSON CLI parses without executing source and validates requests', () => {
