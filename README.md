@@ -51,3 +51,14 @@ A reusable block is a folder with `questions.json` (a list), `rules.json`
 `QuestionBlock(directory).run(text, config=config, registry=registry)` sends all
 questions in one SDK call and returns independently named decisions. Missing/extra
 policies and duplicate configuration keys fail before inference.
+
+`building_blocks.file_reference_utils.detect_file_references(text, pattern)` is a
+pure lexical detector. Supply a string or compiled regex with a named `path`
+capture containing the complete POSIX path, excluding quotes and `:line:column`.
+For example, a pattern containing the named group `(?P<path>[^>]+)` between
+angle brackets captures a delimited path including spaces. The expression owns supported syntax; use delimiters for paths with spaces
+and never capture only their suffix. Results preserve duplicates and path spelling,
+with `filename`, exact capture `start/end`, and a case-sensitive lexical `kind`:
+`declaration` (`.d.ts`), `test_code` (`.spec.ts`/`.test.ts`), `production_code`
+(`.ts/.tsx/.js/.jsx`), or `non_code`. Backslash paths/control characters reject.
+A log mention remains a mention; this API never reads files or decides intent.
