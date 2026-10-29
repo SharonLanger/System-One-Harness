@@ -49,12 +49,16 @@ def validate_response(raw, questions):
     return raw
 
 
-def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False):
-    """Return copied raw JSON. Mock mode requires an explicit loader."""
+def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None):
+    """Return copied raw JSON, reusing agents only in the provided registry."""
+    from .config import RunConfig
+    from .registry import AgentRegistry
     validate_questions(questions)
-    if loader is None:
-        if not real:
-            raise RuntimeError('mock mode requires an explicit loader')
-        loader = real_loader
-    raw = loader(model).predict(text, deepcopy(questions))
+    if config is None:
+        config = RunConfig(model=model)
+    if registry is None:
+        registry = AgentRegistry(loader=loader, real=real)
+    elif loader is not None or real:
+        raise ValueError('registry owns loader and mode')
+    raw = registry.get_agent(config).predict(text, deepcopy(questions), **config.predict_kwargs())
     return deepcopy(validate_response(raw, questions))
