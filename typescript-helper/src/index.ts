@@ -11,7 +11,7 @@ export interface Outline {
   schema_version: number; path: string; source_hash: string; callables: Callable[];
   diagnostics: Diagnostic[]; limitations: string[];
 }
-export function outline(path: string): Outline {
+function readOutline(path: string): {outline: Outline; source: string} {
   const canonical = realpathSync(path);
   const source = readFileSync(canonical, 'utf8');
   const sf = ts.createSourceFile(canonical, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -51,8 +51,27 @@ export function outline(path: string): Outline {
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  return {schema_version: 1, path: canonical, source_hash: hash, callables, diagnostics,
+  return {source, outline: {schema_version: 1, path: canonical, source_hash: hash, callables, diagnostics,
     limitations: ['Only ordinary named top-level function implementations are supported.',
       'Locations and ranges use UTF-16 code units; comments before declarations are excluded.',
-      'Dependency context is not collected.']};
+      'Dependency context is not collected.']}};
+}
+
+
+export function outline(path: string): Outline {
+  return readOutline(path).outline;
+}
+export interface CallableSource extends Omit<Outline, 'callables'> {
+  callable: Callable; code: string; display_code: string;
+}
+export function extractCallable(path: string, id: string): CallableSource {
+  // Outline and code share one read snapshot; JS slice uses compiler UTF-16 offsets.
+  const snapshot = readOutline(path);
+  const callable = snapshot.outline.callables.find(c => c.id === id);
+  if (!callable) throw new Error('Stale or unknown callable ID');
+  const code = snapshot.source.slice(callable.start, callable.end);
+  const display_code = code.split(/\r\n|\r|\n/).map((line, index) =>
+    `${callable.location.line + index}: ${line}`).join('\n');
+  const {callables: _unused, ...metadata} = snapshot.outline;
+  return {...metadata, callable, code, display_code};
 }

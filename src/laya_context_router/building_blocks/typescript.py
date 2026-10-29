@@ -45,8 +45,8 @@ def _validate_outline(data, path):
     return data
 
 
-def outline(path: str | Path, *, node: str = "node", helper: str | Path = DEFAULT_HELPER,
-            timeout: float = 5.0) -> dict:
+def _request(path: str | Path, request: dict, *, node: str, helper: str | Path,
+             timeout: float) -> dict:
     """Read an outline using argv (never a shell); requires a fresh helper build.
 
     Default helper location supports the source checkout. Installed applications
@@ -61,7 +61,7 @@ def outline(path: str | Path, *, node: str = "node", helper: str | Path = DEFAUL
     path = Path(path).resolve()
     try:
         result = subprocess.run([str(node), str(helper.resolve())],
-            input=json.dumps({"action": "outline", "path": str(path)}),
+            input=json.dumps({**request, "path": str(path)}),
             text=True, encoding="utf-8", capture_output=True, timeout=timeout, check=False)
     except FileNotFoundError as exc:
         raise TypeScriptError(f"Node executable unavailable: {node}") from exc
@@ -75,4 +75,33 @@ def outline(path: str | Path, *, node: str = "node", helper: str | Path = DEFAUL
         data = json.loads(result.stdout)
     except (ValueError, TypeError) as exc:
         raise TypeScriptError("TypeScript helper returned invalid JSON stdout") from exc
-    return _validate_outline(data, path)
+    return data
+
+
+def outline(path: str | Path, *, node: str = "node", helper: str | Path = DEFAULT_HELPER,
+            timeout: float = 5.0) -> dict:
+    """Return a validated compiler outline; source is parsed, never executed."""
+    data = _request(path, {"action": "outline"}, node=node, helper=helper, timeout=timeout)
+    return _validate_outline(data, Path(path).resolve())
+
+
+def extract_callable(path: str | Path, callable_id: str, *, node: str = "node",
+                     helper: str | Path = DEFAULT_HELPER, timeout: float = 5.0) -> dict:
+    """Return exact source; UTF-16 indexing happens entirely inside the helper."""
+    data = _request(path, {"action": "extract", "id": callable_id},
+                    node=node, helper=helper, timeout=timeout)
+    if not isinstance(data, dict):
+        raise TypeScriptError("invalid extraction schema")
+    candidate = data.get("callable")
+    _validate_outline({**data, "callables": [candidate]}, Path(path).resolve())
+    code = data.get("code")
+    if (candidate["id"] != callable_id or not isinstance(code, str) or not code
+            or not isinstance(data.get("display_code"), str) or not data["display_code"]):
+        raise TypeScriptError("invalid extraction schema")
+    try:
+        length = len(code.encode("utf-16-le")) // 2
+    except UnicodeError as exc:
+        raise TypeScriptError("invalid extraction schema: Unicode") from exc
+    if length != candidate["end"] - candidate["start"]:
+        raise TypeScriptError("invalid extraction schema: source range length")
+    return data

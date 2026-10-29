@@ -91,3 +91,12 @@ are later stages. The Python bridge uses argv and a bounded process timeout,
 validates schema1 output, and raises `TypeScriptError` for helper/protocol errors.
 Its default helper path is for this source checkout; installed applications must
 supply `helper=` pointing to a built helper with its pinned dependency available.
+
+`building_blocks.typescript.extract_callable(path, callable_id)` returns exact
+`code`, its `callable` metadata, path/hash, diagnostics and limitations. Obtain the
+ID from the outline; stale/unknown IDs fail. Outline and slice share a single read
+snapshot. Slicing happens inside the TypeScript helper using its UTF16 offsets,
+so Unicode does not depend on Python indexing. Leading attached comments and
+trailing comments are excluded; interior comments remain. Raw code retains source
+line endings. Separate `display_code` adds line numbers with LF display newlines.
+Dependency context is still incomplete.
