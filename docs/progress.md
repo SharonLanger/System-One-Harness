@@ -15,5 +15,6 @@ externally, and the next phase starts from the matching published tree.
 - [Phase 07](phases/phase-07.md): COMPLETE, independent verification; 163 mock tests pass; wheel resources verified.
 - [Continuation handoff](continuation.md): current APIs, source provenance and execution workflow.
 - [Phase 08](phases/phase-08.md): COMPLETE, independent verification; 189 mock/lexical tests pass.
-- Phases 09–19: pending, authorized continuation.
+- [Phase 09](phases/phase-09.md): COMPLETE, independent verification; 216 tests pass.
+- Phases 10–19: pending, authorized continuation.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.

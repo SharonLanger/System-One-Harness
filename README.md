@@ -62,3 +62,13 @@ with `filename`, exact capture `start/end`, and a case-sensitive lexical `kind`:
 `declaration` (`.d.ts`), `test_code` (`.spec.ts`/`.test.ts`), `production_code`
 (`.ts/.tsx/.js/.jsx`), or `non_code`. Backslash paths/control characters reject.
 A log mention remains a mention; this API never reads files or decides intent.
+
+`building_blocks.resolve_file.resolve_file(reference, cwd=..., repository_root=...)`
+resolves eligible production `.ts` references inside an explicit repository.
+Exact paths take precedence; only missing basename-only mentions trigger a sorted
+search. It returns `Resolution(status, selected_path, candidates)` with canonical
+absolute Paths; ambiguous results never select a file. Statuses distinguish
+`resolved`, `missing`, `ambiguous`, `excluded`, `not_file`, `inaccessible`, and
+`outside_repository`. Test/declaration/non-TS files are excluded. The search skips
+`.git`, `node_modules`, and symlink directories; symlink targets cannot escape the
+repository. Any scan error prevents selection. Source contents remain untouched.
