@@ -1,8 +1,7 @@
-# API and implementation status through Phase 18A
+# API and implementation status through Phase 18
 
-Phases01–17 are implemented and independently verified with the Laya
-SDK boundary mocked. Phase18A same-file helper/bridge is independently verified; Phase18 flow/hook
-integration and Phase19 remain pending.
+Phases01–18 are implemented and independently verified with the Laya
+SDK boundary mocked. Cross-file Phase19 remains pending.
 Phase20 live integration is blocked: the verification environment is Linux x86_64
 without MLX or laya_mlx. No real model loading, inference or Claude activation has
 been performed. Mock results establish pipeline behavior, not live compatibility,
@@ -86,8 +85,8 @@ selection accuracy, policy calibration or token savings.
   whole-unit depth/size omissions are deterministic. Dependency budget counts
   UTF16 units in dependency code only, including overlaps; selected code and
   metadata are excluded. Depth0–20, positive budget<=1,000,000. External/runtime
-  state, callers and other module initialization remain partial. Flow/hook still
-  use exact extraction until18B; their model/final-render budgets are separate.
+  state, callers and other module initialization remain partial. Phase18B integrates
+  this collector into the flow/hook with independent model/final-render budgets.
 - `building_blocks.questions.method_selection.block.run(text,source_outline,
   config=...,registry=...,max_candidates=64,max_input_chars=16000)` returns
   selected_id/reason/decisions/candidate_map. Four files questions/rules/block/README
@@ -102,16 +101,18 @@ selection accuracy, policy calibration or token savings.
 - `flows.file_method_context.run(prompt,cwd=...,repository_root=...,config=...,
   registry=...,reference_pattern=DEFAULT_REFERENCE_PATTERN,node='node',
   helper=DEFAULT_HELPER,timeout=5.0,max_candidates=64,max_input_chars=16000,
-  fallback_config=None,fallback_max_input_chars=16000)`:
+  fallback_config=None,fallback_max_input_chars=16000,
+  max_dependency_depth=2,max_dependency_chars=12000)`:
   case-insensitive explicit `Explain`, one backtick-quoted production .ts path,
   colon, nonempty question. Requires exactly one lexical mention equal to target;
   default regex detects quoted spaces and plain extra file mentions. Filename only,
   output-only and incidental logs do not infer intent. Context result exactly
-  {status:'context',reason:None,context:<extract dict plus coverage:'partial'>};
+  {status:'context',reason:None,context:<local context dict with coverage:'partial'>};
   no-op {status:'noop',reason:<reason>,context:None}. Flow uses real components,
-  checks confinement before outline/extract and validates mapped path/hash/callable.
-  Source/model failures are safe no-ops. Prompt/source unchanged. No dependencies
-  collected; exact callable is useful but context explicitly partial.
+  checks confinement before outline/collection and validates mapped path/hash/callable.
+  Source/model failures are safe no-ops. Prompt/source unchanged. Invalid dependency
+  limits no-op before source/model work. Complete selected code plus bounded
+  semantic same-file dependencies/gaps remain explicitly partial.
 - Phase 14 opt-in `fallback_config` only triggers when method is policy-rejected
   and multiple_relevant is accepted `no`. Appends a fixed snapshot ID/signature
   summary to the original text, unchanged question choices. Independent positive
@@ -137,6 +138,9 @@ selection accuracy, policy calibration or token savings.
   stdout and stderr diagnostics; argparse errors never exit2. Pipeline Python
   stdout and synchronous file-descriptor-1 output redirect to stderr. Tests
   cover simulated native writes; actual backend output remains unverified.
+  --max-dependency-depth defaults2 (0–20); --max-dependency-chars defaults12,000
+  (1–1,000,000 UTF16 source units), separate from final Unicode rendering. Invalid
+  limits no-op before SDK loading. Final overflow never retries with fewer units.
   --deadline defaults10s, explicit finite >0<=300s; helper remains5s. Default and
   max are administrative bounds, not measured Laya latency. SIGALRM covers Python
   stdin/import/load/flow path but cannot guarantee interrupting native C. Future
@@ -205,8 +209,8 @@ raw slices, separate display text, parser-error failure and explicit unsupported
 diagnostics. Existing unsupported-form expectations may change only when replaced
 with positive source-fidelity coverage for the deliberately promoted form.
 
-Phase18 adds bounded same-file context using TypeScript symbol identity rather
-than spelling matches. Preserve raw dependency statements, deterministic order,
+Phase18 provides bounded same-file context using TypeScript symbol identity
+rather than spelling matches. Preserve raw dependency statements, deterministic order,
 deduplication, depth/size bounds and explicit gaps for closures, mutable state,
 side effects and unresolved/dynamic references. Keep selected code intact.
 

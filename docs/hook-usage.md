@@ -66,7 +66,13 @@ context is partial, not a complete explanation or dependency graph. Input and
 context budgets refuse oversized data without truncating it. The 8,000-character
 default applies to the entire rendered string (including code, labels and
 provenance), below the documented 10,000-character overflow behavior. It is
-separate from the Laya input budget. Ordinary Python output and synchronous
+separate from the Laya input and dependency-source budgets.
+`--max-dependency-depth` defaults to2 (0–20); `--max-dependency-chars` defaults
+to12,000 (1–1,000,000 UTF16 code units in complete dependency source). Collection
+can omit complete units only with explicit gaps. Selected code stays complete.
+The final Unicode-character rendering budget counts dependency units, gaps and
+all metadata; overflow returns a no-op without a reduced-context retry.
+Ordinary Python output and synchronous
 native writes to fd 1 during model work are redirected to stderr; actual SDK
 background output behavior still needs a supported-environment check.
 

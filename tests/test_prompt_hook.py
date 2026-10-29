@@ -8,7 +8,7 @@ import time
 
 import pytest
 
-from laya_context_router.building_blocks.typescript import outline, extract_callable
+from laya_context_router.building_blocks.typescript import outline, collect_local_context
 from test_method_selection import questions_for, raw_for
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -67,7 +67,7 @@ def assert_noop(result, diagnostic=True):
 
 
 def expected_context(case):
-    context=extract_callable(case['path'],case['data']['callables'][0]['id'])
+    context=collect_local_context(case['path'],case['data']['callables'][0]['id'])
     context['coverage']='partial'
     return HEADER+json.dumps(context,ensure_ascii=False,separators=(',',':'))
 

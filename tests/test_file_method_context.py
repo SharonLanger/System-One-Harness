@@ -41,7 +41,8 @@ def test_complete_real_source_flow_exact_request_and_context(tmp_path, absolute)
     assert context["code"] == 'export function greet() { return "😀"; }'
     assert context["path"] == str(path) and context["callable"] == candidate
     assert context["coverage"] == "partial"
-    assert any("Dependency" in line for line in context["limitations"])
+    assert context["dependencies"] == []
+    assert any("Same-file semantic dependencies" in line for line in context["limitations"])
     assert len(calls) == 1 and prompt == original and path.read_bytes() == before
 
 
@@ -108,7 +109,7 @@ def test_parser_malformed_outline_and_extraction_fail_closed(tmp_path, monkeypat
     assert flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=CONFIG,registry=forbidden_registry(),node=sys.executable,helper=helper)["reason"]=="extractor_error"
     path.write_text("function greet() {}")
     data=outline(path); expected=questions_for(data)
-    monkeypatch.setattr(flow,"extract_callable",lambda *args,**kwargs:{"bad":"shape"})
+    monkeypatch.setattr(flow,"collect_local_context",lambda *args,**kwargs:{"bad":"shape"})
     result=flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=CONFIG,
                     registry=registry_for(prompt,expected,raw_for(expected,data["callables"][0]["id"]),[]))
     assert result["reason"]=="extractor_error" and result["context"] is None

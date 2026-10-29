@@ -94,8 +94,8 @@ transparent wrappers; exact raw extraction remains the callable expression alone
 See [17A](docs/phases/phase-17a.md), [17B](docs/phases/phase-17b.md) and
 [17C](docs/phases/phase-17c.md) for the tested matrix, naming and remaining gaps.
 Parse errors fail. The helper parses source without importing or executing it.
-Signatures and UTF16 source ranges retain provenance; dependency collection
-remains a later stage. The Python bridge uses argv and a bounded process timeout,
+Signatures and UTF16 source ranges retain provenance. Bounded same-file semantic
+dependency collection preserves original source units and reports explicit gaps. The Python bridge uses argv and a bounded process timeout,
 validates schema1 output, and raises `TypeScriptError` for helper/protocol errors.
 Its default helper path is for this source checkout; installed applications must
 supply `helper=` pointing to a built helper with its pinned dependency available.
@@ -107,7 +107,9 @@ snapshot. Slicing happens inside the TypeScript helper using its UTF16 offsets,
 so Unicode does not depend on Python indexing. Leading attached comments and
 trailing comments are excluded; interior comments remain. Raw code retains source
 line endings. Separate `display_code` adds line numbers with LF display newlines.
-Dependency context is still incomplete.
+`building_blocks.typescript.collect_local_context(path, callable_id)` adds bounded
+same-file semantic dependency statements and explicit gaps to exact selected
+source. Cross-file and runtime dependency coverage remains partial.
 
 The [method selection block](src/laya_context_router/building_blocks/questions/method_selection/README.md)
 constructs dynamic ID/signature choices from a real outline and asks `method` plus
@@ -135,7 +137,12 @@ Explain `src/service.ts`: how does calculate work?
 
 `flows.file_method_context.run(prompt, cwd=..., repository_root=..., config=...,
 registry=...)` returns `{status, reason, context}`. Context includes exact source
-and provenance with `coverage="partial"`; dependency context is incomplete.
+and provenance with `coverage="partial"`, same-file dependency units and gaps.
+`max_dependency_depth=2` (0–20) and `max_dependency_chars=12000`
+(1–1,000,000 UTF16 units) bound complete dependency source only. These limits
+exclude selected code and metadata and remain separate from model input and
+final hook rendering. Outer closures, runtime state and cross-file implementations
+remain partial.
 Unmatched prompts, ambiguous/missing/excluded files, budget refusal, rejected
 predictions and source/model failures return a reasoned no-op. The prompt and
 source remain unchanged. No hook has been installed or activated.
@@ -161,7 +168,10 @@ unverified until Phase20. Tests inject the SDK boundary independently.
 The POSIX adapter exits 0 on handled errors and no-ops, logs only to stderr, and
 emits only protocol JSON for accepted context. Input is bounded to 65,536 Unicode
 characters, context to 8,000 (lower with `--max-context-chars`); nothing is truncated.
-The rendered context budget includes metadata, labels and code. Subprocess tests
+The rendered context budget includes dependency units, gaps, metadata, labels
+and code. `--max-dependency-depth` and `--max-dependency-chars` configure the
+separate source collection limits. Final overflow returns a no-op without
+truncation or automatic collection retries. Subprocess tests
 also simulate native writes to stdout during SDK load and predict; the adapter
 redirects these to stderr while it works, then restores stdout for its response.
 Actual SDK background-output behavior remains a final-environment check.

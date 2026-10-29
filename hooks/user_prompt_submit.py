@@ -52,9 +52,13 @@ def main(argv=None):
             parser.add_argument('--real', action='store_true', help='explicit lazy live adapter opt-in; unverified until Phase20')
             parser.add_argument('--deadline', type=float, default=10.0)
             parser.add_argument('--max-context-chars', type=int, default=MAX_CONTEXT_CHARS)
+            parser.add_argument('--max-dependency-depth', type=int, default=2)
+            parser.add_argument('--max-dependency-chars', type=int, default=12000)
             args = parser.parse_args(argv)
             if (not math.isfinite(args.deadline) or not 0 < args.deadline <= 300
-                    or not 0 < args.max_context_chars <= MAX_CONTEXT_CHARS):
+                    or not 0 < args.max_context_chars <= MAX_CONTEXT_CHARS
+                    or not 0 <= args.max_dependency_depth <= 20
+                    or not 1 <= args.max_dependency_chars <= 1000000):
                 raise ValueError('invalid hook budget')
             previous_handler = signal.signal(signal.SIGALRM, _expired)
             signal.setitimer(signal.ITIMER_REAL, args.deadline)
@@ -86,7 +90,8 @@ def main(argv=None):
             from laya_context_router.flows.file_method_context import run
             config = load_config(args.config) if args.config else RunConfig()
             result = run(event['prompt'], cwd=cwd, repository_root=root, config=config,
-                         registry=AgentRegistry(real=True))
+                         registry=AgentRegistry(real=True), max_dependency_depth=args.max_dependency_depth,
+                         max_dependency_chars=args.max_dependency_chars)
             if result['status'] != 'context':
                 print(f"laya hook noop: {result['reason']}", file=sys.stderr)
                 return 0

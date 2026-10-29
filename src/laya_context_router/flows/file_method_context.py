@@ -4,7 +4,7 @@ import re
 
 from ..building_blocks.file_reference_utils import detect_file_references
 from ..building_blocks.resolve_file import resolve_file
-from ..building_blocks.typescript import DEFAULT_HELPER, TypeScriptError, outline, extract_callable
+from ..building_blocks.typescript import DEFAULT_HELPER, TypeScriptError, outline, collect_local_context
 from ..building_blocks.questions.method_selection.block import run as select_method
 
 DEFAULT_REFERENCE_PATTERN = re.compile(r'''(?P<quote>["'`])?(?P<path>(?(quote)[^"'`\r\n]+|[^\s"'`<>:,;!?()]+)\.[A-Za-z0-9]+)(?(quote)(?P=quote))(?::\d+(?::\d+)?)?''')
@@ -23,13 +23,17 @@ def _confined(path, root):
 def run(prompt, *, cwd, repository_root, config, registry,
         reference_pattern=DEFAULT_REFERENCE_PATTERN, node='node', helper=DEFAULT_HELPER,
         timeout=5.0, max_candidates=64, max_input_chars=16000,
-        fallback_config=None, fallback_max_input_chars=16000):
+        fallback_config=None, fallback_max_input_chars=16000,
+        max_dependency_depth=2, max_dependency_chars=12000):
     """Only `Explain `backtick path`: question` qualifies for this first flow.
 
     Exactly one lexical file mention must equal that target. This is an explicit
     trigger, not a general intent classifier. All source work is read-only; only
     SDK load/predict is injected for offline use. Dependency context is partial.
     """
+    if (type(max_dependency_depth) is not int or not 0 <= max_dependency_depth <= 20
+            or type(max_dependency_chars) is not int or not 1 <= max_dependency_chars <= 1000000):
+        return _noop('invalid_dependency_budget')
     if (type(fallback_max_input_chars) is not int or fallback_max_input_chars <= 0):
         return _noop('invalid_fallback_budget')
     if not isinstance(prompt, str) or not re.match(r'^\s*Explain\b', prompt, re.IGNORECASE):
@@ -80,7 +84,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
     try:
         if not _confined(path, root):
             return _noop('source_changed')
-        context = extract_callable(path, selection['selected_id'], node=node, helper=helper, timeout=timeout)
+        context = collect_local_context(path, selection['selected_id'], node=node, helper=helper, timeout=timeout,
+                                        max_depth=max_dependency_depth, max_dependency_chars=max_dependency_chars)
         mapped = selection['candidate_map'][selection['selected_id']]
         if (context['path'] != mapped['path'] or context['source_hash'] != mapped['source_hash']
                 or context['callable'] != {k: v for k, v in mapped.items() if k not in {'path', 'source_hash'}}
