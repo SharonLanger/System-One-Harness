@@ -153,6 +153,10 @@ unverified until Phase20. Tests inject the SDK boundary independently.
 The POSIX adapter exits 0 on handled errors and no-ops, logs only to stderr, and
 emits only protocol JSON for accepted context. Input is bounded to 65,536 Unicode
 characters, context to 8,000 (lower with `--max-context-chars`); nothing is truncated.
+The rendered context budget includes metadata, labels and code. Subprocess tests
+also simulate native writes to stdout during SDK load and predict; the adapter
+redirects these to stderr while it works, then restores stdout for its response.
+Actual SDK background-output behavior remains a final-environment check.
 `--deadline` defaults to 10 seconds (maximum 300, explicitly opted in) around Python processing; native
 SDK interruption is unverified. The outer harness timeout must exceed this
 internal deadline with grace (for example, deadline plus 5 seconds); its current

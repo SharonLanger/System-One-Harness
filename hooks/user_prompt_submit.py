@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Opt-in POSIX command hook; protocol only, no installation or activation."""
 import argparse
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
 import json
 import math
+import os
 from pathlib import Path
 import signal
 import sys
@@ -17,12 +18,34 @@ def _expired(signum, frame):
     raise TimeoutError('hook deadline exceeded')
 
 
+@contextmanager
+def _isolate_protocol_stdout():
+    """Send Python and file-descriptor stdout chatter to stderr during work.
+
+    Restore the original descriptor before writing the single hook response.
+    This covers native writes to fd 1 as well as sys.__stdout__ writes in this
+    synchronous process; uncontrolled background writers remain unverified.
+    """
+    sys.stdout.flush()
+    saved_stdout = os.dup(1)
+    try:
+        os.dup2(2, 1)
+        with redirect_stdout(sys.stderr):
+            yield
+    finally:
+        try:
+            sys.__stdout__.flush()
+        finally:
+            os.dup2(saved_stdout, 1)
+            os.close(saved_stdout)
+
+
 def main(argv=None):
     output = None
     previous_handler = None
     try:
-        # Imports/model Python output belong on stderr, never hook context stdout.
-        with redirect_stdout(sys.stderr):
+        # All Python and native SDK progress output belongs on stderr.
+        with _isolate_protocol_stdout():
             parser = argparse.ArgumentParser(description=__doc__)
             parser.add_argument('--repository-root', required=True)
             parser.add_argument('--config')

@@ -23,5 +23,6 @@ externally, and the next phase starts from the matching published tree.
 - [Phase 14](phases/phase-14.md): COMPLETE, independent verification; 290 Python +6 Node tests pass; bounded opt-in second round, distinct-block A/B/A composition.
 - [Phase 15](phases/phase-15.md): COMPLETE, independent verification; 336 Python +6 Node tests pass; documented prompt hook protocol, no activation.
 - [Phase 16](phases/phase-16.md): COMPLETE, independent verification; 345 Python +6 Node tests pass; complete isolated hook scenarios, no activation.
+- [Phase 16H](phases/phase-16h.md): COMPLETE, independent verification; 352 Python +6 Node pass; native stdout isolation and final-delivery criteria.
 - Phases 17–19: pending, authorized continuation with fresh writer after Phase16 publication.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.

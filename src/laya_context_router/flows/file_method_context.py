@@ -71,6 +71,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
                 f"{candidate['id']}: {candidate['signature']}" for candidate in source_outline['callables'])
             selection = select_method(second_text, source_outline, config=fallback_config, registry=registry,
                                       max_candidates=max_candidates, max_input_chars=fallback_max_input_chars)
+    except TimeoutError:
+        return _noop('deadline_exceeded')
     except Exception:
         return _noop('model_error')
     if selection['selected_id'] is None:

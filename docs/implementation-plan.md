@@ -358,6 +358,17 @@ This happens later, after Sharon supplies the repository and asks implementation
 
 **Completion:** full accumulated mock/contract/source/hook suite and independent review. Report protocol behavior as verified and actual Claude delivery as unverified. Real-harness delivery belongs to the final environment stage if authorized and available. **Commit:** `test: cover complete hook scenarios with mocked Laya`.
 
+**Post-16 hook hardening (handoff correction, separate verified commit):** retain the
+existing additive `hookSpecificOutput.hookEventName` plus string
+`additionalContext` contract. Isolate both Python and native file-descriptor-1
+progress output during synchronous SDK work, then emit exactly one JSON response
+or empty stdout/exit 0. Test native writes in load and predict, success and
+failure; missing/ambiguous files; unrelated event fields; load/predict deadline
+and whole-rendered-context budgets including Unicode and metadata. Document
+synthetic stdin/output/no-op examples, actual required CLI arguments, project-local
+synchronous command settings, and the unverified harness boundary. No real
+model or Claude activation is required for this follow-up.
+
 ## Phase 17 — broader production callable coverage
 
 **Goal:** extend outline/extraction beyond the initial function subset.
@@ -378,6 +389,13 @@ This happens later, after Sharon supplies the repository and asks implementation
 
 **Completion:** full suite including mock-based hook scenarios; manually inspect dependency context against the fixture source, without claiming model explanation quality or universal sufficiency. **Commit:** `feat: include bounded local method dependencies`.
 
+Keep three budgets distinct: model question input, source/dependency collection,
+and final hook `additionalContext` rendering. Carry complete selected code or
+refuse output; never cut a method mid-code or silently imply omitted dependencies
+were included. Exercise final hook output with oversized dependency bundles and
+explicit partial-coverage/gap information. Deterministic omission of complete
+dependency units is allowed only when the resulting context labels those gaps.
+
 ## Phase 19 — cross-file context and explicit gaps
 
 **Goal:** resolve dependencies where the original report suggested enrichment may help most.
@@ -387,6 +405,11 @@ This happens later, after Sharon supplies the repository and asks implementation
 **Tests before completion:** relative imports, aliases/re-exports, path mappings, missing modules/configuration, external declaration-only dependencies, inherited/dynamic targets, cycles, shared dependencies, module side effects, repository boundary enforcement, partial caller coverage, and stable budgets. Verify that omitted/unresolved references do not become “no dependencies.”
 
 **Completion:** full accumulated mock-based suite; same-file and cross-file context fixtures reviewed for correct source coverage and explicit omissions. Model explanation quality is not an early gate. **Commit:** `feat: add bounded cross-file context resolution`.
+
+Repeat hook-level rendering tests with cross-file bundles, re-exports and
+unresolved references. Stay below the configured final context ceiling or emit
+the documented no-op; no automatic overflow/file offload may count as full inline
+method delivery. Keep exact selected source and provenance in successful output.
 
 ## Phase 20 — final integration with actual Laya
 
@@ -405,7 +428,25 @@ This happens later, after Sharon supplies the repository and asks implementation
 
 If a real response differs structurally from the established schema, add a version/model-specific fixture and make an explicit reviewed compatibility fix. Preserve previous fixtures and tests. Re-run all required checks after any code or validation change. Missing runtime, a second compatible checkpoint, or unverifiable required settings leaves this final real-verification milestone blocked or partially executed; it does not turn prior mock results into failures or authorize fake substitutions.
 
-If actual Claude harness delivery is part of the authorized final scope, perform an isolated project-local smoke in a disposable repository after backend compatibility is established: verify context delivery, unmatched/no-op behavior, disable behavior, and unchanged tracked source. Record the harness version. Report this result separately from Laya verification; missing harness access must not be disguised as a successful delivery test. Normal/global hook activation still requires the appropriate task scope. Harness explanation quality and model accuracy are separate observations, not guarantees from protocol success.
+Actual Claude harness delivery is authorized as an isolated project-local check
+in a disposable repository after backend compatibility is established. Record
+candidate commit, date, `claude --version`, exact command/settings and debug-log
+location. Inspect `/hooks` registration and debug evidence of hook execution,
+JSON parsing or rejection, timeout and overflow behavior. The protocol subprocess
+test alone is not proof that Claude received the string. In a diagnostic-only
+path, generate a fresh unpredictable marker inside the hook and retain the
+expected value outside the model-visible prompt, conversation and readable
+source. Ask the matching prompt to return the marker without tools, inspect
+the transcript for alternate reads, then repeat with the hook disabled in a
+fresh session and another fresh marker. Record exact matches and controls,
+unmatched/no-op behavior, unchanged tracked source, and any unresolved access
+path. Remove the diagnostic path before normal use. A marker match supports
+context availability, not proof that Claude used every code line or that Laya
+selected correctly; a mismatch requires diagnosis. Report four outcomes
+separately: mock protocol, mock full flow, actual Claude delivery, and real Laya
+compatibility. Missing harness access or real model support stays explicitly
+blocked/unrun, never reported as a pass. Normal/global hook activation remains
+outside this isolated check.
 
 **Completion:** all required accumulated suites pass, the separate verifier confirms genuine model execution and response handling, and any in-scope harness check has its own verified outcome. Record the supported models/settings and remaining gaps. This proves implementation compatibility, not fixed answers, equal accuracy across models, policy calibration, or token savings. **Commit:** `test: verify Laya integration with actual models`.
 

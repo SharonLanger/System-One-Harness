@@ -192,8 +192,10 @@ phase. Publisher creates server commit IDs, fetches and synchronizes clean main.
 Never force push/discard files. Phase12 published62922776cfa00f6b9bf643252fd061c24c681362;
 Phase13 published8a46ea56ea75dad5ed4ad37e2566d5ec58123da6;
 Phase14 published01a29ac69a2a53d0ade128fea2f150723e2a930e;
-Phase15 publishedfac696fa3ddca2e1aa477dacf2705ba396d1f5ee. Phase16 follows in
-this commit; use git log after publication for server-assigned ID.
+Phase15 publishedfac696fa3ddca2e1aa477dacf2705ba396d1f5ee. Phase16 was
+independently verified in local candidate f44e7dd; check remote main for its
+server-assigned ID. A handoff-driven hook hardening increment follows Phase16;
+check progress and git log before starting 17.
 
 No AGENTS found in repo/ancestors by root; no old runner/framework added. Keep
 model/SDK/harness evidence honest: mocks establish mechanics, never live support.
@@ -207,6 +209,13 @@ small groups/subphases allowed, each independent planner/review/full-suite/commi
 external/declaration/dynamic/missing config gaps; partial caller coverage honest.
 20: BLOCKED on host, do not install/import/load/infer. Real checkpoints/settings,
 model compatibility and actual harness delivery remain unverified separately.
+The final isolated Claude check must capture version, commit, actual command and
+settings, `/hooks` registration, debug parsing/timeout/overflow evidence, and
+a fresh unpredictable hook-only marker returned without alternate tool/source
+access plus a disabled-hook control in a fresh session. The marker test is a
+diagnostic path, removed afterward; report actual Claude receipt separately
+from actual Laya response compatibility and mock protocol/full-flow results.
+Missing MLX/SDK or harness access is a blocked/unrun check, never mock success.
 
 Read docs/implementation-plan.md entire for exact tests/gates; don't redo01–16.
 Initial source subset deliberately narrow; no broad dependency completeness claim.
@@ -231,6 +240,13 @@ UserPromptSubmit input session_id,cwd,hook_event_name,prompt; exit0 JSON
 hookSpecificOutput:{hookEventName:'UserPromptSubmit',additionalContext:'...'};
 exit0 empty stdout no-op. stderr logs only; errors must not unintentionally block.
 No active Claude harness installed/tested; official protocol not actual delivery.
+The handoff at /workspace/scratch/c0679bf67556/laya-hook-integration-handoff.md
+clarifies additional context versus prompt replacement, complete rendered-budget
+behavior, native stdout isolation, and separate delivery evidence. The hook
+hardening increment adds regression cases for native fd1 output, missing and
+ambiguous files, extra input fields, load/predict deadlines, Unicode and metadata
+budget, and a tested synthetic usage example. Preserve these when expanding
+source context in 17–19; test the final hook budget with new dependency bundles.
 
 ## Fresh builder entry checklist after publication
 

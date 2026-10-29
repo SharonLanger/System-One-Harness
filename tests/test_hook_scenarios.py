@@ -99,12 +99,19 @@ def test_standalone_scenario_example_is_mocked_and_protocol_correct():
 
 def test_documented_enable_disable_recipe_with_mock_only(tmp_path):
     text=(ROOT/'docs/hook-usage.md').read_text()
-    settings=json.loads(re.search(r'```json\n(.*?)\n```',text,re.DOTALL).group(1))
+    examples=re.findall(r'```json\n(.*?)\n```',text,re.DOTALL)
+    settings, hook_input, hook_output=map(json.loads,examples[:3])
+    assert hook_input['hook_event_name']=='UserPromptSubmit'
+    assert hook_output['hookSpecificOutput']['hookEventName']=='UserPromptSubmit'
+    assert isinstance(hook_output['hookSpecificOutput']['additionalContext'],str)
     handler=settings['hooks']['UserPromptSubmit'][0]['hooks'][0]
     assert handler['type']=='command' and handler['timeout']>10
     assert 'remove this UserPromptSubmit entry' in text
     case=hook_case(tmp_path)
-    command=handler['command'].replace('/absolute/laya-context-router/hooks/user_prompt_submit.py',str(HOOK)).replace('/absolute/run-config.json',case['args'][3])
+    command=(handler['command']
+             .replace('/absolute/laya-context-router/.venv/bin/python',sys.executable)
+             .replace('/absolute/laya-context-router/hooks/user_prompt_submit.py',str(HOOK))
+             .replace('/absolute/run-config.json',case['args'][3]))
     env={**case['env'],'CLAUDE_PROJECT_DIR':str(case['repo'])}
     before=list(case['repo'].rglob('*'))
     enabled=subprocess.run(['bash','-c',command],input=json.dumps(case['event']),text=True,capture_output=True,env=env,timeout=15)

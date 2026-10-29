@@ -32,7 +32,7 @@ activation is authorized for that project; preserve unrelated settings:
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"/absolute/laya-context-router/hooks/user_prompt_submit.py\" --repository-root \"$CLAUDE_PROJECT_DIR\" --config \"/absolute/run-config.json\" --real --deadline 10",
+            "command": "\"/absolute/laya-context-router/.venv/bin/python\" \"/absolute/laya-context-router/hooks/user_prompt_submit.py\" --repository-root \"$CLAUDE_PROJECT_DIR\" --config \"/absolute/run-config.json\" --real --deadline 10",
             "timeout": 15
           }
         ]
@@ -42,7 +42,10 @@ activation is authorized for that project; preserve unrelated settings:
 }
 ```
 
-To disable it, remove this UserPromptSubmit entry; keep unrelated hooks. Omitting
+Replace the interpreter path with the absolute Python executable that has this
+package and the supported backend installed. Use a synchronous `command` hook;
+do not set `async: true`. Inspect registration with Claude Code's `/hooks` in
+the disposable project. To disable it, remove this UserPromptSubmit entry; keep unrelated hooks. Omitting
 `--real` also makes this adapter return a safe no-op without importing the SDK.
 Removing an entry changes configuration, and actual Claude reload/disable behavior
 must be checked in the supported final environment. Tests parse the recipe, run
@@ -60,6 +63,36 @@ Accepted context is one `hookSpecificOutput` object containing `hookEventName`
 and string `additionalContext`. The original prompt is preserved. Safe no-ops
 and handled errors exit 0 with empty stdout; diagnostics go to stderr. Source
 context is partial, not a complete explanation or dependency graph. Input and
-context budgets refuse oversized data without truncating it. These contracts are
+context budgets refuse oversized data without truncating it. The 8,000-character
+default applies to the entire rendered string (including code, labels and
+provenance), below the documented 10,000-character overflow behavior. It is
+separate from the Laya input budget. Ordinary Python output and synchronous
+native writes to fd 1 during model work are redirected to stderr; actual SDK
+background output behavior still needs a supported-environment check.
+
+Synthetic input for the currently supported narrow flow (not a captured run):
+
+```json
+{"session_id":"example","cwd":"/repo","hook_event_name":"UserPromptSubmit","prompt":"Explain `src/service.ts`: how does calculate work?"}
+```
+
+The adapter emits one JSON line shaped like this after a successful selection;
+the source and metadata shown here are illustrative, not a runtime trace:
+
+```json
+{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Selected TypeScript context (partial):\n{\"path\":\"/repo/src/service.ts\",\"code\":\"function calculate(x: number) { return x * 2; }\",\"coverage\":\"partial\"}"}}
+```
+
+The real context also includes the extractor's actual source hash, callable
+identity, line ranges, import/dependency information and numbered display code.
+This `additionalContext` accompanies the original prompt; it does not replace it.
+The input key `hook_event_name` and output key `hookEventName` have different
+spellings. A top-level `additionalContext` is incorrectly nested and can be
+ignored by Claude Code even though its JSON parses. Ineligible, ambiguous,
+oversized and handled failure cases emit **no stdout and exit 0**, with a reason
+on stderr. A successful subprocess response establishes protocol output only;
+actual delivery to Claude and actual Laya inference have separate final checks.
+
+These contracts are
 checked against the unversioned official [hooks reference](https://code.claude.com/docs/en/hooks),
 retrieved 29 October 2026. No actual Claude version or delivery is claimed.

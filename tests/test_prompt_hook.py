@@ -34,12 +34,18 @@ class Agent:
         assert (text,questions,kwargs)==(spec['prompt'],spec['questions'],{'lang':'fr'})
         record({'predict':text,'questions':questions,'kwargs':kwargs})
         print('synthetic SDK noise')
+        if spec.get('native_noise'):
+            os.write(1, b'synthetic native SDK noise\\n')
+            sys.__stdout__.write('synthetic original stdout noise\\n')
+            sys.__stdout__.flush()
         if spec.get('sleep'): time.sleep(spec['sleep'])
         if spec.get('error'): raise RuntimeError('planned synthetic failure')
         return spec['raw']
 def load(model,**kwargs):
     assert (model,kwargs)==('mock-hook',{'lang_temperatures':{'fr':{'temperature':[.2]*3}}})
     record({'load':model,'kwargs':kwargs})
+    if spec.get('native_noise'): os.write(1, b'synthetic native load noise\\n')
+    if spec.get('load_sleep'): time.sleep(spec['load_sleep'])
     return Agent()
 sys.modules['laya_mlx']=types.SimpleNamespace(load=load)
 ''')
@@ -67,7 +73,9 @@ def expected_context(case):
 
 
 def test_hook_real_pipeline_protocol_nested_cwd_and_stdout_purity(tmp_path):
-    case=hook_case(tmp_path); before=case['path'].read_bytes(); original=json.dumps(case['event'])
+    case=hook_case(tmp_path); before=case['path'].read_bytes()
+    case['event']['future_unrelated_field']={'nested':True}
+    original=json.dumps(case['event'])
     result=invoke(case)
     assert result.returncode==0
     assert json.loads(result.stdout)=={'hookSpecificOutput':{'hookEventName':'UserPromptSubmit','additionalContext':expected_context(case)}}
@@ -75,6 +83,35 @@ def test_hook_real_pipeline_protocol_nested_cwd_and_stdout_purity(tmp_path):
     assert case['path'].read_bytes()==before and json.dumps(case['event'])==original
     events=[json.loads(x) for x in case['log'].read_text().splitlines()]
     assert len(events)==2 and events[0]['load']=='mock-hook' and events[1]['predict']==case['event']['prompt']
+
+
+@pytest.mark.parametrize('failure', [False, True])
+def test_native_and_original_stdout_never_contaminate_protocol(tmp_path, failure):
+    case=hook_case(tmp_path)
+    spec=json.loads(case['spec'].read_text()); spec['native_noise']=True; spec['error']=failure
+    case['spec'].write_text(json.dumps(spec))
+    result=invoke(case)
+    assert result.returncode==0
+    if failure:
+        assert result.stdout==''
+        assert 'model_error' in result.stderr
+    else:
+        assert json.loads(result.stdout)=={'hookSpecificOutput':{
+            'hookEventName':'UserPromptSubmit','additionalContext':expected_context(case)}}
+        assert result.stdout.count('"hookSpecificOutput"')==1
+    for noise in ('synthetic SDK noise', 'synthetic native SDK noise',
+                  'synthetic original stdout noise', 'synthetic native load noise'):
+        assert noise in result.stderr and noise not in result.stdout
+
+
+def test_full_context_metadata_counts_towards_budget(tmp_path):
+    case=hook_case(tmp_path, text='function greet() { return "😀"; }')
+    full=expected_context(case)
+    assert len(full)>len(case['path'].read_text())
+    budget=len(case['path'].read_text())
+    result=invoke(case,args=case['args']+['--max-context-chars',str(budget)])
+    assert_noop(result)
+    assert 'context_budget_exceeded' in result.stderr
 
 
 @pytest.mark.parametrize('payload', ['', '{', '[]', 'null', '{}'])
@@ -117,6 +154,47 @@ def test_bounded_deadline_model_sleep(tmp_path):
     case=hook_case(tmp_path); spec=json.loads(case['spec'].read_text()); spec['sleep']=10; case['spec'].write_text(json.dumps(spec))
     start=time.monotonic(); result=invoke(case,args=case['args']+['--deadline','1'])
     assert_noop(result); assert time.monotonic()-start < 4
+    assert 'deadline_exceeded' in result.stderr
+
+
+def test_bounded_deadline_during_model_load(tmp_path):
+    case=hook_case(tmp_path); spec=json.loads(case['spec'].read_text()); spec['load_sleep']=10
+    case['spec'].write_text(json.dumps(spec))
+    start=time.monotonic(); result=invoke(case,args=case['args']+['--deadline','1'])
+    assert_noop(result); assert 'deadline_exceeded' in result.stderr
+    assert time.monotonic()-start < 4
+
+
+def test_bounded_deadline_while_waiting_for_stdin(tmp_path):
+    case=hook_case(tmp_path)
+    process=subprocess.Popen([sys.executable,str(HOOK),*case['args'],'--deadline','1'],
+                             stdin=subprocess.PIPE,stdout=subprocess.PIPE,
+                             stderr=subprocess.PIPE,text=True,env=case['env'],cwd=ROOT)
+    try:
+        process.stdin.write('{')
+        process.stdin.flush()
+        process.wait(timeout=4)
+        process.stdin.close()
+        stdout,stderr=process.stdout.read(),process.stderr.read()
+        assert process.returncode==0 and stdout==''
+        assert 'deadline exceeded' in stderr and not case['log'].exists()
+    finally:
+        if process.poll() is None:
+            process.kill(); process.communicate()
+
+
+@pytest.mark.parametrize('status', ['missing','ambiguous'])
+def test_missing_or_ambiguous_source_is_protocol_noop(tmp_path,status):
+    case=hook_case(tmp_path)
+    case['event']['cwd']=str(case['repo'])
+    if status=='missing':
+        case['path'].unlink()
+    else:
+        other=case['repo']/'other'; other.mkdir()
+        (other/'a.ts').write_text('function greet() {}')
+    result=invoke(case)
+    assert_noop(result); assert status in result.stderr
+    assert not case['log'].exists()
 
 
 @pytest.mark.parametrize('extra', [0,1])
