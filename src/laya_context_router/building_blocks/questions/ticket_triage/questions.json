@@ -1,0 +1,17 @@
+[
+  {
+    "name": "department",
+    "type": "choice",
+    "instructions": "Which department should handle this?",
+    "criteria": {
+      "billing": "invoices, charges, refunds, cancellations",
+      "technical": "bugs, outages, login issues",
+      "sales": "upgrades, pricing, new accounts"
+    }
+  },
+  {
+    "name": "churn_risk",
+    "type": "noul",
+    "instructions": "Is the customer at risk of churning (cancelling or leaving)?"
+  }
+]

@@ -44,3 +44,10 @@ predictions become `undecided`; accepted `none_or_unclear` stays a distinct answ
 It ignores extra unrequested answers and preserves raw data. Score extraction uses
 Python `round(score)`, clamps to legend bounds, then indexes zero-based string keys.
 It never uses expected answers or probability argmax for score extraction.
+
+A reusable block is a folder with `questions.json` (a list), `rules.json`
+(`{"rules_by_question": {"question_name": inner_policy}}`), `block.py`, and
+`README.md`. See the [ticket triage block](src/laya_context_router/building_blocks/questions/ticket_triage/README.md).
+`QuestionBlock(directory).run(text, config=config, registry=registry)` sends all
+questions in one SDK call and returns independently named decisions. Missing/extra
+policies and duplicate configuration keys fail before inference.

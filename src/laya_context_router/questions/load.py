@@ -1,10 +1,9 @@
-import json
+from ..json_utils import load_json
 from .models import Question
 
 
 def load_questions(path):
-    with open(path) as handle:
-        data=json.load(handle)
+    data=load_json(path)
     if isinstance(data,dict): data=[data]
     if not isinstance(data,list): raise ValueError('questions must be an object or list')
     questions={}

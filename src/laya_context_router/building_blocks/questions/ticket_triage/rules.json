@@ -1,0 +1,33 @@
+{
+  "rules_by_question": {
+    "department": {
+      "name": "department-policy",
+      "conditions": [
+        {
+          "field": "answer_confidence",
+          "op": "gte",
+          "value": 0.9
+        }
+      ],
+      "conditions_by_type": {
+        "choice": [
+          {
+            "field": "probability_gap",
+            "op": "gte",
+            "value": 0.5
+          }
+        ]
+      }
+    },
+    "churn_risk": {
+      "name": "churn-policy",
+      "conditions": [
+        {
+          "field": "distance_from_boundary",
+          "op": "gte",
+          "value": 0.1
+        }
+      ]
+    }
+  }
+}

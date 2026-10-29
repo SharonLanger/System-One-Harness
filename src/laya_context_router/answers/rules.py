@@ -49,3 +49,14 @@ class RulesConfig:
 
 def accepts(prediction,rules):
     return evaluate_conditions(prediction,rules.conditions_for(prediction.get('type','')))
+
+
+def load_named_rules(path,question_names):
+    from ..json_utils import load_json
+    data=load_json(path)
+    if not isinstance(data,dict) or set(data)!={'rules_by_question'} or not isinstance(data['rules_by_question'],dict):
+        raise ValueError('rules must contain only a rules_by_question object')
+    policies=data['rules_by_question']
+    if set(policies)!=set(question_names):
+        raise ValueError('rules_by_question keys must exactly match question names')
+    return {name:RulesConfig.from_dict(policy) for name,policy in policies.items()}
