@@ -76,6 +76,13 @@ Ordinary Python output and synchronous
 native writes to fd 1 during model work are redirected to stderr; actual SDK
 background output behavior still needs a supported-environment check.
 
+After accepted signature-based selection, project collection uses the nearest
+confined tsconfig for Classic/Node10 relative imports, path mappings and proven
+reexport routes. Missing, malformed or unsupported configuration retains complete
+selected/local context with an explicit gap. Foreign units carry their own source
+hashes/ranges; callers, runtime state, module effects and unproven dispatch remain
+partial. Project source is parsed and never executed.
+
 Synthetic input for the currently supported narrow flow (not a captured run):
 
 ```json

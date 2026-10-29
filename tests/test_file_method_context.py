@@ -109,7 +109,7 @@ def test_parser_malformed_outline_and_extraction_fail_closed(tmp_path, monkeypat
     assert flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=CONFIG,registry=forbidden_registry(),node=sys.executable,helper=helper)["reason"]=="extractor_error"
     path.write_text("function greet() {}")
     data=outline(path); expected=questions_for(data)
-    monkeypatch.setattr(flow,"collect_local_context",lambda *args,**kwargs:{"bad":"shape"})
+    monkeypatch.setattr(flow,"collect_project_context",lambda *args,**kwargs:{"bad":"shape"})
     result=flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=CONFIG,
                     registry=registry_for(prompt,expected,raw_for(expected,data["callables"][0]["id"]),[]))
     assert result["reason"]=="extractor_error" and result["context"] is None

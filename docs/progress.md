@@ -1,7 +1,7 @@
 # Progress
 
-Implementation through18 and the19A helper/bridge is verified with the Laya
-SDK boundary mocked. Phase19 flow/hook integration remains pending. No real model
+Implementation through19 is verified for the documented bounded scope with the
+Laya SDK boundary mocked. No real model
 loading or inference is counted in the results below.
 
 - [Phase 01](phases/phase-01.md): COMPLETE, independent verification; 19 mock tests pass.
@@ -28,5 +28,5 @@ loading or inference is counted in the results below.
 - [Phase 18A](phases/phase-18a.md): COMPLETE, independent verification;374 Python +26 Node pass; semantic same-file helper/bridge.
 - [Phase 18B](phases/phase-18b.md): COMPLETE, independent verification;395 Python +26 Node pass; bounded same-file flow/hook context.
 - [Phase 19A](phases/phase-19a.md): COMPLETE, independent verification;408 Python +53 Node pass; confined project helper/bridge.
-- Phase19 flow/hook integration: pending.
+- [Phase 19B](phases/phase-19b.md): COMPLETE, independent verification;415 Python +53 Node pass; bounded project context through the hook.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.

@@ -4,7 +4,7 @@ import re
 
 from ..building_blocks.file_reference_utils import detect_file_references
 from ..building_blocks.resolve_file import resolve_file
-from ..building_blocks.typescript import DEFAULT_HELPER, TypeScriptError, outline, collect_local_context
+from ..building_blocks.typescript import DEFAULT_HELPER, TypeScriptError, outline, collect_project_context
 from ..building_blocks.questions.method_selection.block import run as select_method
 
 DEFAULT_REFERENCE_PATTERN = re.compile(r'''(?P<quote>["'`])?(?P<path>(?(quote)[^"'`\r\n]+|[^\s"'`<>:,;!?()]+)\.[A-Za-z0-9]+)(?(quote)(?P=quote))(?::\d+(?::\d+)?)?''')
@@ -84,8 +84,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
     try:
         if not _confined(path, root):
             return _noop('source_changed')
-        context = collect_local_context(path, selection['selected_id'], node=node, helper=helper, timeout=timeout,
-                                        max_depth=max_dependency_depth, max_dependency_chars=max_dependency_chars)
+        context = collect_project_context(path, selection['selected_id'], node=node, helper=helper, timeout=timeout,
+                                        repository_root=root, max_depth=max_dependency_depth, max_dependency_chars=max_dependency_chars)
         mapped = selection['candidate_map'][selection['selected_id']]
         if (context['path'] != mapped['path'] or context['source_hash'] != mapped['source_hash']
                 or context['callable'] != {k: v for k, v in mapped.items() if k not in {'path', 'source_hash'}}

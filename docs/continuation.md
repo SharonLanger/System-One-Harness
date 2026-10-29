@@ -1,8 +1,7 @@
-# API and implementation status through Phase 19A
+# API and implementation status through Phase 19
 
-Phases01–18 are implemented and independently verified with the Laya
-SDK boundary mocked. Phase19A project helper/bridge is independently verified;
-project flow/hook integration remains pending.
+Phases01–19 are implemented and independently verified for the documented
+bounded scope with the Laya SDK boundary mocked.
 Phase20 live integration is blocked: the verification environment is Linux x86_64
 without MLX or laya_mlx. No real model loading, inference or Claude activation has
 been performed. Mock results establish pipeline behavior, not live compatibility,
@@ -102,8 +101,8 @@ selection accuracy, policy calibration or token savings.
   libraries, referenced projects and module effects remain partial gaps. Graph
   loading separately caps64 unique source attempts (including failures),4,000,000
   cumulative foreign pre-read bytes and1,000,000 admitted foreign UTF16 units.
-  Source emission retains whole-unit depth/size bounds. Phase19B flow/hook
-  integration remains pending; direct local/extract APIs remain available.
+  Source emission retains whole-unit depth/size bounds. Phase19B integrates this
+  collector into flow/hook; direct local/extract APIs remain available.
 - `building_blocks.questions.method_selection.block.run(text,source_outline,
   config=...,registry=...,max_candidates=64,max_input_chars=16000)` returns
   selected_id/reason/decisions/candidate_map. Four files questions/rules/block/README
@@ -124,12 +123,12 @@ selection accuracy, policy calibration or token savings.
   colon, nonempty question. Requires exactly one lexical mention equal to target;
   default regex detects quoted spaces and plain extra file mentions. Filename only,
   output-only and incidental logs do not infer intent. Context result exactly
-  {status:'context',reason:None,context:<local context dict with coverage:'partial'>};
+  {status:'context',reason:None,context:<project context dict with coverage:'partial'>};
   no-op {status:'noop',reason:<reason>,context:None}. Flow uses real components,
   checks confinement before outline/collection and validates mapped path/hash/callable.
   Source/model failures are safe no-ops. Prompt/source unchanged. Invalid dependency
   limits no-op before source/model work. Complete selected code plus bounded
-  semantic same-file dependencies/gaps remain explicitly partial.
+  semantic project dependencies/configuration gaps remain explicitly partial.
 - Phase 14 opt-in `fallback_config` only triggers when method is policy-rejected
   and multiple_relevant is accepted `no`. Appends a fixed snapshot ID/signature
   summary to the original text, unchanged question choices. Independent positive
@@ -209,6 +208,13 @@ matrix with fresh build/typecheck, Node19/19 and Python358/358 in74.94seconds;
 zero failures/skips/xfail. See [17A](phases/phase-17a.md),
 [17B](phases/phase-17b.md) and [17C](phases/phase-17c.md).
 
+Phase18B independently verified fresh build/typecheck, Node26/26 and Python395/395
+in102.12s. Phase19A independently verified Node53/53 and Python408/408 in102.88s;
+Phase19B independently verified Node53/53 and Python415/415 in112.86s, each with
+a fresh build/typecheck and zero failures/skips/xfail. See [18A](phases/phase-18a.md),
+[18B](phases/phase-18b.md), [19A](phases/phase-19a.md) and
+[19B](phases/phase-19b.md) for source/budget contracts and known gaps.
+
 Example prompt:
 
 ```text
@@ -218,7 +224,7 @@ The offline example explicitly configures a mock to select the fixture's first
 candidate. It returns exact source/provenance with partial coverage; it does not
 infer an answer in the mock or establish actual model-selection accuracy.
 
-## Remaining technical work
+## Source coverage and continuing constraints
 
 Phase17 callable discovery is complete for the advertised matrix. Preserve
 source hash:start:end identity, UTF16 positions, exact
@@ -231,8 +237,9 @@ rather than spelling matches. Preserve raw dependency statements, deterministic 
 deduplication, depth/size bounds and explicit gaps for closures, mutable state,
 side effects and unresolved/dynamic references. Keep selected code intact.
 
-Phase19 uses actual tsconfig-aware project/module resolution for relative paths,
-aliases and reexports. Enforce repository boundaries and identify external,
+Phase19 provides documented Classic/Node10 project resolution and hook delivery
+for relative paths, aliases and proven reexports. Modern resolution modes and
+unproven foreign dispatch remain explicit gaps. Enforce repository boundaries and identify external,
 declaration-only, missing-config/module and dynamic/inherited gaps. Do not execute
 project modules or load arbitrary package implementations. Caller coverage remains
 explicitly partial where it cannot be established reliably.

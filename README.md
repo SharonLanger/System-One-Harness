@@ -109,7 +109,10 @@ trailing comments are excluded; interior comments remain. Raw code retains sourc
 line endings. Separate `display_code` adds line numbers with LF display newlines.
 `building_blocks.typescript.collect_local_context(path, callable_id)` adds bounded
 same-file semantic dependency statements and explicit gaps to exact selected
-source. Cross-file and runtime dependency coverage remains partial.
+source. `collect_project_context(path, callable_id, repository_root=...)` adds
+confined tsconfig-aware Classic/Node10 resolution for project imports/reexports.
+Missing or unsupported configuration retains local context with explicit gaps;
+runtime and caller coverage remains partial.
 
 The [method selection block](src/laya_context_router/building_blocks/questions/method_selection/README.md)
 constructs dynamic ID/signature choices from a real outline and asks `method` plus
@@ -137,12 +140,15 @@ Explain `src/service.ts`: how does calculate work?
 
 `flows.file_method_context.run(prompt, cwd=..., repository_root=..., config=...,
 registry=...)` returns `{status, reason, context}`. Context includes exact source
-and provenance with `coverage="partial"`, same-file dependency units and gaps.
+and provenance with `coverage="partial"`, bounded project dependency units and
+explicit gaps. The nearest confined tsconfig supplies relative/path-alias and
+named/default/star reexport resolution; missing/unsupported configuration returns
+local context with a gap.
 `max_dependency_depth=2` (0–20) and `max_dependency_chars=12000`
 (1–1,000,000 UTF16 units) bound complete dependency source only. These limits
 exclude selected code and metadata and remain separate from model input and
-final hook rendering. Outer closures, runtime state and cross-file implementations
-remain partial.
+final hook rendering. Outer closures, runtime state, unproven dispatch, modern resolution modes
+and callers remain partial.
 Unmatched prompts, ambiguous/missing/excluded files, budget refusal, rejected
 predictions and source/model failures return a reasoned no-op. The prompt and
 source remain unchanged. No hook has been installed or activated.
