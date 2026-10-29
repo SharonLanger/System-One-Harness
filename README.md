@@ -18,3 +18,10 @@ with an explicit loader to reuse agents within one invocation. Pass both as
 `config=` and `registry=` to `predict`. Distinct model/temperature/language keys
 load distinct agents; a new registry starts fresh. Defaults preserve the original
 SDK argument contract, including omitting `lang` when temperature is omitted.
+
+`questions.load.load_questions(path)` accepts a single complete definition or a
+list. Each definition has `name`, `type`, `instructions`, and ordered `criteria`
+for choice/score. Build the SDK mapping with
+`{name: q.to_predict_dict() for name, q in questions.items()}`. Definitions do not
+contain expected answers or policies. Empty lists load to an empty mapping;
+submitting an empty question request is rejected by the adapter.
