@@ -90,6 +90,10 @@ def extract_callable(path: str | Path, callable_id: str, *, node: str = "node",
     """Return exact source; UTF-16 indexing happens entirely inside the helper."""
     data = _request(path, {"action": "extract", "id": callable_id},
                     node=node, helper=helper, timeout=timeout)
+    return _validate_extraction(data, Path(path).resolve(), callable_id)
+
+
+def _validate_extraction(data, path, callable_id):
     if not isinstance(data, dict):
         raise TypeScriptError("invalid extraction schema")
     candidate = data.get("callable")
@@ -104,4 +108,66 @@ def extract_callable(path: str | Path, callable_id: str, *, node: str = "node",
         raise TypeScriptError("invalid extraction schema: Unicode") from exc
     if length != candidate["end"] - candidate["start"]:
         raise TypeScriptError("invalid extraction schema: source range length")
+    return data
+
+
+def collect_local_context(path: str | Path, callable_id: str, *, max_depth: int = 2,
+                          max_dependency_chars: int = 12000, node: str = "node",
+                          helper: str | Path = DEFAULT_HELPER, timeout: float = 5.0) -> dict:
+    """Collect partial same-file semantic context, with intact UTF-16 source units.
+
+    The dependency-source budget excludes selected code and JSON metadata. It is
+    independent of model-input and final rendered-hook budgets.
+    """
+    if (not _integer(max_depth) or max_depth > 20 or not _integer(max_dependency_chars, 1)
+            or max_dependency_chars > 1000000):
+        raise ValueError("invalid collection limits")
+    data = _request(path, {"action": "collect_local_context", "id": callable_id,
+        "max_depth": max_depth, "max_dependency_chars": max_dependency_chars},
+        node=node, helper=helper, timeout=timeout)
+    _validate_extraction(data, Path(path).resolve(), callable_id)
+    if (data.get("coverage") != "partial" or not isinstance(data.get("dependencies"), list)
+            or not isinstance(data.get("gaps"), list) or not isinstance(data.get("collection"), dict)):
+        raise TypeScriptError("invalid local context schema")
+    limits = data["collection"]
+    if (limits.get("max_depth") != max_depth or type(limits.get("max_depth")) is not int
+            or limits.get("max_dependency_chars") != max_dependency_chars
+            or type(limits.get("max_dependency_chars")) is not int
+            or not _integer(limits.get("dependency_chars"))):
+        raise TypeScriptError("invalid local context schema: limits")
+    total, previous, ids = 0, None, set()
+    hash_prefix = data["source_hash"] + ":"
+    for item in data["dependencies"]:
+        if (not isinstance(item, dict) or item.get("path") != data["path"]
+                or item.get("source_hash") != data["source_hash"]
+                or not _integer(item.get("start")) or not _integer(item.get("end"))
+                or item["end"] <= item["start"] or not isinstance(item.get("kind"), str)
+                or not item["kind"] or not isinstance(item.get("code"), str)
+                or not isinstance(item.get("location"), dict)
+                or not all(_integer(item["location"].get(k), 1) for k in ("line", "column"))
+                or item.get("id") != f'{hash_prefix}{item["start"]}:{item["end"]}'
+                or item["id"] in ids or not isinstance(item.get("symbol_ids"), list)
+                or not item["symbol_ids"]):
+            raise TypeScriptError("invalid local context schema: dependency")
+        for symbol_id in item["symbol_ids"]:
+            if not isinstance(symbol_id, str) or not re.fullmatch(re.escape(hash_prefix) + r"[0-9]+:[0-9]+", symbol_id):
+                raise TypeScriptError("invalid local context schema: symbol")
+            start, end = map(int, symbol_id[len(hash_prefix):].split(":"))
+            if end <= start:
+                raise TypeScriptError("invalid local context schema: symbol")
+        if item["symbol_ids"] != sorted(set(item["symbol_ids"])):
+            raise TypeScriptError("invalid local context schema: symbol order")
+        try:
+            length = len(item["code"].encode("utf-16-le")) // 2
+        except UnicodeError as exc:
+            raise TypeScriptError("invalid local context schema: Unicode") from exc
+        position = (item["start"], item["end"])
+        if length != item["end"] - item["start"] or (previous is not None and position <= previous):
+            raise TypeScriptError("invalid local context schema: source range/order")
+        previous = position
+        ids.add(item["id"])
+        total += length
+    _validate_outline({**data, "callables": [], "diagnostics": data["gaps"]}, Path(path).resolve())
+    if total != limits["dependency_chars"] or total > max_dependency_chars:
+        raise TypeScriptError("invalid local context schema: source budget")
     return data

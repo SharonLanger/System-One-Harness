@@ -1,7 +1,8 @@
-# API and implementation status through Phase 17C
+# API and implementation status through Phase 18A
 
 Phases01–17 are implemented and independently verified with the Laya
-SDK boundary mocked. Dependency-context Phases18–19 remain pending.
+SDK boundary mocked. Phase18A same-file helper/bridge is independently verified; Phase18 flow/hook
+integration and Phase19 remain pending.
 Phase20 live integration is blocked: the verification environment is Linux x86_64
 without MLX or laya_mlx. No real model loading, inference or Claude activation has
 been performed. Mock results establish pipeline behavior, not live compatibility,
@@ -75,6 +76,18 @@ selection accuracy, policy calibration or token savings.
   for startup/build/nonzero/JSON/schema/timeout errors. Timeout >0 and <=60sec.
   Default helper supports source checkout; installed callers must supply built
   helper path with its pinned dependency. No wheel compiler bundling claimed.
+- Phase18A `typescript.collect_local_context(path,callable_id,max_depth=2,
+  max_dependency_chars=12000,node=...,helper=...,timeout=5.0)` adds same-file
+  semantic dependencies to exact selected extraction, with `coverage:'partial'`,
+  raw dependency units, declaration-based `symbol_ids`, explicit gaps and source
+  accounting. Same-read isolated checker never loads imports/libraries/configs.
+  Module statements/types/functions/classes and same-class members are eligible;
+  outer locals are closure gaps. BFS admission, source-order presentation and
+  whole-unit depth/size omissions are deterministic. Dependency budget counts
+  UTF16 units in dependency code only, including overlaps; selected code and
+  metadata are excluded. Depth0–20, positive budget<=1,000,000. External/runtime
+  state, callers and other module initialization remain partial. Flow/hook still
+  use exact extraction until18B; their model/final-render budgets are separate.
 - `building_blocks.questions.method_selection.block.run(text,source_outline,
   config=...,registry=...,max_candidates=64,max_input_chars=16000)` returns
   selected_id/reason/decisions/candidate_map. Four files questions/rules/block/README

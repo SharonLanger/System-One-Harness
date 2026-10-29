@@ -11,7 +11,7 @@ export interface Outline {
   schema_version: number; path: string; source_hash: string; callables: Callable[];
   diagnostics: Diagnostic[]; limitations: string[];
 }
-function readOutline(path: string): {outline: Outline; source: string} {
+function readOutline(path: string): {outline: Outline; source: string; sf: ts.SourceFile} {
   const canonical = realpathSync(path);
   const source = readFileSync(canonical, 'utf8');
   const sf = ts.createSourceFile(canonical, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
@@ -68,7 +68,7 @@ function readOutline(path: string): {outline: Outline; source: string} {
     ts.forEachChild(node, visit);
   };
   visit(sf);
-  return {source, outline: {schema_version: 1, path: canonical, source_hash: hash, callables, diagnostics,
+  return {source, sf, outline: {schema_version: 1, path: canonical, source_hash: hash, callables, diagnostics,
     limitations: ['Runtime callable bodies are discovered recursively; destructuring-bound callable expressions remain unsupported.',
       'Locations and ranges use UTF-16 code units; comments before declarations are excluded.',
       'Bound expression signatures include their immediate binding header and transparent wrappers; raw code is only the callable expression.',
@@ -93,4 +93,149 @@ export function extractCallable(path: string, id: string): CallableSource {
     `${callable.location.line + index}: ${line}`).join('\n');
   const {callables: _unused, ...metadata} = snapshot.outline;
   return {...metadata, callable, code, display_code};
+}
+
+export interface LocalDependency {
+  id: string; path: string; source_hash: string; start: number; end: number;
+  location: {line: number; column: number}; kind: string; code: string; symbol_ids: string[];
+}
+export interface LocalContext extends CallableSource {
+  coverage: 'partial'; dependencies: LocalDependency[]; gaps: Diagnostic[];
+  collection: {max_depth: number; max_dependency_chars: number; dependency_chars: number};
+}
+export function collectLocalContext(path: string, id: string,
+  options: {maxDepth?: number; maxDependencyChars?: number} = {}): LocalContext {
+  const maxDepth = options.maxDepth ?? 2, maxChars = options.maxDependencyChars ?? 12000;
+  if (!Number.isInteger(maxDepth) || maxDepth < 0 || maxDepth > 20 ||
+      !Number.isInteger(maxChars) || maxChars < 1 || maxChars > 1000000) throw new Error('Invalid collection limit/budget');
+  const {outline: metadata, source, sf} = readOutline(path);
+  const selected = metadata.callables.find(c => c.id === id);
+  if (!selected) throw new Error('Stale or unknown callable ID');
+  // Isolated semantic program: only the already-read snapshot can be supplied.
+  // No filesystem module resolution, standard library loading, or source execution.
+  const compilerOptions: ts.CompilerOptions = {noLib: true, noResolve: true, target: ts.ScriptTarget.Latest};
+  const host: ts.CompilerHost = {
+    getSourceFile: name => name === metadata.path ? sf : undefined,
+    getDefaultLibFileName: () => '', writeFile: () => {}, getCurrentDirectory: () => '',
+    getDirectories: () => [], fileExists: name => name === metadata.path,
+    readFile: name => name === metadata.path ? source : undefined,
+    getCanonicalFileName: name => name, useCaseSensitiveFileNames: () => true, getNewLine: () => '\n'
+  };
+  const checker = ts.createProgram([metadata.path], compilerOptions, host).getTypeChecker();
+  let root: ts.Node = sf;
+  const find = (node: ts.Node): void => {
+    if (node.getStart(sf) === selected.start && node.end === selected.end) root = node;
+    ts.forEachChild(node, find);
+  };
+  find(sf);
+  const within = (node: ts.Node, container: ts.Node) => node.pos >= container.pos && node.end <= container.end;
+  const gaps: Diagnostic[] = [], gapKeys = new Set<string>();
+  const gap = (code: string, node: ts.Node, message: string) => {
+    const start = node.getStart(sf), end = node.end, key = `${code}:${start}:${end}`;
+    if (!gapKeys.has(key)) { gapKeys.add(key); gaps.push({code, message, start, end}); }
+  };
+  const enclosingClass = (node: ts.Node): ts.ClassLikeDeclaration | undefined => {
+    for (let parent = node.parent; parent; parent = parent.parent) if (ts.isClassLike(parent)) return parent;
+  };
+  const selectedClass = enclosingClass(root);
+  const unitFor = (declaration: ts.Declaration): ts.Node | undefined => {
+    let node: ts.Node = declaration;
+    if (ts.isImportSpecifier(node) || ts.isImportClause(node) || ts.isNamespaceImport(node)) {
+      while (node.parent && !ts.isImportDeclaration(node)) node = node.parent;
+      return node;
+    }
+    if (ts.isVariableDeclaration(node)) {
+      while (node.parent && !ts.isVariableStatement(node)) node = node.parent;
+      return ts.isVariableStatement(node) && ts.isSourceFile(node.parent) ? node : undefined;
+    }
+    if ((ts.isFunctionDeclaration(node) || ts.isTypeAliasDeclaration(node) ||
+         ts.isInterfaceDeclaration(node) || ts.isEnumDeclaration(node) || ts.isClassDeclaration(node)) &&
+        ts.isSourceFile(node.parent)) return node;
+    if ((ts.isPropertyDeclaration(node) || ts.isMethodDeclaration(node) ||
+         ts.isGetAccessorDeclaration(node) || ts.isSetAccessorDeclaration(node) ||
+         ts.isConstructorDeclaration(node)) && node.parent === selectedClass) return node;
+    return undefined;
+  };
+  const dependencies = new Map<string, LocalDependency>();
+  const queued = new Set<ts.Node>([root]), queue: {node: ts.Node; depth: number}[] = [{node: root, depth: 0}];
+  const seenSymbols = new Set<ts.Symbol>();
+  let chars = 0;
+  const add = (unit: ts.Node, depth: number, reference: ts.Node, symbol?: ts.Symbol) => {
+    const start = unit.getStart(sf), end = unit.end, unitId = `${metadata.source_hash}:${start}:${end}`;
+    if (within(unit, root)) return;
+    const symbolIds = symbol ? (symbol.declarations ?? []).filter(d => d.getSourceFile() === sf)
+      .map(d => `${metadata.source_hash}:${d.getStart(sf)}:${d.end}`).sort() : [unitId];
+    const existing = dependencies.get(unitId);
+    if (existing) { existing.symbol_ids = [...new Set([...existing.symbol_ids, ...symbolIds])].sort(); return; }
+    if (depth > maxDepth) { gap('depth_limit', reference, 'Dependency omitted at collection depth limit.'); return; }
+    if (chars + end - start > maxChars) { gap('size_limit', reference, 'Complete dependency omitted at source budget limit.'); return; }
+    const pos = sf.getLineAndCharacterOfPosition(start);
+    dependencies.set(unitId, {id: unitId, path: metadata.path, source_hash: metadata.source_hash,
+      start, end, location: {line: pos.line + 1, column: pos.character + 1},
+      kind: ts.SyntaxKind[unit.kind], code: source.slice(start, end), symbol_ids: symbolIds});
+    chars += end - start;
+    if (!queued.has(unit)) { queued.add(unit); queue.push({node: unit, depth}); }
+  };
+  for (const statement of sf.statements) {
+    if (ts.isImportDeclaration(statement) && !statement.importClause)
+      gap('module_side_effects', statement, 'Side-effect import behavior is outside local dependency collection.');
+    else if (ts.isExpressionStatement(statement) || ts.isExportDeclaration(statement))
+      gap('module_side_effects', statement, 'Module initialization or re-export effects are not reconstructed.');
+  }
+  if (selectedClass) {
+    gap('class_state', selectedClass, 'Class initialization, writes, inheritance and dispatch remain partial.');
+    for (const member of selectedClass.members) if (ts.isConstructorDeclaration(member)) add(member, 1, root);
+  }
+  // Bound signatures can precede the raw callable. Visit the immediate binding
+  // type/header separately without treating surrounding sibling declarations as references.
+  let binding: ts.Node = root;
+  while (binding.parent && (ts.isParenthesizedExpression(binding.parent) || ts.isAsExpression(binding.parent) ||
+    ts.isSatisfiesExpression(binding.parent) || ts.isNonNullExpression(binding.parent) || ts.isTypeAssertionExpression(binding.parent))) binding = binding.parent;
+  if (binding.parent && (ts.isVariableDeclaration(binding.parent) || ts.isPropertyDeclaration(binding.parent) ||
+    ts.isPropertyAssignment(binding.parent))) queue[0].node = binding.parent;
+  for (let index = 0; index < queue.length; index++) {
+    const {node: unit, depth} = queue[index];
+    const visit = (node: ts.Node): void => {
+      if (ts.isElementAccessExpression(node)) gap('dynamic_reference', node, 'Computed property target is not resolved.');
+      if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
+        const target = node.expression;
+        if (!(ts.isIdentifier(target) || ts.isPropertyAccessExpression(target)))
+          gap('dynamic_reference', node, 'Indirect invocation target is not resolved.');
+      }
+      if (ts.isIdentifier(node) || ts.isPrivateIdentifier(node)) {
+        const parent = node.parent;
+        const declarationName = ('name' in parent && parent.name === node && !ts.isShorthandPropertyAssignment(parent) &&
+          !ts.isPropertyAccessExpression(parent));
+        const importPart = ts.isImportSpecifier(parent) || ts.isImportClause(parent) || ts.isNamespaceImport(parent);
+        if (!declarationName && !importPart) {
+          const symbol = checker.getSymbolAtLocation(node);
+          if (!symbol || !symbol.declarations?.length) {
+            gap('unresolved_reference', node, 'Reference has no same-file declaration in the isolated semantic program.');
+          } else if (!seenSymbols.has(symbol)) {
+            seenSymbols.add(symbol);
+            for (const declaration of symbol.declarations) {
+              if (declaration.getSourceFile() !== sf || within(declaration, root) || within(declaration, unit)) continue;
+              const target = unitFor(declaration);
+              if (!target) { gap('closure_capture', node, 'Outer local or unsupported declaration is not independently collected.'); continue; }
+              if (ts.isImportDeclaration(target)) gap('external_dependency', node, 'Imported implementation and module effects are not collected.');
+              if (ts.isVariableStatement(target)) gap('mutable_state', node, 'Declaration text does not establish runtime value, writes or object immutability.');
+              if (ts.isClassDeclaration(target)) gap('class_state', node, 'Whole class text does not establish initialization, inheritance or dispatch.');
+              add(target, depth + 1, node, symbol);
+            }
+          }
+        }
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(unit);
+  }
+  const code = source.slice(selected.start, selected.end);
+  const {callables: _unused, ...base} = metadata;
+  return {...base, callable: selected, code,
+    display_code: code.split(/\r\n|\r|\n/).map((line, i) => `${selected.location.line + i}: ${line}`).join('\n'),
+    limitations: metadata.limitations.filter(x => x !== 'Dependency context is not collected.').concat([
+      'Same-file semantic dependencies only; runtime state, external implementations, callers and module effects remain partial.']),
+    coverage: 'partial', dependencies: [...dependencies.values()].sort((a, b) => a.start - b.start || a.end - b.end),
+    gaps: gaps.sort((a, b) => a.start - b.start || a.end - b.end || a.code.localeCompare(b.code)),
+    collection: {max_depth: maxDepth, max_dependency_chars: maxChars, dependency_chars: chars}};
 }

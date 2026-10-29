@@ -1,7 +1,8 @@
 # Progress
 
-Phases01–19 validate the pipeline with the Laya SDK boundary mocked. No real
-model loading or inference is counted in the results below.
+Implementation through18A is verified with the Laya SDK boundary mocked.
+Phase18 flow/hook integration and Phase19 remain pending. No real model
+loading or inference is counted in the results below.
 
 - [Phase 01](phases/phase-01.md): COMPLETE, independent verification; 19 mock tests pass.
 - [Phase 02](phases/phase-02.md): COMPLETE, independent verification; 29 mock tests pass.
@@ -24,5 +25,6 @@ model loading or inference is counted in the results below.
 - [Phase 17A](phases/phase-17a.md): COMPLETE, independent verification; 354 Python +10 Node pass; named class callables and full hook scenario.
 - [Phase 17B](phases/phase-17b.md): COMPLETE, independent verification; 356 Python +14 Node pass; bound expression signatures and full hook cases.
 - [Phase 17C](phases/phase-17c.md): COMPLETE, independent verification; 358 Python +19 Node pass; recursive/special callable matrix and full hook cases.
-- Phases 18–19: pending.
+- [Phase 18A](phases/phase-18a.md): COMPLETE, independent verification;374 Python +26 Node pass; semantic same-file helper/bridge.
+- Phase18 flow/hook integration and Phase19: pending.
 - Phase 20: blocked; real runtime/checkpoints/settings validation not performed.
