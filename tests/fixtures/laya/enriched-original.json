@@ -1,0 +1,89 @@
+{
+  "model": "laya-rl-agent",
+  "answers": {
+    "department": {
+      "type": "choice",
+      "choice": "billing",
+      "probabilities": {
+        "billing": 0.9719,
+        "technical": 0.0108,
+        "sales": 0.0173
+      },
+      "confidence": 0.8663,
+      "answer_confidence": 0.9719,
+      "action": {
+        "act_probability": 1.0
+      },
+      "probability_gap": 0.9546,
+      "normalized_entropy": 0.1336
+    },
+    "urgency": {
+      "type": "score",
+      "score": 1.366,
+      "legend": {
+        "0": "low \u2014 general question, no time pressure",
+        "1": "medium \u2014 issue needs resolving within a few days",
+        "2": "high \u2014 customer is blocked or very frustrated",
+        "3": "critical \u2014 customer threatening to leave or escalate"
+      },
+      "probabilities": {
+        "0": 0.0207,
+        "1": 0.6317,
+        "2": 0.3086,
+        "3": 0.0391
+      },
+      "confidence": 0.3797,
+      "answer_confidence": 0.6317,
+      "action": {
+        "act_probability": 1.0
+      },
+      "probability_gap": 0.3231,
+      "normalized_entropy": 0.6204
+    },
+    "churn_risk": {
+      "type": "noul",
+      "noul": 0.5339,
+      "confidence": 0.5339,
+      "answer_confidence": 0.5339,
+      "action": {
+        "act_probability": 1.0
+      },
+      "distance_from_boundary": 0.0339
+    },
+    "sentiment": {
+      "type": "choice",
+      "choice": "negative",
+      "probabilities": {
+        "positive": 0.0092,
+        "neutral": 0.0418,
+        "negative": 0.9316,
+        "hostile": 0.0174
+      },
+      "confidence": 0.7747,
+      "answer_confidence": 0.9316,
+      "action": {
+        "act_probability": 1.0
+      },
+      "probability_gap": 0.8898,
+      "normalized_entropy": 0.2253
+    },
+    "contains_threat": {
+      "type": "noul",
+      "noul": 0.6734,
+      "confidence": 0.6734,
+      "answer_confidence": 0.6734,
+      "action": {
+        "act_probability": 1.0
+      },
+      "distance_from_boundary": 0.1734
+    }
+  },
+  "usage": {
+    "input_tokens": 588,
+    "output_tokens": 0,
+    "state_tokens": 70,
+    "state_tokens_dropped": 0,
+    "truncated": false,
+    "truncated_questions": []
+  }
+}

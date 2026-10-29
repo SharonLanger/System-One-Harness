@@ -13,3 +13,9 @@ The existing source default remains `aac6fef/laya-typed-decisions-mlx`.
 field and original top-level fields. It is not a separately captured call.
 No sensitive source text was present and no text sanitization was applied.
 The fruit response in the direct example is explicitly synthetic.
+
+`enriched-original.json` is a separate downstream parity snapshot produced by
+executing only the original pure `enrich.py` helper (no runner/SDK import), SHA256
+`efc9720c9b78aa27222373be0d23ef2764fa6949534f5aa108d84668f7f6c012`.
+It is never sent to the model and does not replace the raw capture. Numeric unit
+tests also use independently calculated expected gap/entropy/distance values.

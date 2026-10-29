@@ -25,3 +25,8 @@ for choice/score. Build the SDK mapping with
 `{name: q.to_predict_dict() for name, q in questions.items()}`. Definitions do not
 contain expected answers or policies. Empty lists load to an empty mapping;
 submitting an empty question request is rejected by the adapter.
+
+`answers.enrich.enrich_prediction` and `enrich_response` return copies with the
+original four-decimal gap/entropy (choice/score) or midpoint distance (noul).
+Malformed numbers fail explicitly. Missing distributions or noul values receive
+no derived fields; enrichment alone does not establish a usable answer.
