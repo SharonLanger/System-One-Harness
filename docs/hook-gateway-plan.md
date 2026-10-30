@@ -1,6 +1,6 @@
 # LCR Hook Gateway — three-layer entry design and test plan
 
-Status: implementation in progress on PR2; phase evidence is authoritative for executed checks. Original design and critical review follow, with D07/D02 amendments below.
+Status: core Phases 0–6 implemented and verified on PR2; Phase 7 plugin/live work deferred. Phase evidence is authoritative for executed checks. Original design and critical review follow, with D07/D02 amendments below.
 Prepared for Sharon, 30 October 2026. Revision 2: critical review, top-down implementation phases, unit scenarios, and concurrent PR workflow.
 
 This revision is ready for Sol to implement when Sharon starts that work. Planning here does not create a branch, PR, application commit, or merge.
@@ -405,13 +405,18 @@ Revision-2 review is a design review, not verification of code or executed tests
 
 ## Implementation progress (partial)
 
-Phases0–3 implemented on feat/hook-gateway, draft PR2, with separate tested commits and Astra-reviewed deviations D01–D06 in phase evidence. Phase4 contains independently tested preparation/result-mapping helpers and an explicit root_api_unavailable error boundary. It does not run real selection. Phases5–7 are not completed. The active hook/callers remain unchanged. Official schema verification and the reviewed root-based resolution API remain hard integration/release gates. See docs/phases/hook-gateway for actual test evidence and partial coverage ledger. Do not merge this unfinished replacement or interpret its passing unit tests as live context delivery.
+Phases 0–3 implemented on feat/hook-gateway, draft PR2, with separate tested commits and Astra-reviewed deviations D01–D06 in phase evidence. Phase4 contains independently tested preparation/result-mapping helpers and an explicit root_api_unavailable error boundary. It does not run real selection. Phases5–7 are not completed. The active hook/callers remain unchanged. Official schema verification and the reviewed root-based resolution API remain hard integration/release gates. See docs/phases/hook-gateway for actual test evidence and partial coverage ledger. Do not merge this unfinished replacement or interpret its passing unit tests as live context delivery.
 
 
 ## D07/D02 amendments after merged-root clarification
 
 The separate root-flow API dependency was inferred incorrectly. The merged root/formatter/navigation work is already in main. This branch now owns the narrow explicit resolve_from_project_root opt-in reviewed by Astra. Legacy flow/resolver callers retain defaults; new gateway calls root mode with raw cwd retained separately. This replaces earlier waiting/ownership language wherever inconsistent.
 
-Structural schema verification uses official Anthropic SDK source pinned at https://github.com/anthropics/claude-agent-sdk-python/blob/1ea8cb74ddcdadbfaa9b20dfa8268e18047851e7/src/claude_agent_sdk/types.py . This resolves D02 for core schema; live installed CLI/registration/receipt remain Phase7 checks. Required transcript_path fixtures and matrices are updated.
+Structural schema verification uses official Anthropic SDK source pinned at https://github.com/anthropics/claude-agent-sdk-python/blob/1ea8cb74ddcdadbfaa9b20dfa8268e18047851e7/src/claude_agent_sdk/types.py . This resolves D02 for core schema; live installed CLI/registration/receipt remain Phase 7 checks. Required transcript_path fixtures and matrices are updated.
 
 The temporary root_api_unavailable handler is removed. Gateway invokes the real selection flow, existing helper and formatter. The old hooks/user_prompt_submit.py path is a forwarding wrapper only, retained until Sharon supplies final plugin bindings and external callers can retire it. Replay/IDE experiment callers use the shared gateway through the updated experiment runner.
+
+
+## Final core status (supersedes historical partial checkpoints)
+
+Core Phases 0–6 are complete. Final committed source/test candidate 23eb571ffc8411aef0b78f3ac7a31a015dba8e0f passed795 Python tests(3 existing skips) and122 TypeScript tests. All91 implemented IDs map to passed JUnit cases with explicit assertions and expected-source metadata. Conditional plugin/live F11/F12 remain deferred. The inferred root API dependency is resolved by Astra-approved explicit root mode; SDK structural verification is pinned and required transcript input is implemented. No real model/Claude session/plugin activation is claimed. See docs/phases/hook-gateway/phase-06.md for final independent review and merge gates.

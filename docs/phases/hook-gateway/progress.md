@@ -1,17 +1,13 @@
-# Hook gateway implementation handoff
+# Hook gateway implementation status
 
-Status: Phase0–3 implemented; Phase4 partial; Phase5–7 NOT completed. Draft PR2; branch feat/hook-gateway. Existing active hook and callers unchanged. Do not merge this unfinished replacement.
+Core Phases 0–6 complete and independently audited on feat/hook-gateway, PR2. Phase 7(plugin setup/live validation) is deferred until supplied assets/preferences and runtime access.
 
-Validation:
-- Original upstream baseline: Python548passed2failed3skipped. Astra-approved D04 reconciled stale selection fixtures; production rules unchanged; affected28passed.
-- First accumulated full run: Python661passed3skipped; TypeScript122passed.
-- Broader final run collected before the last timeout/concurrency additions: Python727passed3skipped in197.14s.
-- Latest focused candidate after all timeout/concurrency changes:181passed in1.37s. These checks cover the final adapter and upper layers; do not label the earlier full-run count as including the six later cases.
-- Three skips retained unchanged: two unique-key configuration conventions cases in test_configuration_duplicates_deferred.py; one concurrent outside-project symlink replacement case in test_file_method_context_deferred.py. Verified with pytest -q -rs on those modules.
-- Syntax/document checks pass; unit inventory181collected. Remote publication compares each local Git tree with the connector-created tree and preserves actual upstream ancestry under expected-head leases.
+Implemented: one public gateway, common/event-specific validation and dispatch, reserved enrichment seam, one prompt-context handler reusing the existing flow/helper/formatter, explicit project-root reference mode, strict JSON output, observable no-op/error/write outcomes, metadata-only logs and stdout-based replay reports. The old script path forwards once. Existing flow/resolver callers retain legacy default semantics.
 
-Blocked integration: real flow still uses cwd for reference resolution. The reviewed project-root API and its owner/PR are unavailable. Astra forbids substituting root for cwd, duplicating a resolver, removing containment checks or migrating callers before that dependency is resolved. Official supported CLI schema also remains unverified due to failed documentation lookup. Plugin assets/preferred installation approach still absent.
+Final committed candidate 23eb571ffc8411aef0b78f3ac7a31a015dba8e0f/tree c1d0153b90c52103c85264548e0c00d3487512e3 passed795 Python tests with3 existing skips and122 TypeScript tests. All91 implemented plan IDs map to passing JUnit cases; conditional F11/F12 are not represented as executed. Exact source/test results:phase-06.md, test-coverage.json, verification-results.json.
 
-Independent Phase4 helpers cover explicit config/root preparation, disabled behavior without model load, exhaustive reason mapping, collector schema checks and actual formatter(project_root). The handler explicitly returns root_api_unavailable; it does not perform enrichment. This is not real-flow or live Claude proof.
+Astra decisions include verified connector-backed transport, pinned official input/output schema, historical selection-fixture correction, explicit root-mode ownership, protocol-safe logging, partial-write recovery and bounded deadline lifecycle. The earlier inferred root dependency and temporary root_api_unavailable handler are removed. transcript_path is required; permission_mode optional; transcript content is never read.
 
-Next: identify/integrate the reviewed root API, verify official hook fields, complete Phase4 real flow, Phase5 caller migration and complete Phase6 test-ID audit; then meet PR review/CI gates. Plugin Phase7 is conditional follow-up. Re-read current main and open PRs before continuing. Semantic deviations/conflicts go to Astra; material decisions go to Sharon. Latest main check:984aa6754cd6fd76087672d42fb2b5e1ea9ce12b, unchanged; no textual conflicts encountered.
+No LAYA weights downloaded or live inference performed, no Claude session started and no plugin/global hook installed. Runtime compatibility and actual Claude receipt remain explicitly unverified.
+
+Next follow-up: obtain final plugin folder/manifest/hooks JSON and preferred installation approach; validate commands and document install/disable/troubleshooting, then execute an isolated live check if environment is available. Recheck main and PR state before further work. Semantic deviations/conflicts require Astra; material user decisions go to Sharon. Do not infer live activation from the core merge.
