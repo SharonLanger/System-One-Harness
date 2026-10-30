@@ -258,7 +258,10 @@ export function collectProjectContext(path: string, id: string,
       if(ts.isIdentifier(node)||ts.isPrivateIdentifier(node)){
         const parent=node.parent,declarationName='name'in parent&&parent.name===node&&!ts.isShorthandPropertyAssignment(parent)&&!ts.isPropertyAccessExpression(parent);
         if(!declarationName&&!ts.isImportSpecifier(parent)&&!ts.isImportClause(parent)&&!ts.isNamespaceImport(parent)&&!ts.isExportSpecifier(parent)){
-          const symbol=checker.getSymbolAtLocation(node);
+          // Resolve the value binding of shorthand properties before following
+          // the existing import/alias route and dependency budgets.
+          const symbol=ts.isShorthandPropertyAssignment(parent)&&parent.name===node
+            ? checker.getShorthandAssignmentValueSymbol(parent):checker.getSymbolAtLocation(node);
           if(!symbol?.declarations?.length)gap('unresolved_reference',node,'No supported semantic declaration was found.');
           else if(ts.isPropertyAccessExpression(parent)&&parent.name===node&&ultimate(symbol).declarations?.some(d=>d.getSourceFile()!==node.getSourceFile())) {
             gap('unsupported_reexport_route',node,'Foreign property targets require a proven import route; namespace/object dispatch is not collected.');

@@ -208,7 +208,10 @@ export function collectLocalContext(path: string, id: string,
           !ts.isPropertyAccessExpression(parent));
         const importPart = ts.isImportSpecifier(parent) || ts.isImportClause(parent) || ts.isNamespaceImport(parent);
         if (!declarationName && !importPart) {
-          const symbol = checker.getSymbolAtLocation(node);
+          // A shorthand name owns a property symbol; its value symbol carries
+          // the lexical binding (including shadowed locals and import aliases).
+          const symbol = ts.isShorthandPropertyAssignment(parent) && parent.name === node
+            ? checker.getShorthandAssignmentValueSymbol(parent) : checker.getSymbolAtLocation(node);
           if (!symbol || !symbol.declarations?.length) {
             gap('unresolved_reference', node, 'Reference has no same-file declaration in the isolated semantic program.');
           } else if (!seenSymbols.has(symbol)) {
