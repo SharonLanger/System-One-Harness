@@ -258,7 +258,10 @@ export function collectProjectContext(path: string, id: string,
       if(ts.isIdentifier(node)||ts.isPrivateIdentifier(node)){
         const parent=node.parent,declarationName='name'in parent&&parent.name===node&&!ts.isShorthandPropertyAssignment(parent)&&!ts.isPropertyAccessExpression(parent);
         if(!declarationName&&!ts.isImportSpecifier(parent)&&!ts.isImportClause(parent)&&!ts.isNamespaceImport(parent)&&!ts.isExportSpecifier(parent)){
-          const symbol=checker.getSymbolAtLocation(node);
+          // Resolve the value binding of shorthand properties before following
+          // the existing import/alias route and dependency budgets.
+          const symbol=ts.isShorthandPropertyAssignment(parent)&&parent.name===node
+            ? checker.getShorthandAssignmentValueSymbol(parent):checker.getSymbolAtLocation(node);
           if(!symbol?.declarations?.length)gap('unresolved_reference',node,'No supported semantic declaration was found.');
           else if(ts.isPropertyAccessExpression(parent)&&parent.name===node&&ultimate(symbol).declarations?.some(d=>d.getSourceFile()!==node.getSourceFile())) {
             gap('unsupported_reexport_route',node,'Foreign property targets require a proven import route; namespace/object dispatch is not collected.');
@@ -275,13 +278,14 @@ export function collectProjectContext(path: string, id: string,
             if(routeAllowed)for(const declaration of target.declarations??[]){
               if(ts.isSourceFile(declaration))continue;
               if(within(declaration,selectedNode)||within(declaration,unit))continue;
-              if(declaration.getSourceFile().isDeclarationFile ||
-                 (!ts.isTypeAliasDeclaration(declaration)&&!ts.isInterfaceDeclaration(declaration)&&
-                  !!(ts.getCombinedModifierFlags(declaration)&ts.ModifierFlags.Ambient))){gap('declaration_only',node,'Declaration target has no implementation.');continue;}
+              if(declaration.getSourceFile().isDeclarationFile){gap('declaration_only',node,'Declaration target has no implementation.');continue;}
               if(ts.isFunctionDeclaration(declaration)&&!declaration.body){
-                if(!target.declarations?.some(d=>ts.isFunctionDeclaration(d)&&!!d.body))gap('declaration_only',node,'Function declaration has no implementation.');
-                continue;
-              }
+                // An overload with a body elsewhere is not an implementation gap.
+                if(target.declarations?.some(d=>ts.isFunctionDeclaration(d)&&!!d.body))continue;
+                gap('declaration_only',node,'Function declaration has no implementation.');
+              }else if(!ts.isTypeAliasDeclaration(declaration)&&!ts.isInterfaceDeclaration(declaration)&&
+                       !!(ts.getCombinedModifierFlags(declaration)&ts.ModifierFlags.Ambient))
+                gap('declaration_only',node,'Declaration target has no implementation.');
               const destination=unitFor(declaration);
               if(!destination){gap(enclosingClass(declaration)&&enclosingClass(declaration)!==selectedClass?'inherited_dispatch':'closure_capture',node,'Inherited, outer-local or unsupported dispatch remains partial.');continue;}
               if(ts.isVariableStatement(destination))gap('mutable_state',node,'Declaration text does not establish runtime state or immutability.');
@@ -300,6 +304,6 @@ export function collectProjectContext(path: string, id: string,
     gaps:gaps.sort((a,b)=>compareText(a.path,b.path)||a.start-b.start||a.end-b.end||compareText(a.code,b.code)),
     collection:{max_depth:maxDepth,max_dependency_chars:maxChars,dependency_chars:chars},project:projectMetadata(),
     limitations:base.limitations.filter(x=>x!=='Dependency context is not collected.').concat(['Project graph uses parsed Classic/Node10 resolution only; automatic libraries/types, ambient globals, separate referenced projects and callers remain partial.',
-      'Only repository .ts implementations are collected. Package/declaration-only implementations are omitted; project modules are never executed.',
+      'Only repository .ts source units are collected. Bodyless declarations are flagged; package implementations and .d.ts source units are omitted; project modules are never executed.',
       'Dependency graph loading is capped at64 unique source attempts,4,000,000 cumulative foreign pre-read bytes and1,000,000 admitted foreign UTF16 source units; selected source is governed by the subprocess deadline.'])};
 }

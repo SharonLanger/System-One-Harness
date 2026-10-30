@@ -208,7 +208,10 @@ export function collectLocalContext(path: string, id: string,
           !ts.isPropertyAccessExpression(parent));
         const importPart = ts.isImportSpecifier(parent) || ts.isImportClause(parent) || ts.isNamespaceImport(parent);
         if (!declarationName && !importPart) {
-          const symbol = checker.getSymbolAtLocation(node);
+          // A shorthand name owns a property symbol; its value symbol carries
+          // the lexical binding (including shadowed locals and import aliases).
+          const symbol = ts.isShorthandPropertyAssignment(parent) && parent.name === node
+            ? checker.getShorthandAssignmentValueSymbol(parent) : checker.getSymbolAtLocation(node);
           if (!symbol || !symbol.declarations?.length) {
             gap('unresolved_reference', node, 'Reference has no same-file declaration in the isolated semantic program.');
           } else if (!seenSymbols.has(symbol)) {
@@ -217,6 +220,12 @@ export function collectLocalContext(path: string, id: string,
               if (declaration.getSourceFile() !== sf || within(declaration, root) || within(declaration, unit)) continue;
               const target = unitFor(declaration);
               if (!target) { gap('closure_capture', node, 'Outer local or unsupported declaration is not independently collected.'); continue; }
+              const bodylessFunction = ts.isFunctionDeclaration(declaration) && !declaration.body;
+              const implementedFunction = bodylessFunction && symbol.declarations.some(d => ts.isFunctionDeclaration(d) && !!d.body);
+              if (!implementedFunction && (bodylessFunction ||
+                  (!ts.isTypeAliasDeclaration(declaration) && !ts.isInterfaceDeclaration(declaration) &&
+                   !!(ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Ambient))))
+                gap('declaration_only', node, 'Declaration target has no implementation.');
               if (ts.isImportDeclaration(target)) gap('external_dependency', node, 'Imported implementation and module effects are not collected.');
               if (ts.isVariableStatement(target)) gap('mutable_state', node, 'Declaration text does not establish runtime value, writes or object immutability.');
               if (ts.isClassDeclaration(target)) gap('class_state', node, 'Whole class text does not establish initialization, inheritance or dispatch.');
