@@ -1,0 +1,82 @@
+{
+  "run": {
+    "pid": 70208,
+    "log_path": "/Users/I337254/workspace/sharon-workspace/laya-context-router/logs/debug.jsonl",
+    "script": "flow_connected_project.py",
+    "entry_point": "flows.file_method_context.run",
+    "schema_version": 1,
+    "started_local": "2026-10-30T21:07:03+02:00",
+    "started_utc": "2026-10-30T19:07:03+00:00",
+    "timezone_offset": "+0200",
+    "execution_mode": "real",
+    "status": "completed",
+    "duration_seconds": 1.416,
+    "result_directory": "/Users/I337254/workspace/sharon-workspace/laya-context-router/experiments/results/flow_connected_project/2026-10-30_21-07-03"
+  },
+  "input": {
+    "text": "Explain `experiments/fixtures/connected_project/src/billing/invoice-service.ts`: how does calculateInvoiceTotal compute a total, including its imported adjustment helpers and constants?",
+    "config": {
+      "model": "aac6fef/laya-typed-decisions-mlx",
+      "temperature": null,
+      "lang": "en"
+    }
+  },
+  "submitted_text": "Explain `experiments/fixtures/connected_project/src/billing/invoice-service.ts`: how does calculateInvoiceTotal compute a total, including its imported adjustment helpers and constants?",
+  "submitted_questions": {
+    "method": {
+      "type": "choice",
+      "instructions": "Select exactly one callable that the request asks to explain. Choose none_or_unclear when no single callable is appropriate.",
+      "criteria": {
+        "calculateInvoiceTotal": "export function calculateInvoiceTotal(invoice: Invoice): number",
+        "calculateInvoiceTotalWithAdjustment": "export function calculateInvoiceTotalWithAdjustment(invoice: Invoice, adjustment: number): number",
+        "none_or_unclear": "No single matching callable, or unclear request."
+      }
+    },
+    "multiple_relevant": {
+      "type": "noul",
+      "instructions": "Does the request require explaining more than one candidate callable?"
+    }
+  },
+  "raw_response": {
+    "model": "laya-rl-agent",
+    "answers": {
+      "method": {
+        "type": "choice",
+        "choice": "calculateInvoiceTotal",
+        "probabilities": {
+          "calculateInvoiceTotal": 0.4454,
+          "calculateInvoiceTotalWithAdjustment": 0.44,
+          "none_or_unclear": 0.1146
+        },
+        "confidence": 0.1173,
+        "answer_confidence": 0.4454,
+        "action": {
+          "act_probability": 1.0
+        }
+      },
+      "multiple_relevant": {
+        "type": "noul",
+        "noul": 0.6199,
+        "confidence": 0.6199,
+        "answer_confidence": 0.6199,
+        "action": {
+          "act_probability": 1.0
+        }
+      }
+    },
+    "usage": {
+      "input_tokens": 226,
+      "output_tokens": 0,
+      "state_tokens": 44,
+      "state_tokens_dropped": 0,
+      "truncated": false,
+      "truncated_questions": []
+    }
+  },
+  "result": {
+    "status": "noop",
+    "reason": "method_undecided",
+    "context": null
+  },
+  "error": null
+}
