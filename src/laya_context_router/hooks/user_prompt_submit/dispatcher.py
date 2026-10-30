@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from time import monotonic
 
-from ...hook_contracts import Context, Noop, Failure, ValidationError, validate_result
+from ..contracts import Context, Noop, Failure, ValidationError, validate_result
 from ..dispatcher import HookEnvelope, require_string
 
 @dataclass(frozen=True)

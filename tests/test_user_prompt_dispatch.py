@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 import pytest
-from laya_context_router.hook_contracts import Context, Noop, Failure
+from laya_context_router.hooks.contracts import Context, Noop, Failure
 from laya_context_router.hooks.dispatcher import ingest_common, dispatch_hook
 from laya_context_router.hooks.user_prompt_submit.dispatcher import dispatch_user_prompt_submit
 

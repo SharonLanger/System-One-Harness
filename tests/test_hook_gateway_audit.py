@@ -8,8 +8,8 @@ import subprocess
 import sys
 from contextlib import nullcontext
 import pytest
-from laya_context_router.hook_gateway import parse_args
-from laya_context_router.hook_contracts import ValidationError,Context
+from laya_context_router.hooks.gateway import parse_args
+from laya_context_router.hooks.contracts import ValidationError,Context
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -26,7 +26,7 @@ def test_cli_operational_boundaries(flag,value,valid):
         with pytest.raises(ValidationError):parse_args(['--hook','X',flag,value])
 
 def test_stdin_read_once_and_signal_cleanup(monkeypatch):
-    import laya_context_router.hook_gateway as gateway
+    import laya_context_router.hooks.gateway as gateway
     class Input(io.StringIO):
         calls=[]
         def read(self,n):self.calls.append(n);return super().read(n)
@@ -44,8 +44,8 @@ def test_real_log_filesystem_failure_is_nonrecursive(tmp_path,kind):
     parent=tmp_path/'parent';parent.write_text('not a directory')
     script='''from pathlib import Path
 import laya_context_router.log_utils as logs
-from laya_context_router.hook_gateway import main
-from laya_context_router.hook_contracts import Context,Noop
+from laya_context_router.hooks.gateway import main
+from laya_context_router.hooks.contracts import Context,Noop
 logs.LOG_PATH=Path(__LOG_DEST__)
 original=logs.log
 calls=[]
@@ -71,7 +71,7 @@ def test_log_timeout_never_swallowed(strict,monkeypatch):
 def test_empty_prompt_actual_gateway_never_loads_sdk(tmp_path):
     event={'session_id':'s','transcript_path':'not-existing.jsonl','cwd':str(tmp_path),
            'hook_event_name':'UserPromptSubmit','prompt':''}
-    r=subprocess.run([sys.executable,'-m','laya_context_router.hook_gateway','--hook','UserPromptSubmit',
+    r=subprocess.run([sys.executable,'-m','laya_context_router.hooks.gateway','--hook','UserPromptSubmit',
         '--repository-root',str(tmp_path),'--real'],input=json.dumps(event),text=True,capture_output=True,
         timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
     assert r.returncode==0 and r.stdout=='' and 'ineligible_request' in r.stderr

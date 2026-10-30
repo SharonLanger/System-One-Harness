@@ -9,8 +9,8 @@ import sys
 from uuid import uuid4
 from time import monotonic
 
-from .hook_contracts import Context, Noop, Failure, ValidationError, validate_result
-from .json_utils import _unique_pairs
+from .contracts import Context, Noop, Failure, ValidationError, validate_result
+from ..json_utils import _unique_pairs
 
 MAX_INPUT_CHARS = 65536
 
@@ -84,11 +84,11 @@ def _expired(signum, frame):
     raise TimeoutError('hook deadline exceeded')
 
 def _default_dispatch(payload, args, invocation_id, logger):
-    from .hooks.dispatcher import dispatch_hook
+    from .dispatcher import dispatch_hook
     return dispatch_hook(payload, args, invocation_id, logger)
 
 def _default_log(level, event, **details):
-    from .log_utils import log
+    from ..log_utils import log
     log(level, 'hook_gateway', event, raise_on_error=True, **details)
 
 def main(argv=None, *, dispatcher=None, logger=None):

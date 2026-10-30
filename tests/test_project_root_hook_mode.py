@@ -27,7 +27,7 @@ def test_legacy_and_root_search_bases_differ(tmp_path):
                         resolve_from_project_root=True).selected_path==root
 
 def invoke_gateway(case,*,process_cwd=ROOT):
-    return subprocess.run([sys.executable,'-m','laya_context_router.hook_gateway','--hook','UserPromptSubmit',*case['args']],
+    return subprocess.run([sys.executable,'-m','laya_context_router.hooks.gateway','--hook','UserPromptSubmit',*case['args']],
         input=json.dumps(case['event']),text=True,capture_output=True,timeout=15,env=case['env'],cwd=process_cwd)
 
 @pytest.mark.parametrize('location',['nested','root','unrelated'])

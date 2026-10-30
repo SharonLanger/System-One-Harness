@@ -145,7 +145,7 @@ project-root display paths and warning-only output thresholds.
 
 ## Shared gateway entry and compatibility
 
-New registrations should call `python -m laya_context_router.hook_gateway --hook UserPromptSubmit` with the existing operational arguments (`--repository-root`, optional `--config`, explicit `--real`, deadlines and budgets). The earlier script path is now a forwarding wrapper; the legacy recipe above remains usable. This document does not install or activate a hook. Final plugin registration and installation preference remain pending supplied assets.
+New registrations should call `python -m laya_context_router.hooks.gateway --hook UserPromptSubmit` with the existing operational arguments (`--repository-root`, optional `--config`, explicit `--real`, deadlines and budgets). The earlier script path is now a forwarding wrapper; the legacy recipe above remains usable. This document does not install or activate a hook. Final plugin registration and installation preference remain pending supplied assets.
 
 The gateway requires session_id, transcript_path, cwd, hook_event_name and prompt for UserPromptSubmit. permission_mode is optional. Transcript text is not read. Fields follow the pinned official Anthropic SDK contract documented in the field ledger; installed CLI delivery remains unverified. Unknown event names return unsupported_event without feature requirements.
 

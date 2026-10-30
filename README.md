@@ -115,12 +115,12 @@ adapter).
 
 ## Shared hook gateway
 
-The public entry is `python -m laya_context_router.hook_gateway --hook UserPromptSubmit`. It reads one JSON event from stdin and validates the supplied event name against `--hook`. Common ingestion calls the UserPromptSubmit dispatcher, which calls the prompt-context enrichment handler. Unsupported events return empty stdout without model work.
+The public entry is `python -m laya_context_router.hooks.gateway --hook UserPromptSubmit`. The gateway and shared contracts live together in `src/laya_context_router/hooks/` as `gateway.py` and `contracts.py`. This replaces the earlier `laya_context_router.hook_gateway` package command; the outer script remains compatible. It reads one JSON event from stdin and validates the supplied event name against `--hook`. Common ingestion calls the UserPromptSubmit dispatcher, which calls the prompt-context enrichment handler. Unsupported events return empty stdout without model work.
 
 For an installed development checkout, replay a saved event explicitly:
 
 ```bash
-python -m laya_context_router.hook_gateway --hook UserPromptSubmit --repository-root /absolute/project --config /absolute/run-config.json --real < event.json
+python -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root /absolute/project --config /absolute/run-config.json --real < event.json
 ```
 
 Project root comes from the existing explicit configuration option. Event cwd is retained as metadata; root mode resolves source references and displays paths relative to the configured root. No root is guessed from cwd. `--real` is required to enable the model.
