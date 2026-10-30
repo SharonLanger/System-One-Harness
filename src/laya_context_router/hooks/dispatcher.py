@@ -20,10 +20,10 @@ def require_string(payload, field, stage='common', *, allow_empty=False):
     return value
 
 def ingest_common(payload, invocation_id):
-    common = {key:require_string(payload,key) for key in ('hook_event_name','session_id','cwd')}
+    common = {key:require_string(payload,key) for key in ('hook_event_name','session_id','cwd','transcript_path')}
     if not Path(common['cwd']).is_absolute():
         raise ValidationError('invalid_field','common','cwd')
-    for key in ('transcript_path','permission_mode'):
+    for key in ('permission_mode',):
         if key in payload:common[key]=require_string(payload,key)
     return HookEnvelope(common['hook_event_name'],invocation_id,common,deepcopy(payload))
 

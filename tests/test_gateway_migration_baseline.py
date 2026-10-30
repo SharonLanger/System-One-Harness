@@ -39,7 +39,7 @@ formatter = types.ModuleType('laya_context_router.context_format')
 formatter.format_context = lambda *args, **kwargs: 'Known context: 😀'
 sys.modules[formatter.__name__] = formatter
 ''')
-    event = {'session_id':'baseline', 'hook_event_name':'UserPromptSubmit',
+    event = {'session_id':'baseline','transcript_path':'unused.jsonl', 'hook_event_name':'UserPromptSubmit',
              'cwd':str(tmp_path), 'prompt':'Explain `a.ts`: method?'}
     env = {**os.environ, 'BASELINE_OUTCOME':outcome,
            'PYTHONPATH':os.pathsep.join([str(shim), str(HOOK.parents[1] / 'src')])}

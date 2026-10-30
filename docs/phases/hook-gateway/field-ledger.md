@@ -18,3 +18,9 @@ The event/session/cwd/prompt requirements are the plan's explicit application co
 CLI hook: one occurrence required; string exact-match to payload. Shared options retain the old hook's operational ranges: finite deadline (0,300] seconds; positive context-character warning threshold; dependency depth integer0–20; dependency characters integer1–1000000. These are application policies inherited from current hook, not Claude payload fields. Argparse rejects malformed numeric types.
 
 Repository root/config/real-opt-in: optional at generic transport layer; required/resolved only by the future feature adapter. No default root derived from cwd. Root existence/containment/provenance tests remain Phase4 dependency.
+
+## Verified structural contract (supersedes provisional transcript classification)
+
+Official source: https://github.com/anthropics/claude-agent-sdk-python/blob/1ea8cb74ddcdadbfaa9b20dfa8268e18047851e7/src/claude_agent_sdk/types.py . BaseHookInput requires session_id, transcript_path and cwd; permission_mode is NotRequired. UserPromptSubmitHookInput requires hook_event_name and prompt. UserPromptSubmitHookSpecificOutput/SyncHookJSONOutput establish the event envelope and string additionalContext.
+
+transcript_path is REQUIRED nonempty string at common validation; missing/null/type/whitespace fail before dispatch, exact input preserved, existence not checked and file never read. All valid fixtures updated. This resolves D02 structural-source verification; no installed CLI/live-session compatibility claim follows from SDK types.

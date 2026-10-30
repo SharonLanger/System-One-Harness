@@ -7,7 +7,7 @@ from laya_context_router.hooks.dispatcher import dispatch_hook,enrich_envelope
 
 ARGS=SimpleNamespace(hook='UserPromptSubmit')
 def payload():
-    return {'hook_event_name':'UserPromptSubmit','session_id':'s','cwd':'/project','prompt':'x'}
+    return {'hook_event_name':'UserPromptSubmit','session_id':'s','transcript_path':'unused.jsonl','cwd':'/project','prompt':'x'}
 def invoke(p,**kwargs):
     calls=[];records=[]
     def handler(e,a,l):calls.append(e);return Context('fixed')
@@ -15,20 +15,20 @@ def invoke(p,**kwargs):
                          dispatchers={'UserPromptSubmit':handler},**kwargs)
     return result,calls,records
 
-@pytest.mark.parametrize('key',['session_id','cwd','hook_event_name'])
+@pytest.mark.parametrize('key',['session_id','cwd','hook_event_name','transcript_path'])
 @pytest.mark.parametrize('value',[None,False,1,[],{},'', ' '])
 def test_invalid_common(key,value):
     p=payload();p[key]=value
     result,calls,_=invoke(p)
     assert isinstance(result,Failure) and result.field==key and not calls
 
-@pytest.mark.parametrize('key',['session_id','cwd','hook_event_name'])
+@pytest.mark.parametrize('key',['session_id','cwd','hook_event_name','transcript_path'])
 def test_missing_common(key):
     p=payload();del p[key]
     result,calls,_=invoke(p)
     assert isinstance(result,Failure) and result.field==key and not calls
 
-@pytest.mark.parametrize('key',['permission_mode','transcript_path'])
+@pytest.mark.parametrize('key',['permission_mode'])
 @pytest.mark.parametrize('value',[None,False,4,[],{},'', ' '])
 def test_invalid_optional_when_present(key,value):
     p=payload();p[key]=value

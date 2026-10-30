@@ -5,7 +5,7 @@ from laya_context_router.hooks.dispatcher import ingest_common, dispatch_hook
 from laya_context_router.hooks.user_prompt_submit.dispatcher import dispatch_user_prompt_submit
 
 ARGS=SimpleNamespace(hook='UserPromptSubmit',repository_root=None)
-def event():return {'hook_event_name':'UserPromptSubmit','session_id':'s','cwd':'/root','prompt':'  Explain `a.ts`: 😀\n'}
+def event():return {'hook_event_name':'UserPromptSubmit','session_id':'s','transcript_path':'unused.jsonl','cwd':'/root','prompt':'  Explain `a.ts`: 😀\n'}
 def call(p,output=Context('known')):
     calls=[];logs=[]
     def handler(request,logger):calls.append(request);return output

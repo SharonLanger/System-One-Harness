@@ -126,9 +126,10 @@ def main(argv=None, *, dispatcher=None, logger=None):
             output = serialize_response(result, args.hook)
             if isinstance(result, Failure):
                 log('ERROR', 'gateway_error', code=result.code, stage=result.stage, field=result.field)
-                print(f'laya hook error: {result.stage}: {result.code}', file=sys.stderr)
+                print(f'laya hook error: {result.stage}: {result.code} {result.message}', file=sys.stderr)
             elif isinstance(result, Noop):
                 log('INFO', 'gateway_noop', reason=result.reason)
+                print(f'laya hook noop: {result.reason}', file=sys.stderr)
             if output:
                 log('DEBUG', 'response_prepared', serialized_bytes=len(output.encode('utf-8')))
         if output:

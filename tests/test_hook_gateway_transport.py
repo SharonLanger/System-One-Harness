@@ -142,7 +142,7 @@ open(LOG,'w').write(json.dumps(records))
     def run(index):
         log=tmp_path/f'{index}.json'
         code=script.replace('ROOT',repr(str(tmp_path))).replace('LOG',repr(str(log)))
-        p={'hook_event_name':'UserPromptSubmit','session_id':'same-session','cwd':str(tmp_path),'prompt':'x'}
+        p={'hook_event_name':'UserPromptSubmit','session_id':'same-session','transcript_path':'unused.jsonl','cwd':str(tmp_path),'prompt':'x'}
         r=subprocess.run([sys.executable,'-c',code],input=json.dumps(p),text=True,capture_output=True,
             timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
         assert r.returncode==0 and r.stdout==''

@@ -21,7 +21,7 @@ def _prepare_feature_config(request):
     except OSError as exc:
         return Failure('invalid_project_root','configuration','repository_root',str(exc))
     if not getattr(args,'real',False):
-        return Failure('model_disabled','configuration','real')
+        return Failure('model_disabled','configuration','real','explicit --real required')
     from ...laya.config import RunConfig,load_config
     try:
         model_config=load_config(args.config) if getattr(args,'config',None) else RunConfig()
@@ -38,7 +38,7 @@ _NOOP_REASONS=frozenset({'ineligible_request','unsupported_request','no_file','m
     'multiple_undecided','multiple_relevant'})
 _FAILURE_REASONS=frozenset({'deadline_exceeded','extractor_error','invalid_dependency_budget',
     'invalid_fallback_budget','invalid_reference','model_error','source_changed','unknown_candidate',
-    'inaccessible','outside_repository','not_file'})
+    'inaccessible','outside_repository','not_file','invalid_resolution_mode'})
 
 
 def _map_flow_result(result, *, project_root, max_dependency_depth=2,
@@ -83,9 +83,27 @@ def _map_flow_result(result, *, project_root, max_dependency_depth=2,
     return Context(text)
 
 
-def enrich_prompt_context(request,logger):
-    """Unfinished boundary: no real flow runs until the reviewed root API lands."""
+def enrich_prompt_context(request,logger,*,flow=None,registry=None,formatter=None):
+    """Reuse existing flow with explicit opt-in root-based reference resolution."""
     prepared=_prepare_feature_config(request)
     if isinstance(prepared,Failure):return prepared
-    return Failure('root_api_unavailable','feature',
-        message='Real-flow integration awaits the reviewed project-root resolution API')
+    if flow is None:
+        from ...flows.file_method_context import run
+        flow=run
+    if registry is None:
+        from ...laya.registry import AgentRegistry
+        registry=AgentRegistry(real=True)
+    depth=getattr(request.config,'max_dependency_depth',2)
+    budget=getattr(request.config,'max_dependency_chars',12000)
+    result=flow(request.prompt,cwd=Path(prepared['cwd']),repository_root=prepared['project_root'],
+        config=prepared['model_config'],registry=registry,resolve_from_project_root=True,
+        max_dependency_depth=depth,max_dependency_chars=budget)
+    mapped=_map_flow_result(result,project_root=prepared['project_root'],
+        max_dependency_depth=depth,max_dependency_chars=budget,formatter=formatter)
+    from ...hook_contracts import Context
+    if isinstance(mapped,Context):
+        limit=getattr(request.config,'max_context_chars',8000)
+        if len(mapped.text)>limit:
+            logger('WARNING','context_size_warning',context_chars=len(mapped.text),
+                   max_context_chars=limit,action='send_unchanged')
+    return mapped

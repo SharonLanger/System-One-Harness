@@ -28,7 +28,7 @@ def run(prompt, *, cwd, repository_root, config, registry,
         reference_pattern=_OMITTED_REFERENCE_PATTERN, node='node', helper=DEFAULT_HELPER,
         timeout=5.0, max_candidates=64, max_input_chars=16000,
         fallback_config=None, fallback_max_input_chars=16000,
-        max_dependency_depth=2, max_dependency_chars=12000):
+        max_dependency_depth=2, max_dependency_chars=12000, resolve_from_project_root=False):
     """Only `Explain `backtick path`: question` qualifies for this first flow.
 
     Exactly one lexical file mention must equal that target. This is an explicit
@@ -37,6 +37,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
     """
     log("INFO", "flow", "started", flow="file_method_context", prompt=prompt,
         cwd=cwd, repository_root=repository_root)
+    if type(resolve_from_project_root) is not bool:
+        return _noop('invalid_resolution_mode')
     if (type(max_dependency_depth) is not int or not 0 <= max_dependency_depth <= 20
             or type(max_dependency_chars) is not int or not 1 <= max_dependency_chars <= 1000000):
         return _noop('invalid_dependency_budget')
@@ -68,7 +70,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
         return _noop('excluded')
     try:
         resolution = resolve_file(reference, cwd=cwd, repository_root=repository_root,
-                                  node=node, helper=helper, timeout=timeout)
+                                  node=node, helper=helper, timeout=timeout,
+            **({'resolve_from_project_root': True} if resolve_from_project_root else {}))
         log("DEBUG", "flow", "file_resolved", resolution=resolution)
         if resolution.status != 'resolved':
             return _noop(resolution.status)

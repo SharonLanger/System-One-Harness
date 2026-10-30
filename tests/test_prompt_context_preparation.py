@@ -8,7 +8,7 @@ from laya_context_router.hooks.user_prompt_submit.prompt_context_enrichment impo
 
 
 def request(root,**options):
-    event={'hook_event_name':'UserPromptSubmit','session_id':'s','cwd':'/unrelated/cwd','prompt':'x'}
+    event={'hook_event_name':'UserPromptSubmit','session_id':'s','transcript_path':'unused.jsonl','cwd':'/unrelated/cwd','prompt':'x'}
     return PromptRequest('x',ingest_common(event,'id'),SimpleNamespace(repository_root=root,real=True,config=None,**options))
 
 @pytest.mark.parametrize('root',[None,'','relative',False,1])
@@ -52,7 +52,7 @@ def test_expected_flow_refusals(reason,tmp_path):
 
 @pytest.mark.parametrize('reason',['deadline_exceeded','extractor_error','invalid_dependency_budget',
     'invalid_fallback_budget','invalid_reference','model_error','source_changed','unknown_candidate',
-    'inaccessible','outside_repository','not_file'])
+    'inaccessible','outside_repository','not_file','invalid_resolution_mode'])
 def test_operational_flow_failures(reason,tmp_path):
     assert _map_flow_result({'status':'noop','reason':reason,'context':None},project_root=tmp_path)==Failure(reason,'feature')
 
@@ -88,16 +88,20 @@ def test_formatter_exception(tmp_path):
     assert _map_flow_result({'status':'context','reason':None,'context':collector_context(tmp_path)},
         project_root=tmp_path,formatter=formatter).code=='formatting_error'
 
-def test_default_boundary_blocks_without_flow_formatter_or_model(tmp_path,monkeypatch):
-    import laya_context_router.flows.file_method_context as flow
-    import laya_context_router.context_format as fmt
-    monkeypatch.setattr(flow,'run',lambda *a,**k:pytest.fail('must not run flow'))
-    monkeypatch.setattr(fmt,'format_context',lambda *a,**k:pytest.fail('must not format'))
-    assert enrich_prompt_context(request(tmp_path),lambda *a,**k:None).code=='root_api_unavailable'
-    assert 'laya_mlx' not in sys.modules
+def test_handler_forwards_explicit_root_mode_and_retains_raw_cwd(tmp_path):
+    calls=[]
+    def flow(prompt,**kwargs):
+        calls.append((prompt,kwargs));return {'status':'noop','reason':'multiple_relevant','context':None}
+    sentinel=object()
+    result=enrich_prompt_context(request(tmp_path),lambda *a,**k:None,flow=flow,registry=sentinel)
+    assert result==Noop('multiple_relevant') and len(calls)==1
+    assert str(calls[0][1]['cwd'])=='/unrelated/cwd'
+    assert calls[0][1]['repository_root']==tmp_path
+    assert calls[0][1]['resolve_from_project_root'] is True
+    assert calls[0][1]['registry'] is sentinel
 
 @pytest.mark.parametrize('real',[False,True])
-def test_real_gateway_reports_explicit_unfinished_boundary(tmp_path,real):
+def test_real_gateway_disabled_or_ineligible_never_loads_model(tmp_path,real):
     import json,os,subprocess
     from pathlib import Path
     root=Path(__file__).resolve().parents[1]
@@ -106,20 +110,19 @@ from laya_context_router.hook_gateway import main
 import laya_context_router.flows.file_method_context as flow
 import laya_context_router.context_format as fmt
 def forbidden(*a,**k):raise AssertionError('unexpected flow/formatter')
-flow.run=forbidden
 fmt.format_context=forbidden
 records=[]
 main(ARGS,logger=lambda l,e,**d:records.append({'event':e,**d}))
 assert 'laya_mlx' not in sys.modules
 open(LOG,'w').write(json.dumps(records))
 '''.replace('ARGS',repr(['--hook','UserPromptSubmit','--repository-root',str(tmp_path)]+(['--real'] if real else []))).replace('LOG',repr(str(tmp_path/'records.json')))
-    p={'hook_event_name':'UserPromptSubmit','session_id':'session','cwd':str(tmp_path),'prompt':'Explain `a.ts`: method?'}
+    p={'hook_event_name':'UserPromptSubmit','session_id':'session','transcript_path':'unused.jsonl','cwd':str(tmp_path),'prompt':'hello'}
     r=subprocess.run([sys.executable,'-c',script],input=json.dumps(p),text=True,capture_output=True,
         timeout=5,env={**os.environ,'PYTHONPATH':str(root/'src')})
-    code='root_api_unavailable' if real else 'model_disabled'
+    code='ineligible_request' if real else 'model_disabled'
     assert r.returncode==0 and r.stdout=='' and code in r.stderr
     final=json.loads((tmp_path/'records.json').read_text())[-1]
-    assert final['code']==code and final['outcome']=='error'
+    assert (final['reason']==code and final['outcome']=='noop') if real else (final['code']==code and final['outcome']=='error')
     assert final['session_id']=='session' and final['stdout_bytes_written']==0
 
 @pytest.mark.parametrize('stage',['root','config','validation','formatting'])
