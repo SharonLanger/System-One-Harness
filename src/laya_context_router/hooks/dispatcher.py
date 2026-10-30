@@ -50,6 +50,19 @@ def dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher=
                 or envelope.invocation_id!=baseline.invocation_id or not isinstance(envelope.derived,dict)
                 or 'project_root' in envelope.derived):
             raise ValidationError('invalid_enrichment','common')
+        project_dir = envelope.derived.get('project_dir')
+        if project_dir is not None and (not isinstance(project_dir, str)
+                or not project_dir.strip() or not Path(project_dir).is_absolute()):
+            raise ValidationError('invalid_enrichment','common','project_dir')
+        if project_dir is not None:
+            try:
+                project_path = Path(project_dir)
+                if str(project_path.resolve(strict=True)) != project_dir or not project_path.is_dir():
+                    raise ValidationError('invalid_enrichment','common','project_dir')
+            except TimeoutError:
+                raise
+            except (OSError, ValueError, RuntimeError) as exc:
+                raise ValidationError('invalid_enrichment','common','project_dir') from exc
         logger('INFO','common_input_validated',session_id=envelope.common['session_id'],
                fields=sorted(envelope.common),derived_fields=sorted(envelope.derived))
         return validate_result(registry[name](envelope,args,logger))
