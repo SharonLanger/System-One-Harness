@@ -3,7 +3,8 @@
 Decision date: 2026-10-30. This plan incorporates Sharon's review and supersedes
 the original audit's remediation recommendations where they differ below.
 Scope: prepare tests first, then fix accepted behavior in separate commits.
-No implementation fixes or GitHub commits have been made during this review.
+This document records the original plan. Implementation and commit completion
+are recorded in audit-fix-results.md.
 
 ## Accepted decisions
 
@@ -154,7 +155,7 @@ and makes the gap visible to Claude.
 After targeted checks pass, build the TypeScript helper, run its complete Node
 suite, and run the complete Python suite. Record actual totals and skip reasons.
 The audit baseline was 427 Python and 53 Node passes; these are historical counts,
-not guarantees for a newer checkout. The reviewed additions comprise 30 cases.
+not guarantees for a newer checkout. The reviewed additions comprise 31 cases, including the direct ambiguity-block control.
 Run git diff --check and inspect the staged paths before each commit.
 
 Deliver the ordered test/fix commits together with a concise description of
