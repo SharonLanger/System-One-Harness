@@ -1,0 +1,105 @@
+"""Reporting helper: read one hook child's existing logs without rerunning Laya."""
+import json
+
+
+def read_trace(path, offset, pid):
+    records, warnings = [], []
+    if pid is None:
+        return records, ["The hook subprocess was not started."]
+    try:
+        with path.open("rb") as handle:
+            if path.stat().st_size < offset:
+                offset = 0
+                warnings.append("The debug log was truncated during this replay.")
+            handle.seek(offset)
+            for line in handle:
+                try:
+                    record = json.loads(line)
+                except (ValueError, UnicodeDecodeError):
+                    warnings.append("An unreadable log line was skipped; trace may be incomplete.")
+                    continue
+                if isinstance(record, dict) and record.get("pid") == pid:
+                    records.append(record)
+    except OSError as exc:
+        warnings.append(f"Could not read debug log: {exc}")
+    if not records:
+        warnings.append("No log records were found for this hook PID; this does not prove that Laya ran.")
+    return records, warnings
+
+
+def collect_calls(records):
+    calls = []
+    for record in records:
+        component, event = record.get("component"), record.get("event")
+        data = record.get("details", {})
+        if component == "laya" and event == "prediction_started":
+            calls.append({"submitted_text": data.get("text"), "submitted_questions": data.get("questions"),
+                          "config": {key: data.get(key) for key in ("model", "temperature", "lang")},
+                          "agent_ready": False, "response_received": False, "response_validated": False,
+                          "raw_response": None, "enriched_answers": {}, "applied_rules": {},
+                          "decisions": {}, "errors": []})
+        if not calls:
+            continue
+        call = calls[-1]
+        if component == "laya":
+            if event in {"load_completed", "agent_reused"}:
+                call["agent_ready"] = True
+            elif event == "response_received":
+                call["response_received"] = True
+                call["raw_response"] = data.get("response")
+            elif event == "response_validated":
+                call["response_validated"] = True
+        elif component == "enrichment" and event == "completed":
+            call["enriched_answers"][data["question"]] = data.get("enriched")
+        elif component == "rules" and event == "evaluation_started":
+            call["applied_rules"][data["question"]] = data
+        elif component == "rules" and event == "decision":
+            call["decisions"][data["question"]] = data.get("decision")
+        if record.get("error"):
+            call["errors"].append(record["error"])
+    return calls
+
+
+def render_summary(details):
+    def section(title, value):
+        return f"\n## {title}\n\n```json\n{json.dumps(value, indent=2, ensure_ascii=False)}\n```\n"
+
+    finished = next((record.get("details", {}) for record in reversed(details["trace"])
+                     if record.get("component") == "flow" and record.get("event") == "finished"), {})
+    reason = finished.get("reason")
+    if reason is None:
+        reason = next((line.strip() for line in reversed(details["stderr"].splitlines())
+                       if "laya hook noop:" in line), None)
+    lines = ["# UserPromptSubmit replay\n",
+             f"Outcome: **{details['observed_status']}**. Exit code: {details['exit_code']}. "
+             f"Hook PID: {details['hook_pid']}.\n",
+             f"No-op/error reason: {reason or details['error'] or 'none recorded'}.\n",
+             "This runs the real hook subprocess. It does not install a hook in Claude.\n",
+             section("Input from Claude (replayed)", details["event"])]
+    calls = details["laya_calls"]
+    if not calls:
+        lines.append("\n**No Laya request was observed.** The flow may have stopped before model selection, "
+                     "or logging may be unavailable. Read the timeline and diagnostics below.\n")
+    for index, call in enumerate(calls, 1):
+        lines.append(f"\n## Laya request {index}\n\n"
+                     f"Request prepared: yes. Agent ready: {call['agent_ready']}. "
+                     f"Response received: {call['response_received']}. Validated: {call['response_validated']}.\n"
+                     "Preparing a request alone does not prove inference ran.\n")
+        for title, key in [("Requested model and temperature", "config"), ("Text submitted to Laya", "submitted_text"),
+                           ("Exact questions and choices", "submitted_questions"), ("Raw Laya response", "raw_response"),
+                           ("Enriched answers (including gap)", "enriched_answers"),
+                           ("Rules evaluated", "applied_rules"), ("Answers accepted or rejected", "decisions"),
+                           ("Errors observed", "errors")]:
+            lines.append(section(title, call[key]))
+    lines.append("\n## Execution timeline\n\n")
+    lines.extend(f"- {r.get('time')} — {r.get('component')}.{r.get('event')}\n" for r in details["trace"])
+    if not details["trace"]:
+        lines.append("No entries captured.\n")
+    lines.append(section("JSON returned to Claude", details["parsed_output"]))
+    lines.append(section("Diagnostics from stderr (can include SDK progress)", details["stderr"]))
+    lines.append(section("Replay error", details["error"]))
+    lines.append(section("Trace warnings", details["trace_warnings"]))
+    lines.append(f"\nSource log: `{details['run']['log_path']}`. "
+                 "`trace.jsonl` contains this hook PID's captured log entries only; "
+                 "`details.json` contains the full report, including raw stdout.\n")
+    return "\n".join(lines)

@@ -6,7 +6,8 @@ import os
 from pathlib import Path
 import subprocess
 import sys
-from support import allocate_result_dir, start_record, write_report
+from support import LOG_PATH, log, allocate_result_dir, start_record, write_report
+from hook_trace import read_trace, collect_calls, render_summary
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DEFAULT_INPUT = HERE / "inputs/hook_user_prompt_submit.json"
@@ -34,12 +35,16 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", type=Path, default=DEFAULT_INPUT, help="saved hook event JSON")
     parser.add_argument("--deadline", type=float, default=10.0, help="hook deadline in seconds (default: 10)")
+    parser.add_argument("--config", type=Path, help="optional RunConfig JSON passed to the real hook")
     args = parser.parse_args(argv)
     stamp, started = datetime.now().astimezone(), datetime.now().astimezone()
     details = {"run": start_record("hook_user_prompt_submit.py", "hooks/user_prompt_submit.py subprocess", "real"),
                "input_path": str(args.input), "event": None, "exit_code": None,
                "stdout": "", "stderr": "", "parsed_output": None, "observed_status": "technical_error",
-               "deadline_seconds": args.deadline, "error": None}
+               "deadline_seconds": args.deadline, "error": None, "hook_pid": None,
+               "trace": [], "trace_warnings": [], "laya_calls": [],
+               "config_path": str(args.config.resolve()) if args.config else None}
+    log_offset = 0
     try:
         if not 0 < args.deadline <= 290: raise ValueError("deadline must be greater than 0 and at most 290 seconds")
         event = json.loads(args.input.read_text())
@@ -48,14 +53,34 @@ def main(argv=None):
         details["event"] = event
         env = dict(os.environ)
         env["PYTHONPATH"] = os.pathsep.join([str(ROOT / "src"), env.get("PYTHONPATH", "")]).rstrip(os.pathsep)
-        proc = subprocess.run([sys.executable, str(ROOT / "hooks/user_prompt_submit.py"),
-                               "--repository-root", str(ROOT), "--real", "--deadline", str(args.deadline)],
-                              input=json.dumps(event), text=True, capture_output=True,
-                              timeout=args.deadline + 10, cwd=ROOT, env=env)
-        details.update(exit_code=proc.returncode, stdout=proc.stdout, stderr=proc.stderr)
-        if proc.stdout.strip():
+        command = [sys.executable, str(ROOT / "hooks/user_prompt_submit.py"),
+                   "--repository-root", str(ROOT), "--real", "--deadline", str(args.deadline)]
+        if args.config:
+            command.extend(["--config", str(args.config.resolve())])
+        try:
+            log_offset = LOG_PATH.stat().st_size
+        except FileNotFoundError:
+            pass
+        except OSError as exc:
+            details["trace_warnings"].append(f"Could not locate log start: {exc}")
+        log("INFO", "hook_replay", "launching", command=command, event_input=event)
+        print(f"Starting real hook replay. Debug log: {LOG_PATH}", flush=True)
+        with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                              text=True, cwd=ROOT, env=env) as proc:
+            details["hook_pid"] = proc.pid
+            log("INFO", "hook_replay", "child_started", hook_pid=proc.pid)
+            print(f"Hook PID: {proc.pid}. Full questions and responses will print when it finishes.", flush=True)
             try:
-                decoded = json.loads(proc.stdout)
+                stdout, stderr = proc.communicate(json.dumps(event), timeout=args.deadline + 10)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+                stdout, stderr = proc.communicate()
+                details.update(exit_code=proc.returncode, stdout=stdout, stderr=stderr)
+                raise
+            details.update(exit_code=proc.returncode, stdout=stdout, stderr=stderr)
+        if stdout.strip():
+            try:
+                decoded = json.loads(stdout)
                 details["parsed_output"] = decoded
             except json.JSONDecodeError:
                 decoded = None
@@ -65,28 +90,25 @@ def main(argv=None):
         specific = decoded.get("hookSpecificOutput") if isinstance(decoded, dict) else None
         if decoded is not None and not (isinstance(specific, dict) and isinstance(specific.get("additionalContext"), str)):
             details["error"] = {"type": "InvalidOutputShape", "message": "hook stdout did not contain hookSpecificOutput"}
-        details["observed_status"] = classify(proc.stderr, decoded)
+        details["observed_status"] = classify(stderr, decoded)
         if details["error"] is not None: details["observed_status"] = "technical_error"
         if proc.returncode != 0: details["observed_status"] = "technical_error"
     except subprocess.TimeoutExpired as exc:
-        details["stdout"] = exc.stdout.decode(errors="replace") if isinstance(exc.stdout, bytes) else (exc.stdout or "")
-        details["stderr"] = exc.stderr.decode(errors="replace") if isinstance(exc.stderr, bytes) else (exc.stderr or "")
         details["observed_status"] = "technical_error"
         details["error"] = {"type": "TimeoutExpired", "message": f"hook subprocess exceeded {args.deadline + 10:g} seconds"}
     except Exception as exc:
         details["observed_status"] = "technical_error"
         details["error"] = {"type": type(exc).__name__, "message": str(exc)}
+    trace, warnings = read_trace(LOG_PATH, log_offset, details["hook_pid"])
+    details["trace"] = trace
+    details["trace_warnings"].extend(warnings)
+    details["laya_calls"] = collect_calls(trace)
     details["run"]["status"] = "failed" if details["observed_status"] == "technical_error" else "completed"
     details["run"]["duration_seconds"] = round((datetime.now().astimezone() - started).total_seconds(), 3)
     out = allocate_result_dir(HERE / "results/hook_user_prompt_submit", stamp)
     details["run"]["result_directory"] = str(out)
-    output = details.get("parsed_output")
-    specific = output.get("hookSpecificOutput") if isinstance(output, dict) else None
-    context = specific.get("additionalContext") if isinstance(specific, dict) else None
-    excerpt = str(context)[:500] if context else details.get("stderr", "").strip()[:500]
-    summary = (f"# UserPromptSubmit replay\n\nObserved outcome: `{details['observed_status']}`; exit code: `{details['exit_code']}`.\n\n"
-               f"Context excerpt or no-op/error reason: {excerpt or '(none)'}\n\n"
-               "Only the placeholder cwd is replaced. A captured cwd outside this repository is preserved and the hook may no-op. This replay does not install or activate Claude hooks.\n")
+    summary = render_summary(details)
+    (out / "trace.jsonl").write_text("".join(json.dumps(record, ensure_ascii=False) + "\n" for record in trace), encoding="utf-8")
     write_report(out, details, summary)
     print(summary, end="")
     print(f"Saved: {out}")

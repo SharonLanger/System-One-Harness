@@ -99,7 +99,7 @@ Where to edit each thing:
 - Dynamic choices: neighboring `block.py` fills them from the file outline.
 - Flow sequencing: `src/laya_context_router/flows/file_method_context.py`.
 - Model configuration: the real hook accepts `--config` with a RunConfig JSON;
-  the existing replay script currently does not expose that argument.
+  the replay script forwards its optional `--config` argument to the real hook.
 
 Those question/rule files are shared by all callers of this block. Editing
 them changes the real flow, not just the experiment. The event JSON currently
@@ -111,3 +111,61 @@ Start with the probe, then connect the real hook once delivery is confirmed.
 Keep its diagnostic no-ops: forcing a method selection would hide the cause.
 The real replay's default deadline is ten seconds, which can also expire during
 cold model loading. Its existing `--deadline` option changes that limit.
+
+## See the real questions, responses, and rule decisions
+
+Run the real replay against one of the expanded fixture files:
+
+```bash
+python experiments/hook_user_prompt_submit.py --input experiments/inputs/hook_inventory.json --deadline 120
+```
+
+The replay prints the hook PID and debug-log path immediately. When the child
+finishes, it prints the full question/choice payloads, requested model and
+temperature, raw response, enriched answers, evaluated rules, decisions,
+timeline, returned hook JSON, and stderr. It reads existing logs; it does not
+query Laya again, recalculate enrichment, or change the acceptance rules.
+
+Open the newest directory under `experiments/results/hook_user_prompt_submit/`:
+
+- `summary.md`: the same readable report printed in the terminal.
+- `details.json`: `laya_calls` holds the requests, responses, enrichment and
+  decisions; `trace` holds the captured child log records; `stdout` and `stderr`
+  retain the subprocess output.
+- `trace.jsonl`: all captured Python log entries for this hook PID, starting at
+  this replay's log offset. Previous runs and concurrent experiment PIDs are
+  excluded. This is a copy, not a replacement for `logs/debug.jsonl`.
+
+`request prepared` means the prediction boundary was reached, before loading
+the model. `agent_ready` means loading or reuse completed. `response_received`
+means a raw SDK response was logged. `response_validated` means the response
+passed validation. A request without a response is not a successful model run.
+If there is no recorded request, the report explicitly says so. Check the
+timeline and diagnostics: the flow may have stopped at eligibility, file
+resolution, extraction, or another earlier step. Missing/unreadable logging is
+reported separately instead of being presented as proof that inference ran.
+
+The trace is best-effort and reflects only emitted log entries. Raw child
+stdout/stderr are retained separately, including native SDK progress. Logging
+failures, file replacement, or abrupt termination can leave incomplete traces.
+This report enhancement applies to the replay experiment; it does not install
+new reporting in a live Claude session.
+
+Five ready event inputs target five different production files:
+
+- `inputs/hook_inventory.json`: `consolidateOrderLines`.
+- `inputs/hook_packing.json`: `PackingCalculator.countUnits`.
+- `inputs/hook_pricing.json`: `insuranceCharge`.
+- `inputs/hook_shipment.json`: `ShipmentService.checkAvailability`.
+- `inputs/hook_reporting.json`: `renderShippingManifest`.
+
+Use each with the same `--input` option. Edit its `prompt` to choose another
+method. Keep the current flow's exact `Explain \`path.ts\`: question` format
+and mention one file. Each target file has at least five implemented named
+callables. The original default event and the connection probe remain available.
+Laya can still decline a selection; richer fixtures and better reporting do not
+force acceptance. The longer deadline only gives cold loading more time.
+
+`hook_trace.py` is a reporting helper imported by the replay, not a runnable
+experiment. Questions and rules still come from the existing method-selection
+block described above. No new flow or model behavior is introduced here.

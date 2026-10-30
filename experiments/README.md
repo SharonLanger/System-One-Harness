@@ -5,6 +5,13 @@ To understand the prompt hook and first check the live Claude connection, see
 context response with immediate invocation logging and no Laya call. Its
 `--hook` mode accepts Claude's stdin; its default mode replays a synthetic event.
 
+For actual Laya questions and responses, use `hook_user_prompt_submit.py`.
+Its terminal output and saved report now include questions, raw responses,
+enrichment, evaluated rules and decisions, plus a per-hook-PID `trace.jsonl`.
+The [expanded fixture](fixtures/connected_project/README.md) adds five production
+files with five implemented methods/functions each. See [the hook guide](HOOKS.md#see-the-real-questions-responses-and-rule-decisions)
+for five ready replay inputs and how to identify a run that never reached Laya.
+
 Direct adapter experiments are implemented for choice, noul, score, multiple
 named questions, and configuration comparison. No live Laya execution is
 verified here. See [the implementation plan](../docs/experiments-plan.md). A mock
