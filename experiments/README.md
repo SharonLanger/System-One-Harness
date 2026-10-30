@@ -163,6 +163,30 @@ The TypeScript helper is a prerequisite: from the repository root, run
 experiment does not build it automatically. A Python 3.11+ environment
 with `laya_mlx`, compatible MLX, and Node.js are also required.
 
+`flow_connected_project.py` runs the same flow against the deterministic
+multi-file fixture in `fixtures/connected_project/`. Its default prompt selects
+`calculateInvoiceTotal` in `invoice-service.ts`; that function imports
+`calculateAdjustment`, which calls `addOne`, `double`, and `subtract`, and uses
+project constants and other imported helpers. `tsconfig.json` explicitly uses
+CommonJS and Node10 resolution and includes both `src/**/*.ts` and
+`tests/**/*.spec.ts`. The spec files use self-contained assertions and need no
+test framework. The controller and currency formatter inputs exercise
+instance-method and static-method entry points:
+`inputs/flow_connected_project_controller.json` and
+`inputs/flow_connected_project_static.json`. These are useful probes for
+collector limits around class/static dispatch and member calls. The fixture
+does not imply that every edge will be resolved; inspect `dependencies`,
+`gaps`, and `limitations` in each run's `details.json`.
+
+The flow scripts accept `--input /path/to/input.json` to try another saved
+prompt/configuration. Reports go under the invoking script's own stem, with a
+timestamped summary and details file. For example, run the direct imported
+function chain from any working directory with:
+
+```bash
+python /path/to/laya-context-router/experiments/flow_connected_project.py
+```
+
 `flow_missing_file.py` is the deterministic missing-`.ts`-file reference
 branch. It records the existing flow's missing-file no-op reason and makes no
 model call.
