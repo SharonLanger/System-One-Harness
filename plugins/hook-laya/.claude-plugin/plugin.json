@@ -1,0 +1,5 @@
+{
+  "name": "hook-laya",
+  "description": "Connects Laya Context Router to Claude CLI",
+  "version": "1.0.0"
+}
