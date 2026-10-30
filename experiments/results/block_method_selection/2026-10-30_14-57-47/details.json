@@ -1,0 +1,179 @@
+{
+  "run": {
+    "script": "block_method_selection.py",
+    "entry_point": "method_selection.block.run",
+    "schema_version": 1,
+    "started_local": "2026-10-30T14:57:47+02:00",
+    "started_utc": "2026-10-30T12:57:47+00:00",
+    "timezone_offset": "+0200",
+    "execution_mode": "real",
+    "status": "success",
+    "duration_seconds": 2.099,
+    "result_directory": "/Users/I337254/workspace/sharon-workspace/laya-context-router/experiments/results/block_method_selection/2026-10-30_14-57-47"
+  },
+  "input": "Please explain how chooseDestination selects one destination for a request.",
+  "source_outline": {
+    "path": "src/synthetic/sample.ts",
+    "source_hash": "synthetic-sha256-demo-7f3a9c21",
+    "callables": [
+      {
+        "id": "choose_destination",
+        "name": "chooseDestination",
+        "signature": "function chooseDestination(request: Request, routes: Route[]): Route | undefined"
+      },
+      {
+        "id": "format_response",
+        "name": "formatResponse",
+        "signature": "function formatResponse(result: RouteResult, includeMetadata?: boolean): HttpResponse"
+      },
+      {
+        "id": "record_metrics",
+        "name": "recordMetrics",
+        "signature": "function recordMetrics(event: RoutingEvent, sink: MetricsSink, timestamp: Date): void"
+      }
+    ]
+  },
+  "submitted_text": "Please explain how chooseDestination selects one destination for a request.",
+  "submitted_questions": {
+    "method": {
+      "type": "choice",
+      "instructions": "Select exactly one callable that the request asks to explain. Choose none_or_unclear when no single callable is appropriate.",
+      "criteria": {
+        "choose_destination": "function chooseDestination(request: Request, routes: Route[]): Route | undefined",
+        "format_response": "function formatResponse(result: RouteResult, includeMetadata?: boolean): HttpResponse",
+        "record_metrics": "function recordMetrics(event: RoutingEvent, sink: MetricsSink, timestamp: Date): void",
+        "none_or_unclear": "No single matching callable, or unclear request."
+      }
+    },
+    "multiple_relevant": {
+      "type": "noul",
+      "instructions": "Does the request require explaining more than one candidate callable?"
+    }
+  },
+  "predict_kwargs": {},
+  "model_config": {
+    "requested": {
+      "model": "aac6fef/laya-typed-decisions-mlx",
+      "temperature": null,
+      "lang": "en"
+    },
+    "observed": "not_exposed"
+  },
+  "raw_response": {
+    "model": "laya-rl-agent",
+    "answers": {
+      "method": {
+        "type": "choice",
+        "choice": "choose_destination",
+        "probabilities": {
+          "choose_destination": 0.7279,
+          "format_response": 0.0546,
+          "record_metrics": 0.0501,
+          "none_or_unclear": 0.1674
+        },
+        "confidence": 0.3947,
+        "answer_confidence": 0.7279,
+        "action": {
+          "act_probability": 1.0
+        }
+      },
+      "multiple_relevant": {
+        "type": "noul",
+        "noul": 0.1805,
+        "confidence": 0.8195,
+        "answer_confidence": 0.8195,
+        "action": {
+          "act_probability": 1.0
+        }
+      }
+    },
+    "usage": {
+      "input_tokens": 186,
+      "output_tokens": 0,
+      "state_tokens": 13,
+      "state_tokens_dropped": 0,
+      "truncated": false,
+      "truncated_questions": []
+    }
+  },
+  "enriched_response": {
+    "model": "laya-rl-agent",
+    "answers": {
+      "method": {
+        "type": "choice",
+        "choice": "choose_destination",
+        "probabilities": {
+          "choose_destination": 0.7279,
+          "format_response": 0.0546,
+          "record_metrics": 0.0501,
+          "none_or_unclear": 0.1674
+        },
+        "confidence": 0.3947,
+        "answer_confidence": 0.7279,
+        "action": {
+          "act_probability": 1.0
+        },
+        "probability_gap": 0.5605,
+        "normalized_entropy": 0.6053
+      },
+      "multiple_relevant": {
+        "type": "noul",
+        "noul": 0.1805,
+        "confidence": 0.8195,
+        "answer_confidence": 0.8195,
+        "action": {
+          "act_probability": 1.0
+        },
+        "distance_from_boundary": 0.3195
+      }
+    },
+    "usage": {
+      "input_tokens": 186,
+      "output_tokens": 0,
+      "state_tokens": 13,
+      "state_tokens_dropped": 0,
+      "truncated": false,
+      "truncated_questions": []
+    }
+  },
+  "result": {
+    "selected_id": "choose_destination",
+    "reason": null,
+    "decisions": {
+      "method": {
+        "answer": "choose_destination",
+        "decided": true,
+        "reason": null
+      },
+      "multiple_relevant": {
+        "answer": "no",
+        "decided": true,
+        "reason": null
+      }
+    },
+    "candidate_map": {
+      "choose_destination": {
+        "id": "choose_destination",
+        "name": "chooseDestination",
+        "signature": "function chooseDestination(request: Request, routes: Route[]): Route | undefined",
+        "path": "src/synthetic/sample.ts",
+        "source_hash": "synthetic-sha256-demo-7f3a9c21"
+      },
+      "format_response": {
+        "id": "format_response",
+        "name": "formatResponse",
+        "signature": "function formatResponse(result: RouteResult, includeMetadata?: boolean): HttpResponse",
+        "path": "src/synthetic/sample.ts",
+        "source_hash": "synthetic-sha256-demo-7f3a9c21"
+      },
+      "record_metrics": {
+        "id": "record_metrics",
+        "name": "recordMetrics",
+        "signature": "function recordMetrics(event: RoutingEvent, sink: MetricsSink, timestamp: Date): void",
+        "path": "src/synthetic/sample.ts",
+        "source_hash": "synthetic-sha256-demo-7f3a9c21"
+      }
+    }
+  },
+  "error": null
+}
