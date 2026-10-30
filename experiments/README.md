@@ -150,16 +150,54 @@ environment and run the script with no arguments. Live compatibility is
 unverified; missing SDK/model errors are reported without a mock fallback.
 Keep private captures out of Git.
 
-## Later scenarios to remember
+## Flow, hook replay, and repeated scenario experiments
 
-- The existing method-context flow, following this first building-block experiment.
-- Missing file and nonexistent method references: show the actual no-op reason.
-- A genuine controlled technical failure: show error stage and diagnostics.
-  A no-match/no-op is not itself a technical error.
-- Hook replay using a synthetic event, then Sharon's captured event; actual Claude
-  hook installation and end-to-end delivery are a separate later step.
-- Repetition with changing prompts/questions, agent reuse, individual outcomes,
-  and an aggregate summary. Decide that report extension when implementing it.
+`flow_method_context.py` runs the existing file-method context flow against
+`fixtures/synthetic_method.ts`. Its prompt, model configuration, and fixture
+are synthetic. It records the final `context` or `noop` result and, when the
+flow reaches prediction, captures the exact submitted question payload and raw
+SDK response through the observed registry. A no-op is a valid flow outcome.
+The TypeScript helper is a prerequisite: from the repository root, run
+`npm --prefix typescript-helper install` and
+`npm --prefix typescript-helper run build` before running this flow. The
+experiment does not build it automatically. A Python 3.11+ environment
+with `laya_mlx`, compatible MLX, and Node.js are also required.
 
-After the first scripts are pushed and Sharon tries them, explicitly revisit the
-bad-method and visible-error scenarios before proceeding to hook integration.
+`flow_missing_file.py` is the deterministic missing-`.ts`-file reference
+branch. It records the existing flow's missing-file no-op reason and makes no
+model call.
+
+`hook_user_prompt_submit.py` replays the saved synthetic
+`inputs/hook_user_prompt_submit.json` event through the actual hook subprocess.
+The script replaces `cwd` only when it equals `__REPOSITORY_ROOT__`; a captured
+cwd is otherwise preserved. Pass `--input /path/to/event.json` to replay another
+saved event. It supplies `src/` through `PYTHONPATH`, and saves stdout, stderr,
+exit status, and context/no-op/technical-error classification. A captured cwd
+outside this repository is preserved and the hook will no-op. The replay does
+not install or activate Claude hooks.
+The TypeScript helper build, Node.js, `laya_mlx`, and compatible MLX are also
+required for a context-producing run; the hook itself catches failures and may
+report a no-op with exit status zero. The replay classifies known flow no-op
+reasons separately from technical-error messages in stderr.
+The hook deadline defaults to 10 seconds, matching the hook's own default;
+use `--deadline SECONDS` to allow more time for a cold model load. The replay
+subprocess timeout is set to the chosen deadline plus 10 seconds.
+
+`repeat_scenario.py` sends one named `fruit` choice question for each prompt in
+`inputs/repeat_scenario.json`, using one real `AgentRegistry` instance in the
+process. The input is capped at five prompts (three by default). The report
+contains each selected choice or error and an aggregate count; it makes no
+accuracy claim.
+
+Run these scripts from any directory after prerequisites are met:
+
+```bash
+python /path/to/laya-context-router/experiments/flow_method_context.py
+python /path/to/laya-context-router/experiments/flow_missing_file.py
+python /path/to/laya-context-router/experiments/hook_user_prompt_submit.py
+python /path/to/laya-context-router/experiments/repeat_scenario.py
+```
+
+Reports are saved under the matching `experiments/results/<script-stem>/`
+directory, with a timestamped `summary.md` and `details.json` for each run.
+

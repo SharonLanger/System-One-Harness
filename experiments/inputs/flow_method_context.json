@@ -1,0 +1,4 @@
+{
+  "text": "Explain `experiments/fixtures/synthetic_method.ts`: how does calculateTotal add invoice amounts?",
+  "config": {"model": "aac6fef/laya-typed-decisions-mlx", "temperature": null, "lang": "en"}
+}
