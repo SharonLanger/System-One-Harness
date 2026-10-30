@@ -37,6 +37,8 @@ def run(text, source_outline, *, config, registry, max_candidates=64, max_input_
         return result('no_candidates')
     if len(candidates) > max_candidates:
         return result('candidate_budget_exceeded')
+    if len({c['signature'] for c in candidates}) != len(candidates):
+        return result('ambiguous_candidates')
     block = QuestionBlock(BLOCK_DIR)
     payloads = {name: q.to_predict_dict() for name, q in block.questions.items()}
     sentinel = payloads['method']['criteria']['none_or_unclear']

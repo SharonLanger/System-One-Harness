@@ -18,7 +18,7 @@ NONE = "No single matching callable, or unclear request."
 
 def source_outline(tmp_path):
     source = tmp_path / "a.ts"
-    source.write_text("function same() { return 1; }\nfunction same() { return 2; }")
+    source.write_text("function same() { return 1; }\nfunction same(value: number) { return 2; }")
     return outline(source)
 
 
@@ -73,7 +73,7 @@ def test_fixed_requests_real_outline_actual_pipeline(tmp_path, text, index, mult
     if expected_id:
         assert result["candidate_map"][expected_id]["start"] == data["callables"][1]["start"]
         assert result["candidate_map"][expected_id]["path"] == data["path"]
-        assert extract_callable(data["path"], expected_id)["code"] == "function same() { return 2; }"
+        assert extract_callable(data["path"], expected_id)["code"] == "function same(value: number) { return 2; }"
 
 
 def test_policy_rejections_and_unknown_choice_fail_closed(tmp_path):
