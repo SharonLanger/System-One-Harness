@@ -1,7 +1,7 @@
 from types import SimpleNamespace
 import sys
 import pytest
-from laya_context_router.hook_contracts import Failure
+from laya_context_router.hooks.contracts import Failure
 from laya_context_router.hooks.dispatcher import ingest_common
 from laya_context_router.hooks.user_prompt_submit.dispatcher import PromptRequest
 from laya_context_router.hooks.user_prompt_submit.prompt_context_enrichment import _prepare_feature_config
@@ -39,7 +39,7 @@ def test_configuration_failure(tmp_path):
     r=request(tmp_path);r.config.config=str(tmp_path/'missing.json')
     assert _prepare_feature_config(r).code=='invalid_configuration'
 
-from laya_context_router.hook_contracts import Context,Noop
+from laya_context_router.hooks.contracts import Context,Noop
 from laya_context_router.hooks.user_prompt_submit.prompt_context_enrichment import (
     _map_flow_result,enrich_prompt_context)
 
@@ -108,7 +108,7 @@ def test_real_gateway_disabled_or_ineligible_never_loads_model(tmp_path,real):
     from pathlib import Path
     root=Path(__file__).resolve().parents[1]
     script='''import json,sys
-from laya_context_router.hook_gateway import main
+from laya_context_router.hooks.gateway import main
 import laya_context_router.flows.file_method_context as flow
 import laya_context_router.context_format as fmt
 def forbidden(*a,**k):raise AssertionError('unexpected flow/formatter')

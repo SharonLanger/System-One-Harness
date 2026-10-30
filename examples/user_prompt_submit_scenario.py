@@ -51,7 +51,7 @@ sys.modules['laya_mlx']=types.SimpleNamespace(load=load)
                  'permission_mode': 'default', 'hook_event_name': 'UserPromptSubmit',
                  'cwd': str(root), 'prompt': prompt}
         result = subprocess.run(['bash', '-c', 'exec "$@"', 'laya-hook', sys.executable,
-            '-m', 'laya_context_router.hook_gateway', '--hook', 'UserPromptSubmit', '--repository-root', str(root),
+            '-m', 'laya_context_router.hooks.gateway', '--hook', 'UserPromptSubmit', '--repository-root', str(root),
             '--config', str(config), '--real'], input=json.dumps(event), text=True,
             capture_output=True, timeout=15, env={**os.environ,
                 'PYTHONPATH': os.pathsep.join([str(root), str(ROOT/'src')]),

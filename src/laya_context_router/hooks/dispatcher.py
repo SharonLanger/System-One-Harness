@@ -3,7 +3,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from ..hook_contracts import Noop, Failure, ValidationError, validate_result
+from .contracts import Noop, Failure, ValidationError, validate_result
 
 @dataclass(frozen=True)
 class HookEnvelope:
