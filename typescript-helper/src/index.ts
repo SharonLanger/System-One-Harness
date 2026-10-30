@@ -303,6 +303,7 @@ export function collectLocalContext(path: string, id: string,
 
 export {collectProjectContext} from './project';
 
-export {listCalledCallables} from './calls';
+export {listCalledCallables, getCalledMethodLocations} from './calls';
+export {getCallingMethodLocations} from './incoming';
 
 export {detectReferences, resolveReference} from './files';

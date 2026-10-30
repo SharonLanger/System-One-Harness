@@ -1,9 +1,12 @@
-# Call-navigation helpers — future work only
+# Call-navigation helpers — implementation contract
 
-Neither helper is implemented or connected to a flow/hook in this change.
-The current change only removes formatter-added Markdown and makes paths
-relative to the hook event cwd. Content, notes, rules and size warnings stay the
-same. Future helpers return navigation data for a later building block.
+Implementation and regression tests are now in progress. Neither navigation
+helper is connected to a flow/hook. This document remains the acceptance contract;
+implementation presence does not mean every completion gate below has passed.
+The previous formatter's hook-cwd behavior is historical, not the new contract.
+Relative input and output paths use an explicit, stable **project root**, never
+the process cwd or changing hook cwd. See the detailed test plan's acceptance
+review for remaining verification and support gaps.
 
 ## Contracts
 
@@ -19,13 +22,22 @@ sites targeting that callable throughout an explicitly selected project. Return
 the enclosing caller's definition range and every call-site span. This requires
 project-wide discovery, not just following the target file's imports.
 
-Both take `path`, `callable_id`, `repository_root`, and `cwd`. Caller lookup also
-takes an explicit tsconfig path. IDs come from the existing outline; reject stale
-IDs. Code text alone is insufficient for semantic resolution. Relative input
-paths resolve from cwd. Canonical absolute paths remain internal; returned IDs
-remain opaque snapshot identifiers. Returned navigation paths are relative to
-cwd, including `../` for siblings.
-The working directory is a display/input base, not the repository boundary.
+Both take `path`, `callable_id`, and `project_root`. Caller lookup also takes an
+explicit tsconfig path. IDs come from the existing outline; reject stale IDs.
+Code text alone is insufficient for semantic resolution. Relative input paths,
+including tsconfig paths, resolve from project_root. Canonical absolute paths
+remain internal; returned IDs remain opaque snapshot identifiers. All navigation
+paths are project-root-relative. External targets are classified separately;
+never manufacture project locations for them.
+
+Project root must be explicit and absolute. At hook integration, use a stable
+configured project root; do not guess it from process cwd, event cwd, or the helper
+repository location. Inspect existing root configuration before implementation;
+reuse it if it already supplies this value. If it does not, document one explicit
+configuration option. Missing/invalid root produces a logged safe no-op at the
+hook boundary and a validation error at the helper boundary. Establish this
+wiring before changing formatter callers. Internal existing repository_root
+parameters can be mapped at the adapter without a broad rename.
 
 Definition line numbers are one-based and end lines inclusive. Call-site spans
 use one-based lines and UTF-16 columns, with an inclusive start position and an
@@ -45,10 +57,9 @@ Outgoing input:
 
 ```json
 {
-  "path": "../src/run.ts",
+  "path": "src/run.ts",
   "callable_id": "<outline-id-for-run>",
-  "repository_root": "/repo",
-  "cwd": "/repo/tools"
+  "project_root": "/repo"
 }
 ```
 
@@ -59,15 +70,15 @@ Outgoing response:
   "status": "ok",
   "data": {
     "methods": [{
-      "path": "../src/work.ts",
+      "path": "src/work.ts",
       "callable_id": "<outline-id-for-work>",
       "name": "work",
       "signature": "export function work(): void",
       "start_line": 3,
       "end_line": 8,
       "call_sites": [
-        {"path": "../src/run.ts", "start_line": 12, "start_column": 3, "end_line": 12, "end_column": 9},
-        {"path": "../src/run.ts", "start_line": 15, "start_column": 3, "end_line": 15, "end_column": 9}
+        {"path": "src/run.ts", "start_line": 12, "start_column": 3, "end_line": 12, "end_column": 9},
+        {"path": "src/run.ts", "start_line": 15, "start_column": 3, "end_line": 15, "end_column": 9}
       ]
     }]
   },
@@ -75,9 +86,9 @@ Outgoing response:
 }
 ```
 
-Incoming input targets `../src/work.ts` and its ID, with the same root/cwd plus
-`tsconfig_path: "../tsconfig.json"`. Its output uses `data.callers`: an entry
-with `kind: "method"`, `path: "../src/run.ts"`, `name: "run"`, its outline ID,
+Incoming input targets `src/work.ts` and its ID, with the same project root plus
+`tsconfig_path: "tsconfig.json"`. Its output uses `data.callers`: an entry
+with `kind: "method"`, `path: "src/run.ts"`, `name: "run"`, its outline ID,
 definition lines 10–18, and the two call sites above. Include a `data.scope`
 record naming the config, searched files, and any search limits or omissions.
 
@@ -122,41 +133,46 @@ Stale IDs, unreadable selected source or invalid input are errors. Never silentl
 truncate search results or mix source snapshots. Keep JS/TSX and multi-project
 support explicit; do not promise them until implemented and verified.
 
-## Phases and independent testing
+## Implementation phases and gates
 
-1. Document the two new API contracts in the TypeScript README. Create failing
-   contract tests for the examples before implementation. Preserve the old API.
-2. Add outgoing location enrichment by sharing existing resolution logic. Add
-   matching Python adapter validation. No block/flow wiring.
-3. Add incoming project discovery and semantic lookup, with explicit scope,
-   budgets and uncertainty. Add matching Python validation. No block/flow wiring.
-4. Have an independent verifier check contracts and source navigation. Run the
-   relevant TypeScript/Python regression suites before a later integration phase.
+1. **Restore durable coverage for the previous commit.** Add formatter tests for
+   current plain-text behavior and hook protocol/reporting tests. Update only
+   assertions made obsolete by the approved formatter and warning-only changes.
+   Preserve unrelated checks. These retrospective tests may pass immediately;
+   do not deliberately break correct code to manufacture a failure.
+2. **Project-root contract, test first.** Add tests that fail under current cwd
+   behavior, record the meaningful failure, then implement explicit root wiring.
+   Cover formatter, hook, adapters and documentation. Keep source content intact.
+3. **Outgoing helper, test first.** Define the new TypeScript operation/schema,
+   add failing tests, reuse semantic resolution, add Python adapter validation.
+   Preserve the old listCalledCallables operation and all existing consumers.
+4. **Incoming helper, test first.** Add explicit configured-project discovery,
+   semantic invocation lookup, honest scope/limits and adapter tests.
+5. **Independent verification.** Review the diff against this contract; verify
+   fixture-derived locations and recorded test results. Run all relevant Python
+   and TypeScript regression suites. Resolve failures rather than weakening tests.
+   Neither new operation is wired into a building block or hook in these phases.
 
-An independent test-planning reviewer identified these required cases:
+For each phase: define expected results before implementation; run targeted tests
+first; implement; rerun the targeted tests and the relevant existing suites.
+Keep failure/pass evidence and report skipped tests explicitly. Do not delete
+coverage because an implementation fails it. No real Laya calls are needed:
+mock only the model boundary; exercise real formatting, extraction, adapters and
+hook subprocesses where those are the subject of the test. Live Mac validation
+is a separate later manual step, not a substitute for automated coverage.
 
-- Same-file/imported functions; aliases, re-exports and tsconfig paths; static and
-  instance methods; arrow/function initializers; object members; optional calls;
-  overloads; same names in different files/classes.
-- Two calls to one target, including same-line invocations; multiline call sites;
-  nested callbacks; local methods; recursion; top-level calls; non-call references.
-- A caller outside the target's import graph; included test files; excluded and
-  excluded-but-imported files; sibling projects and project references.
-- Interfaces, inheritance, reassigned values, computed calls, `.call`/`.apply`,
-  constructors, tagged templates and declaration-only targets: explicit support
-  or uncertainty instead of guessing runtime implementations.
-- Missing files, stale IDs, parse/config failures, service errors, timeouts,
-  changed source snapshots and file/search limits: honest partial/error results.
-- CRLF, Unicode and end-of-line positions; nested cwd and `../`; symlinks and
-  confinement; definition ranges verified against extraction by returned ID.
-- Compatibility with old outgoing callers; deterministic ordering; no unintended
-  invocation from hooks/flows; no source writes and no model calls.
+## Detailed test specification
 
-Current presentation verification (separate from those future helpers): an
-independent reviewer checked 8 formatter option combinations, 9 newline/range
-cases, exact source preservation including Markdown/backticks, relative/sibling
-paths, duplicate handling and input immutability. The saved inventory example
-renders 1,009 characters; selected code remains 502 characters at lines 46–56.
-The hook AST differs only by passing `cwd=cwd` to the formatter. No live model
-or full suite was run. Existing raw-JSON/size-rejection tests still need the
-previous formatter-contract update; that broader test work is deferred.
+See [call-navigation-test-plan.md](call-navigation-test-plan.md) for named cases,
+fixtures, assertions, error policies, regression migrations and completion gates.
+Every case there is planned, not claimed executed. Parameterized families should
+expand into independent cases, with readable failure names.
+
+## Historical verification (not durable regression coverage)
+
+Before this plan, an independent reviewer ran in-memory formatter checks covering
+8 options combinations, newline/range cases, exact source preservation, paths,
+deduplication and immutability. These were not committed tests. No full suite or
+live model run validated that formatter commit. The new first phase explicitly
+closes that gap; the historical cwd output is not an acceptance baseline for the
+new project-root behavior.

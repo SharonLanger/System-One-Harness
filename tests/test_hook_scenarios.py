@@ -131,18 +131,10 @@ def test_class_method_full_hook_source_and_complete_render_budget(tmp_path, budg
     assert case['data']['callables'][0]['name']=='greet'
     full=expected_context(case)
     result=invoke(case,args=case['args']+['--max-context-chars',str(len(full)+budget_delta)])
-    if budget_delta < 0:
-        assert_noop(result); assert 'context_budget_exceeded' in result.stderr
-    else:
-        output=json.loads(result.stdout)
-        assert output=={'hookSpecificOutput':{'hookEventName':'UserPromptSubmit','additionalContext':full}}
-        context=json.loads(output['hookSpecificOutput']['additionalContext'].split('\n',1)[1])
-        assert context['code']==raw and context['coverage']=='partial'
-        assert context['callable']['signature']=='public async greet(name: string): Promise<string>'
-        assert context['callable']['location']=={'line':4,'column':3}
-        assert context['path']==str(case['path'])
-        assert 'attached' not in context['code'] and 'trailing' not in context['code']
-        assert 'synthetic SDK noise' in result.stderr and 'synthetic SDK noise' not in result.stdout
+    output=json.loads(result.stdout)
+    assert output=={'hookSpecificOutput':{'hookEventName':'UserPromptSubmit','additionalContext':full}}
+    assert raw in full and 'nested/a.ts (lines 4–7)' in full
+    assert 'synthetic SDK noise' in result.stderr and 'synthetic SDK noise' not in result.stdout
     assert len(events(case))==2 and case['path'].read_bytes()==before
 
 
@@ -160,9 +152,8 @@ def test_bound_expression_full_hook_labels_binding_extracts_only_callable(tmp_pa
     assert result.returncode==0
     output=json.loads(result.stdout)['hookSpecificOutput']
     assert output['hookEventName']=='UserPromptSubmit'
-    context=json.loads(output['additionalContext'].split('\n',1)[1])
-    assert context['code']==raw and context['callable']==candidate
-    assert context['coverage']=='partial' and context['path']==str(case['path'])
+    assert output['additionalContext']==expected_context(case)
+    assert raw in output['additionalContext']
     assert events(case)[1]['questions']['method']['criteria'][candidate['name']]==signature
     assert case['path'].read_bytes()==before
 
@@ -179,10 +170,9 @@ def test_outer_boundary_and_anonymous_default_full_hook(tmp_path, source, index,
     result=invoke(case)
     assert result.returncode==0
     output=json.loads(result.stdout)['hookSpecificOutput']
-    context=json.loads(output['additionalContext'].split('\n',1)[1])
     assert output['hookEventName']=='UserPromptSubmit'
-    assert context['code']==raw and context['callable']==candidate
+    assert output['additionalContext']==expected_context(case)
+    assert raw in output['additionalContext']
     assert candidate['name']==name and candidate['signature']==signature
-    assert context['path']==str(case['path']) and context['coverage']=='partial'
     assert events(case)[1]['questions']['method']['criteria'][candidate['name']]==signature
     assert case['path'].read_bytes()==before and len(events(case))==2

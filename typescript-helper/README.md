@@ -227,3 +227,32 @@ Project collection adds project provenance and explicit caller coverage, even wi
 ```
 
 Dependency ordering is source range within the local file, and canonical path then range for project context. Dependencies deduplicate source units and retain sorted `symbol_ids`; context units can overlap selected code or other atomic declarations when syntax requires a whole statement/class. Selected code is always present even when a budget omits dependencies. The collector response remains version 1 with `coverage:"partial"` rather than the new outcome envelope. Navigate calls with `list_called_callables`; collect broader support with these operations. The limits and coverage contracts are separate.
+
+## Future call-navigation operations
+
+`getCalledMethodLocations(path,id,{projectRoot})` / `get_called_method_locations` and
+`getCallingMethodLocations(path,id,{projectRoot,tsconfigPath})` /
+`get_calling_method_locations` are independent navigation utilities. Both require
+an explicit absolute project root. Input source and config paths are resolved
+relative to it; output paths are relative to it, independent of process or hook
+working directory. They are not connected to a building block or hook.
+
+Get the selected ID from `outline` for the current source snapshot. Outgoing
+returns `status`, `data.methods` and `diagnostics`. Each method has `path`,
+`callable_id`, `name`, `signature`, one-based inclusive `start_line/end_line`, and
+`call_sites`. Incoming returns `data.callers` with `kind` (`method` or `module`),
+`path`, nullable `callable_id/name` for module calls, implementation/statement
+lines and `call_sites`, plus `data.scope` (`tsconfig_path`, sorted
+`searched_files`, `limits`, `omissions`). Each site has `path`, one-based
+`start_line/start_column` and exclusive `end_line/end_column`; columns count
+UTF-16 code units. An error has null data; partial coverage has explicit
+structured diagnostics. IDs identify snapshot positions; never parse them as
+stable method names.
+
+These are static TypeScript navigation hints, not proof of actual runtime dispatch.
+Unresolved/dynamic/unsupported constructs report partial coverage. Incoming
+requires explicit tsconfig and reports the configured search scope; lack of
+callers means none were proven within that scope. The old
+`list_called_callables` action keeps its exact existing response fields.
+See `docs/call-navigation-plan.md` and `docs/call-navigation-test-plan.md` for
+coverage and remaining acceptance cases.

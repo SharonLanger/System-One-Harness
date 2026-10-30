@@ -10,7 +10,7 @@ from laya_context_router.laya.registry import AgentRegistry
 from test_dependency_flow import decode
 from test_file_method_context import CONFIG, source
 from test_method_selection import questions_for, raw_for
-from test_prompt_hook import hook_case, invoke, assert_noop
+from test_prompt_hook import hook_case, invoke
 
 
 def configure(case, files, *, paths=True):
@@ -40,7 +40,7 @@ def project_case(tmp_path, *, missing=False):
 def test_cross_file_routes_and_provenance_survive_real_hook_without_execution(tmp_path):
     case, raw, units, marker = project_case(tmp_path)
     before = {p: p.read_bytes() for p in case["repo"].rglob("*.ts")}
-    text, context = decode(invoke(case))
+    text, context = decode(invoke(case),case)
     assert len(text) <= 8000 and context["code"] == raw and context["coverage"] == "partial"
     assert "project" in context
     assert context["project"]["repository_root"] == str(case["repo"])
@@ -59,16 +59,17 @@ def test_cross_file_routes_and_provenance_survive_real_hook_without_execution(tm
     assert len(events) == 2 and "writeFileSync" not in json.dumps(events[1]["questions"])
 
 
-def test_cross_file_final_overflow_and_explicit_complete_route_omission(tmp_path):
+def test_cross_file_final_warning_and_explicit_complete_route_omission(tmp_path):
     imp = 'import {payload} from "@context/barrel";'
     route = 'export {payload} from "./data";'
     raw = 'function selected() { return payload; }'
     case = hook_case(tmp_path, imp + '\n' + raw)
     configure(case, {"deps/barrel.ts": route, "deps/data.ts": 'export const payload = "' + 'x' * 9000 + '";'})
     overflow = invoke(case)
-    assert_noop(overflow)
-    assert "context_budget_exceeded" in overflow.stderr
-    text, context = decode(invoke(case, args=case["args"] + ["--max-dependency-chars", "100"]))
+    full, full_context = decode(overflow,case)
+    assert len(full)>8000 and "x"*9000 in full
+    assert full_context["code"] == raw
+    text, context = decode(invoke(case, args=case["args"] + ["--max-dependency-chars", "100"]),case,max_dependency_chars=100)
     assert len(text) <= 8000 and context["code"] == raw
     assert [d["code"] for d in context["dependencies"]] == [route, imp]
     assert context["collection"]["dependency_chars"] == len(route) + len(imp)
@@ -80,15 +81,14 @@ def test_cross_file_final_overflow_and_explicit_complete_route_omission(tmp_path
 @pytest.mark.parametrize("delta", [0, -1])
 def test_project_hook_exact_unicode_crlf_render_boundary_with_unresolved_gap(tmp_path, delta):
     case, raw, units, marker = project_case(tmp_path, missing=True)
-    text, context = decode(invoke(case))
+    text, context = decode(invoke(case),case)
     assert context["code"] == raw
     assert [d["code"] for d in context["dependencies"]] == units
     assert any(g["code"] == "missing_module" for g in context["gaps"])
     assert any(g["code"] == "caller_coverage" for g in context["gaps"])
     assert context["collection"]["dependency_chars"] > sum(len(d["code"]) for d in context["dependencies"])
     result = invoke(case, args=case["args"] + ["--max-context-chars", str(len(text) + delta)])
-    if delta: assert_noop(result); assert "context_budget_exceeded" in result.stderr
-    else: assert decode(result)[0] == text
+    assert decode(result,case)[0] == text
     assert not marker.exists()
 
 
@@ -97,7 +97,7 @@ def test_project_hook_local_fallback_has_explicit_configuration_gap(tmp_path, mo
     raw = 'function selected(){return "😀";}'
     case = hook_case(tmp_path, raw)
     if mode == "modern": (case["repo"] / "tsconfig.json").write_text('{"compilerOptions":{"module":"nodenext"},"include":["**/*.ts"]}')
-    _, context = decode(invoke(case))
+    _, context = decode(invoke(case),case)
     assert context["code"] == raw and context["coverage"] == "partial"
     assert any(g["code"] == reason for g in context["gaps"])
     assert context["dependencies"] == []

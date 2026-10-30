@@ -43,7 +43,7 @@ and still sends the full content. The old saved run reports remain historical
 evidence; rerun an experiment to observe the new behavior.
 
 The current context formatter uses plain text and paths relative to the hook
-event's cwd. It keeps the same code, supporting declarations, line ranges and
+configured project root (`--repository-root`), independent of the event cwd. It keeps the same code, supporting declarations, line ranges and
 notes. Report files remain Markdown for viewing; the `additionalContext` string
 has no formatter-added headings, fences or bullet prefixes. See the separate
 [future helper plan](../docs/call-navigation-plan.md) for outgoing/incoming

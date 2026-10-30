@@ -330,3 +330,93 @@ def list_called_callables(path, callable_id, *, repository_root, node='node', he
     if keys != sorted(set(keys)):
         raise TypeScriptError('invalid call-list schema: ordering')
     return data
+
+
+def _validate_navigation_path(value):
+    return (isinstance(value, str) and bool(value) and not Path(value).is_absolute()
+            and value != '..' and not value.startswith('../')
+            and not any(part in ('', '.', '..') for part in value.split('/')))
+
+
+def _validate_navigation_sites(sites):
+    if not isinstance(sites, list) or not sites:
+        raise TypeScriptError('invalid navigation call sites')
+    previous = None
+    for site in sites:
+        if (not isinstance(site, dict) or set(site) != {'path', 'start_line', 'start_column', 'end_line', 'end_column'}
+                or not _validate_navigation_path(site['path'])
+                or not all(_integer(site[k], 1) for k in ('start_line', 'start_column', 'end_line', 'end_column'))):
+            raise TypeScriptError('invalid navigation call site')
+        begin = (site['start_line'], site['start_column'])
+        end = (site['end_line'], site['end_column'])
+        key = (site['path'], *begin, *end)
+        if end <= begin or (previous is not None and key <= previous):
+            raise TypeScriptError('invalid navigation call site order/range')
+        previous = key
+
+
+def _validate_navigation(data, kind):
+    data = _validate_outcome(data)
+    if data['status'] == 'error':
+        return data
+    body = data['data']
+    if not isinstance(body, dict) or not isinstance(body.get(kind), list):
+        raise TypeScriptError('invalid navigation data')
+    previous = None
+    for item in body[kind]:
+        required = {'path', 'callable_id', 'name', 'start_line', 'end_line', 'call_sites'}
+        if kind == 'methods':
+            required.add('signature')
+        else:
+            required.add('kind')
+        if (not isinstance(item, dict) or set(item) != required
+                or not _validate_navigation_path(item['path'])
+                or not _integer(item['start_line'], 1) or not _integer(item['end_line'], item['start_line'])):
+            raise TypeScriptError('invalid navigation item')
+        if kind == 'methods' or item['kind'] == 'method':
+            if (not isinstance(item['callable_id'], str) or not re.fullmatch(r'[0-9a-f]{64}:[0-9]+:[0-9]+', item['callable_id'])
+                    or not isinstance(item['name'], str) or not item['name']):
+                raise TypeScriptError('invalid navigation callable')
+        elif item['kind'] != 'module' or item['callable_id'] is not None or item['name'] is not None:
+            raise TypeScriptError('invalid navigation module')
+        if kind == 'methods' and (not isinstance(item['signature'], str) or not item['signature']):
+            raise TypeScriptError('invalid navigation signature')
+        _validate_navigation_sites(item['call_sites'])
+        if item['callable_id'] is not None:
+            _, offset_start, offset_end = item['callable_id'].split(':')
+            if int(offset_end) <= int(offset_start):
+                raise TypeScriptError('invalid navigation callable range')
+        key = (item['path'], item['start_line'], item['call_sites'][0]['start_line'], item['call_sites'][0]['start_column'])
+        if previous is not None and key < previous:
+            raise TypeScriptError('invalid navigation order')
+        previous = key
+    if kind == 'callers':
+        scope = body.get('scope')
+        if (not isinstance(scope, dict) or set(scope) != {'tsconfig_path', 'searched_files', 'limits', 'omissions'}
+                or not _validate_navigation_path(scope['tsconfig_path'])
+                or not isinstance(scope['searched_files'], list)
+                or not all(_validate_navigation_path(p) for p in scope['searched_files'])
+                or scope['searched_files'] != sorted(set(scope['searched_files']))
+                or not all(isinstance(scope[k], list) and all(isinstance(v, str) for v in scope[k]) for k in ('limits', 'omissions'))):
+            raise TypeScriptError('invalid navigation scope')
+    return data
+
+
+def get_called_method_locations(path, callable_id, *, project_root, node='node', helper=DEFAULT_HELPER, timeout=5.0):
+    """Return static outgoing project implementation locations, with call sites."""
+    root = Path(project_root).resolve(strict=True)
+    if not root.is_dir() or not Path(project_root).is_absolute():
+        raise ValueError('project_root must be an absolute directory')
+    return _validate_navigation(_request(root / path, {'action': 'get_called_method_locations',
+        'id': callable_id, 'project_root': str(root)}, node=node, helper=helper, timeout=timeout), 'methods')
+
+
+def get_calling_method_locations(path, callable_id, *, project_root, tsconfig_path,
+                                 node='node', helper=DEFAULT_HELPER, timeout=5.0):
+    """Return configured-project callers and precise invocation locations."""
+    root = Path(project_root).resolve(strict=True)
+    if not root.is_dir() or not Path(project_root).is_absolute():
+        raise ValueError('project_root must be an absolute directory')
+    return _validate_navigation(_request(root / path, {'action': 'get_calling_method_locations',
+        'id': callable_id, 'project_root': str(root), 'tsconfig_path': str(tsconfig_path)},
+        node=node, helper=helper, timeout=timeout), 'callers')

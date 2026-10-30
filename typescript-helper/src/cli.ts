@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs';
-import {outline, extractCallable, collectLocalContext, collectProjectContext, listCalledCallables, detectReferences, resolveReference} from './index';
+import {outline, extractCallable, collectLocalContext, collectProjectContext, listCalledCallables, getCalledMethodLocations, getCallingMethodLocations, detectReferences, resolveReference} from './index';
 try {
   const request: unknown = JSON.parse(readFileSync(0, 'utf8'));
   if (request && typeof request === 'object' && !Array.isArray(request) && 'action' in request &&
@@ -11,7 +11,7 @@ try {
     process.stdout.write(JSON.stringify(result) + '\n');
   } else {
   if (!request || typeof request !== 'object' || Array.isArray(request) ||
-      !('action' in request) || (request.action !== 'outline' && request.action !== 'extract' && request.action !== 'collect_local_context' && request.action !== 'collect_project_context' && request.action !== 'list_called_callables') ||
+      !('action' in request) || (request.action !== 'outline' && request.action !== 'extract' && request.action !== 'collect_local_context' && request.action !== 'collect_project_context' && request.action !== 'list_called_callables' && request.action !== 'get_called_method_locations' && request.action !== 'get_calling_method_locations') ||
       !('path' in request) || typeof request.path !== 'string' || !request.path) {
     throw new Error('Expected {action:"outline", path:<nonempty string>}');
   }
@@ -23,7 +23,9 @@ try {
       throw new Error('Extract request requires a nonempty id');
     }
     if ((request.action === 'collect_project_context' || request.action === 'list_called_callables') && (!('repository_root' in request) || typeof request.repository_root !== 'string' || !request.repository_root)) throw new Error('Project collection requires repository_root');
-    result = request.action === 'list_called_callables' ? listCalledCallables(request.path, request.id, {repositoryRoot: 'repository_root' in request ? request.repository_root as string : ''}) : request.action === 'collect_project_context' ? collectProjectContext(request.path, request.id, {
+    if ((request.action === 'get_called_method_locations' || request.action === 'get_calling_method_locations') && (!('project_root' in request) || typeof request.project_root !== 'string' || !request.project_root)) throw new Error('Navigation requires project_root');
+    if (request.action === 'get_calling_method_locations' && (!('tsconfig_path' in request) || typeof request.tsconfig_path !== 'string' || !request.tsconfig_path)) throw new Error('Incoming navigation requires tsconfig_path');
+    result = request.action === 'get_called_method_locations' ? getCalledMethodLocations(request.path, request.id, {projectRoot: (request as Record<string, unknown>).project_root as string}) : request.action === 'get_calling_method_locations' ? getCallingMethodLocations(request.path, request.id, {projectRoot: (request as Record<string, unknown>).project_root as string, tsconfigPath: (request as Record<string, unknown>).tsconfig_path as string}) : request.action === 'list_called_callables' ? listCalledCallables(request.path, request.id, {repositoryRoot: 'repository_root' in request ? request.repository_root as string : ''}) : request.action === 'collect_project_context' ? collectProjectContext(request.path, request.id, {
       repositoryRoot: 'repository_root' in request ? request.repository_root as string : '',
       maxDepth: 'max_depth' in request ? request.max_depth as number : undefined,
       maxDependencyChars: 'max_dependency_chars' in request ? request.max_dependency_chars as number : undefined

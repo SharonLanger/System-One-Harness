@@ -118,7 +118,7 @@ retrieved 29 October 2026. No actual Claude version or delivery is claimed.
 ## Formatter contract
 
 `format_context(extracted_context, *, include_imports=True,
-include_dependencies=True, include_notes=True, cwd=None)` returns a string and does not
+include_dependencies=True, include_notes=True, project_root=...)` returns a string and does not
 mutate the validated extraction result or read additional files. The selected
 method is always included in full. Import declarations and other supporting
 declarations can be enabled independently. Supporting declarations are not
@@ -127,8 +127,10 @@ Notes summarize missing-context categories rather than emitting every raw gap.
 
 Labels and source are plain text: no added Markdown headings, fences or bullets.
 Original source keeps its own backticks and Markdown. Display paths are relative
-to the explicit absolute cwd (default: process cwd); the hook passes the validated
-event cwd. Sibling paths may begin with `../`. Raw extraction paths stay absolute.
+to the required absolute project_root; the hook passes its validated
+--repository-root. Event cwd controls file lookup, not displayed paths. The pure
+formatter checks the absolute-path form; the hook validates existence and directory
+containment. Raw extraction paths stay absolute.
 See [the future navigation plan](call-navigation-plan.md) for the separate
 outgoing/incoming helpers; neither is wired into a flow.
 
@@ -137,6 +139,5 @@ dependency locations instead of bodies. This formatter does not yet implement
 that mode or discover extra callees; the existing call-navigation operation is
 the source for any future list of called methods.
 
-The old tests asserting raw extractor JSON and output-size rejection describe
-the previous contract. They need updating for this new presentation and warning
-behavior. No test suite was run or modified for this manual experiment change.
+Durable formatter and hook tests cover plain presentation, exact source retention,
+project-root display paths and warning-only output thresholds.

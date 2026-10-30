@@ -42,17 +42,19 @@ def _source_block(path, location, code):
     return f'{path} (lines {first}–{last})\n{code}'
 
 
-def format_context(extracted_context, *, include_imports=True,
-                   include_dependencies=True, include_notes=True, cwd=None) -> str:
+def format_context(extracted_context, *, project_root, include_imports=True,
+                   include_dependencies=True, include_notes=True) -> str:
     """Render selected source and optional supporting context, without mutation.
 
+    project_root is the validated absolute analysis root, never the process cwd.
+    This pure presentation layer does not read or validate filesystem state.
     Input is the validated collector object. Imports and other supporting
     declarations have independent presentation switches; neither changes what
     the collector gathers or retains for diagnostics.
     """
-    base = os.getcwd() if cwd is None else os.fspath(cwd)
+    base = os.fspath(project_root)
     if not os.path.isabs(base):
-        raise ValueError('cwd must be absolute')
+        raise ValueError('project_root must be absolute')
     selected = extracted_context['callable']
     parts = ['Selected TypeScript context (partial).', 'Selected method',
              _source_block(os.path.relpath(extracted_context['path'], base), selected['location'],

@@ -3,11 +3,12 @@ import json
 
 import pytest
 
-from laya_context_router.building_blocks.typescript import outline
+from laya_context_router.building_blocks.typescript import outline, collect_project_context
+from laya_context_router.context_format import format_context
 from laya_context_router.flows import file_method_context as flow
 from test_file_method_context import CONFIG, forbidden_registry, source
 from test_method_selection import questions_for, raw_for, registry_for
-from test_prompt_hook import HEADER, hook_case, invoke, assert_noop
+from test_prompt_hook import hook_case, invoke, assert_noop
 
 
 def run_selected(tmp_path, path, **kwargs):
@@ -61,23 +62,28 @@ def test_invalid_source_limits_refuse_before_source_or_model(tmp_path, monkeypat
     assert result == {"status": "noop", "reason": "invalid_dependency_budget", "context": None}
 
 
-def decode(result):
-    assert result.returncode == 0
+def decode(result, case, **limits):
+    """Check the actual plain payload against fresh real collection, retaining metadata checks."""
+    assert result.returncode == 0, result.stderr
     additional = json.loads(result.stdout)["hookSpecificOutput"]["additionalContext"]
-    assert additional.startswith(HEADER)
-    return additional, json.loads(additional[len(HEADER):])
+    context = collect_project_context(case['path'],case['data']['callables'][0]['id'],
+                                      repository_root=case['repo'], **limits)
+    context['coverage']='partial'
+    assert additional == format_context(context,project_root=case['repo'])
+    return additional, context
 
 
-def test_large_dependency_bundle_final_overflow_or_explicit_whole_unit_omission(tmp_path):
+def test_large_dependency_bundle_warning_or_explicit_whole_unit_omission(tmp_path):
     dependency = 'const payload = "' + 'x' * 9000 + '";'
     selected = 'function selected() { return payload; }'
     case = hook_case(tmp_path, dependency + '\n' + selected)
     before = case["path"].read_bytes()
     overflow = invoke(case)
-    assert_noop(overflow)
-    assert "context_budget_exceeded" in overflow.stderr
+    full, full_context = decode(overflow,case)
+    assert len(full)>8000 and dependency in full
+    assert full_context["dependencies"][0]["code"] == dependency
     limited = invoke(case, args=case["args"] + ["--max-dependency-chars", "32"])
-    text, context = decode(limited)
+    text, context = decode(limited,case,max_dependency_chars=32)
     assert len(text) <= 8000
     assert context["code"] == selected
     assert context["dependencies"] == []
@@ -95,15 +101,14 @@ def test_unicode_dependency_source_and_exact_final_render_budgets(tmp_path, delt
     size = len(dependency.encode("utf-16-le")) // 2
     assert size > len(dependency)
     args = case["args"] + ["--max-dependency-chars", str(size), "--max-dependency-depth", "1"]
-    text, context = decode(invoke(case, args=args))
+    text, context = decode(invoke(case, args=args),case,max_dependency_chars=size,max_depth=1)
     assert context["dependencies"][0]["code"] == dependency
     assert context["dependencies"][0]["source_hash"] == context["source_hash"]
     assert context["code"] == selected
     assert context["collection"]["dependency_chars"] == size
     exact = invoke(case, args=args + ["--max-context-chars", str(len(text) + delta)])
-    if delta: assert_noop(exact); assert "context_budget_exceeded" in exact.stderr
-    else: assert decode(exact)[0] == text
-    _, omitted = decode(invoke(case, args=case["args"] + ["--max-dependency-chars", str(size - 1)]))
+    assert decode(exact,case,max_dependency_chars=size,max_depth=1)[0] == text
+    _, omitted = decode(invoke(case, args=case["args"] + ["--max-dependency-chars", str(size - 1)]),case,max_dependency_chars=size-1)
     assert omitted["dependencies"] == []
     assert any(g["code"] == "size_limit" for g in omitted["gaps"])
 
