@@ -1,4 +1,5 @@
 """Present validated collector context without changing its source or metadata."""
+import os
 import re
 
 
@@ -38,24 +39,23 @@ def _source_block(path, location, code):
     if code.endswith(('\r', '\n', '\u2028', '\u2029')):
         breaks -= 1
     last = first + max(0, breaks)
-    longest = max((len(run) for run in re.findall(r'`+', code)), default=0)
-    fence = '`' * max(3, longest + 1)
-    # The separator before the closing fence is outside the exact source text.
-    separator = '' if code.endswith(('\r', '\n')) else '\n'
-    return f'{path} (lines {first}–{last})\n{fence}typescript\n{code}{separator}{fence}'
+    return f'{path} (lines {first}–{last})\n{code}'
 
 
 def format_context(extracted_context, *, include_imports=True,
-                   include_dependencies=True, include_notes=True) -> str:
+                   include_dependencies=True, include_notes=True, cwd=None) -> str:
     """Render selected source and optional supporting context, without mutation.
 
     Input is the validated collector object. Imports and other supporting
     declarations have independent presentation switches; neither changes what
     the collector gathers or retains for diagnostics.
     """
+    base = os.getcwd() if cwd is None else os.fspath(cwd)
+    if not os.path.isabs(base):
+        raise ValueError('cwd must be absolute')
     selected = extracted_context['callable']
-    parts = ['Selected TypeScript context (partial).', '## Selected method',
-             _source_block(extracted_context['path'], selected['location'],
+    parts = ['Selected TypeScript context (partial).', 'Selected method',
+             _source_block(os.path.relpath(extracted_context['path'], base), selected['location'],
                            extracted_context['code'])]
     declarations, imports = [], []
     seen = {(extracted_context['path'], selected['start'], selected['end'])}
@@ -66,17 +66,17 @@ def format_context(extracted_context, *, include_imports=True,
         seen.add(identity)
         if item['kind'] == 'ImportDeclaration':
             if include_imports:
-                imports.append(_source_block(item['path'], item['location'], item['code']))
+                imports.append(_source_block(os.path.relpath(item['path'], base), item['location'], item['code']))
         elif include_dependencies:
-            declarations.append(_source_block(item['path'], item['location'], item['code']))
+            declarations.append(_source_block(os.path.relpath(item['path'], base), item['location'], item['code']))
     if declarations:
-        parts.extend(['## Supporting declarations', *declarations])
+        parts.extend(['Supporting declarations', *declarations])
     if imports:
-        parts.extend(['## Imports', *imports])
+        parts.extend(['Imports', *imports])
     if include_notes:
         notes = list(dict.fromkeys(_GAP_NOTES.get(
             gap['code'], 'Some additional context could not be collected.')
             for gap in extracted_context['gaps']))
         if notes:
-            parts.extend(['## Context notes', '\n'.join(f'- {note}' for note in notes)])
+            parts.extend(['Context notes', '\n'.join(notes)])
     return '\n\n'.join(parts)

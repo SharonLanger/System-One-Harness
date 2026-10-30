@@ -94,7 +94,7 @@ The adapter emits one JSON line shaped like this after a successful selection;
 the source and metadata shown here are illustrative, not a runtime trace:
 
 ```json
-{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Selected TypeScript context (partial)\n\nMethod: calculate\nFile: /repo/src/service.ts, line 1\n\n```typescript\nfunction calculate(x: number) { return x * 2; }\n```"}}
+{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Selected TypeScript context (partial).\n\nSelected method\n\nsrc/service.ts (lines 1–1)\nfunction calculate(x: number) { return x * 2; }"}}
 ```
 
 The exact presentation is defined by `src/laya_context_router/context_format.py`.
@@ -118,12 +118,19 @@ retrieved 29 October 2026. No actual Claude version or delivery is claimed.
 ## Formatter contract
 
 `format_context(extracted_context, *, include_imports=True,
-include_dependencies=True, include_notes=True)` returns a string and does not
+include_dependencies=True, include_notes=True, cwd=None)` returns a string and does not
 mutate the validated extraction result or read additional files. The selected
 method is always included in full. Import declarations and other supporting
 declarations can be enabled independently. Supporting declarations are not
 necessarily called methods: they may also be interfaces, constants, or types.
 Notes summarize missing-context categories rather than emitting every raw gap.
+
+Labels and source are plain text: no added Markdown headings, fences or bullets.
+Original source keeps its own backticks and Markdown. Display paths are relative
+to the explicit absolute cwd (default: process cwd); the hook passes the validated
+event cwd. Sibling paths may begin with `../`. Raw extraction paths stay absolute.
+See [the future navigation plan](call-navigation-plan.md) for the separate
+outgoing/incoming helpers; neither is wired into a flow.
 
 Paths and line ranges accompany the code so a later presentation mode can show
 dependency locations instead of bodies. This formatter does not yet implement

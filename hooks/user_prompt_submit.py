@@ -107,7 +107,7 @@ def main(argv=None):
                 print(f"laya hook noop: {result['reason']}", file=sys.stderr)
                 return 0
             from laya_context_router.context_format import format_context
-            context = format_context(result['context'])
+            context = format_context(result['context'], cwd=cwd)
             response = {'hookSpecificOutput': {
                 'hookEventName': 'UserPromptSubmit', 'additionalContext': context}}
             _log('DEBUG', 'response_prepared', response=response,

@@ -42,6 +42,13 @@ Exceeding 8,000 formatted characters logs `WARNING` / `context_size_warning`
 and still sends the full content. The old saved run reports remain historical
 evidence; rerun an experiment to observe the new behavior.
 
+The current context formatter uses plain text and paths relative to the hook
+event's cwd. It keeps the same code, supporting declarations, line ranges and
+notes. Report files remain Markdown for viewing; the `additionalContext` string
+has no formatter-added headings, fences or bullet prefixes. See the separate
+[future helper plan](../docs/call-navigation-plan.md) for outgoing/incoming
+navigation methods that are not yet implemented or used by a flow.
+
 **Try the other four files with the same hook:**
 
 ```bash
