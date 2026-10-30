@@ -46,14 +46,8 @@ clock changes require comparing the recorded UTC timestamps.
 
 `results/` and captured personal hook inputs must be ignored by Git. Commit only
 synthetic, shareable sample inputs. Inputs are read relative to the script, not
-the shell working directory. On your Apple Silicon Mac, select the Python
-environment where `laya_mlx` is installed, then from the repository root run
-`python -m pip install -e .` once. Open `laya_choice.py` in a Python-capable IDE
-and press Run, or execute `python experiments/laya_choice.py`. To override model
-and temperature for a run, use `--model YOUR_MODEL --temperature YOUR_TEMPERATURE`
-with a checkpoint and temperature confirmed compatible with your SDK. Edit the
-input JSON's temperature to `null` to return to SDK defaults. The IDE needs
-Python execution support and that environment selected.
+the shell working directory. See [Run the first experiment](#run-the-first-experiment)
+for environment setup and invocation.
 
 ## Input and configuration
 
@@ -141,23 +135,22 @@ any production change.
 
 ## Run the first experiment
 
-On Sharon's Apple Silicon Mac, activate the Python 3.11+ environment containing
-the supplied `laya_mlx` SDK and compatible MLX. From the repository root, install
-the project into that environment once, then run:
+Activate the Python 3.11+ environment containing the installed `laya_mlx` SDK
+and compatible MLX. The script bootstraps this checkout's `src/` import path, so
+installing the project with `pip install -e .` is optional. Run from any working
+directory:
 
 ```bash
-python -m pip install -e .
 python /path/to/laya-context-router/experiments/laya_choice.py
 ```
 
 The script reads its adjacent `inputs/laya_choice.json` and writes a unique
-timestamped report under `experiments/results/laya_choice/`. In an IDE, open
-`laya_choice.py`, select that Python environment, and use Run File. Optional
-`--model`, `--temperature`, and `--lang` arguments override the input settings;
-edit temperature to `null` in the input file to request SDK default. With no
-test loader injected, the script always uses the real adapter and reports missing
-SDK/model errors without a mock fallback. Automated tests use synthetic SDK
-responses and do not verify live compatibility. Keep private captures out of Git.
+report under `experiments/results/laya_choice/`. In an IDE, select the same
+Python environment and run `laya_choice.py`. Optional `--model`, `--temperature`,
+and `--lang` arguments override the input settings; set input temperature to
+`null` to request the SDK default. Execution uses the real adapter and reports
+missing SDK/model errors without a mock fallback. Automated tests use synthetic
+SDK responses and do not verify live compatibility. Keep private captures out of Git.
 
 ## Later scenarios to remember
 

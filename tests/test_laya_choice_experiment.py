@@ -1,6 +1,9 @@
 import copy
 import json
+import os
 from pathlib import Path
+import shutil
+import subprocess
 import sys
 
 ROOT = Path(__file__).parents[1]
@@ -103,3 +106,41 @@ def test_invalid_input_still_saves_failed_report(tmp_path):
     assert "config must be an object" in details["error"]["message"]
     assert "unavailable" in (run_dir / "summary.md").read_text()
     assert any("Saved summary" in message for message in messages)
+
+
+def test_direct_script_imports_checkout_src_from_unrelated_cwd_without_pythonpath(tmp_path):
+    # Run a temporary project copy so the fake SDK and result files never touch
+    # the checkout. The adjacent SDK is found as it would be on a real run.
+    project = tmp_path / "project"
+    experiments = project / "experiments"
+    experiments.mkdir(parents=True)
+    shutil.copy2(ROOT / "experiments" / "laya_choice.py", experiments)
+    shutil.copy2(ROOT / "experiments" / "support.py", experiments)
+    shutil.copytree(ROOT / "experiments" / "inputs", experiments / "inputs")
+    (project / "src").symlink_to(ROOT / "src", target_is_directory=True)
+    sdk = experiments / "laya_mlx.py"
+    sdk.write_text('''
+class Agent:
+    def predict(self, text, questions, **kwargs):
+        return {"answers": {"fruit": {
+            "type": "choice", "choice": "apple",
+            "probabilities": {"apple": 1.0, "pear": 0.0},
+        }}}
+
+def load(model, **kwargs):
+    return Agent()
+''', encoding="utf-8")
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    completed = subprocess.run(
+        [sys.executable, str(experiments / "laya_choice.py")],
+        cwd=tmp_path, env=env, text=True, capture_output=True, timeout=30,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "Outcome:" in completed.stdout
+    result_root = experiments / "results" / "laya_choice"
+    run_dirs = list(result_root.iterdir())
+    assert len(run_dirs) == 1
+    details = json.loads((run_dirs[0] / "details.json").read_text())
+    assert details["run"]["status"] == "success"
+    assert details["result"]["answer"]["choice"] == "apple"

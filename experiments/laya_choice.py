@@ -8,12 +8,18 @@ from pathlib import Path
 import sys
 import time
 
+# Make the checkout's src layout available when this file is run directly from
+# an IDE or by absolute path. This does not install or provide the Laya SDK.
+HERE = Path(__file__).resolve().parent
+REPO_SRC = HERE.parent / "src"
+if str(REPO_SRC) not in sys.path:
+    sys.path.insert(0, str(REPO_SRC))
+
 from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.predict import predict
 from laya_context_router.laya.registry import AgentRegistry
 from support import ObservingRegistry, allocate_result_dir, json_safe, start_record, write_report
 
-HERE = Path(__file__).resolve().parent
 INPUT_PATH = HERE / "inputs" / "laya_choice.json"
 
 
