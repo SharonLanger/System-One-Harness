@@ -117,7 +117,7 @@ def test_foreign_snapshot_is_taken_after_selection_with_unchanged_selected_sourc
         def predict(self, text, payloads, **kwargs):
             assert (text, payloads, kwargs) == (prompt, questions, {"lang": "fr"})
             dep.write_text(updated)
-            return raw_for(questions, data["callables"][0]["id"])
+            return raw_for(questions, data["callables"][0]["signature"])
     result = flow.run(prompt, cwd=tmp_path, repository_root=tmp_path, config=CONFIG,
                       registry=AgentRegistry(loader=lambda *args, **kwargs: Fake()))
     assert result["status"] == "context"

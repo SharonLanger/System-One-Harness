@@ -43,7 +43,7 @@ test('unsupported callable forms remain visible diagnostics', () => {
   const {file,dir} = fixture(text);
   try {
     const result = outline(file);
-    assert.deepEqual(result.callables.map(f=>f.name), ['outer','inner','m','a','af','gen','ov']);
+    assert.deepEqual(result.callables.map(f=>f.name), ['outer','m','a','af','gen','ov']);
     assert.ok(result.diagnostics.some(d=>d.message.includes('ov')));
     assert.ok(result.callables.some(c=>c.signature==='a=()=>'));
     assert.equal(result.diagnostics.length, 1);

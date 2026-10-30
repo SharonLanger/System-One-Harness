@@ -22,7 +22,7 @@ def setup(tmp_path):
     data = outline(path)
     prompt = 'Explain `a.ts`: explain greet'
     second = prompt + '\n\nFallback candidate signatures (same source snapshot):\n' + '\n'.join(
-        f'{c["id"]}: {c["signature"]}' for c in data['callables'])
+        f'{c["signature"]}' for c in data['callables'])
     return path, data, prompt, second, questions_for(data)
 
 
@@ -49,7 +49,7 @@ def execute(tmp_path, prompt, registry, **kwargs):
 
 @pytest.mark.parametrize('second_outcome', ['accepted', 'rejected', 'abstain', 'error'])
 def test_opt_in_two_round_sequence_terminates(tmp_path, second_outcome):
-    _, data, prompt, second, q = setup(tmp_path); selected = data['callables'][0]['id']
+    _, data, prompt, second, q = setup(tmp_path); selected = data['callables'][0]['signature']
     response = raw_for(q, selected)
     if second_outcome == 'rejected': response = raw_for(q, selected, confidence=0.1)
     if second_outcome == 'abstain': response = raw_for(q, 'none_or_unclear')
@@ -69,7 +69,7 @@ def test_opt_in_two_round_sequence_terminates(tmp_path, second_outcome):
 ])
 def test_explicit_outcomes_never_trigger_fallback(tmp_path, choice, confidence, multiple, reason):
     _, data, prompt, _, q = setup(tmp_path)
-    selected = data['callables'][0]['id'] if choice == 'candidate' else choice
+    selected = data['callables'][0]['signature'] if choice == 'candidate' else choice
     reg, remaining, _, calls = sequence_registry([(A, prompt, q, raw_for(q, selected, multiple, confidence))])
     result = execute(tmp_path, prompt, reg, fallback_config=B)
     assert result['reason'] == reason and len(calls) == 1 and not remaining
@@ -77,7 +77,7 @@ def test_explicit_outcomes_never_trigger_fallback(tmp_path, choice, confidence, 
 
 def test_default_disabled_and_first_error_terminates(tmp_path):
     _, data, prompt, _, q = setup(tmp_path)
-    for response, reason in [(raw_for(q, data['callables'][0]['id'], confidence=.1), 'method_undecided'),
+    for response, reason in [(raw_for(q, data['callables'][0]['signature'], confidence=.1), 'method_undecided'),
                              (RuntimeError('planned'), 'model_error')]:
         reg, _, _, calls = sequence_registry([(A, prompt, q, response)])
         assert execute(tmp_path, prompt, reg)['reason'] == reason
@@ -86,7 +86,7 @@ def test_default_disabled_and_first_error_terminates(tmp_path):
 
 @pytest.mark.parametrize('delta', [-1, 0, 1])
 def test_second_input_budget_exact_boundary(tmp_path, delta):
-    _, data, prompt, second, q = setup(tmp_path); selected = data['callables'][0]['id']
+    _, data, prompt, second, q = setup(tmp_path); selected = data['callables'][0]['signature']
     size = len(second) + len(json.dumps(q, ensure_ascii=False, separators=(',', ':')))
     expected = [(A, prompt, q, raw_for(q, selected, confidence=.1))]
     if delta >= 0: expected.append((B, second, q, raw_for(q, selected)))
@@ -105,7 +105,7 @@ def test_invalid_second_budget_no_load(tmp_path, budget):
 
 
 def test_distinct_blocks_independent_policies_and_actual_flow_A_B_A(tmp_path):
-    _, data, prompt, second, q = setup(tmp_path); selected = data['callables'][0]['id']
+    _, data, prompt, second, q = setup(tmp_path); selected = data['callables'][0]['signature']
     block = QuestionBlock(BLOCK_DIR)
     ticket_q = {name: question.to_predict_dict() for name, question in block.questions.items()}
     ticket_raw = {'answers': {

@@ -1,4 +1,9 @@
-"""Pure lexical file mentions; the caller owns the complete path expression."""
+"""Configured TypeScript detection plus temporary caller-regex compatibility.
+
+The legacy Python-regex entry point remains unchanged to preserve regex flags,
+conditionals and existing caller syntax. New/default callers use the TypeScript
+configured detector; see typescript-helper/README.md, Detection.
+"""
 from dataclasses import dataclass
 import re
 
@@ -53,3 +58,28 @@ def detect_file_references(text: str, pattern: str | re.Pattern[str]) -> list[Fi
         start, end = match.span("path")
         references.append(FileReference(path, filename, kind, start, end))
     return references
+
+
+def detect_configured_references(text: str, config: dict | None = None, *,
+                                 node: str = "node", helper=None,
+                                 timeout: float = 5.0) -> list[FileReference]:
+    """Use the TypeScript configured detector; production TypeScript is default.
+
+    See typescript-helper/README.md, Detection. Unlike the legacy caller-regex
+    API above, this operation filters complete names with include/exclude regexes.
+    Positions in the returned Python records use Python character indices; the
+    JSON helper protocol uses UTF-16 offsets.
+    """
+    from .typescript import DEFAULT_HELPER, detect_references
+    outcome = detect_references(text, config, node=node,
+                                helper=DEFAULT_HELPER if helper is None else helper,
+                                timeout=timeout)
+    if outcome["status"] == "error":
+        raise ValueError(outcome["diagnostics"][0]["message"])
+    # Only transport position conversion happens here; recognition/filtering is TS.
+    encoded = text.encode("utf-16-le")
+    def position(offset):
+        return len(encoded[:offset * 2].decode("utf-16-le"))
+    return [FileReference(item["path"], item["filename"], item["category"],
+                          position(item["start"]), position(item["end"]))
+            for item in outcome["data"]["references"]]

@@ -18,7 +18,7 @@ def run_selected(tmp_path, path, **kwargs):
     prompt = f"Explain `{path.name}`: how does selected work?"
     calls = []
     result = flow.run(prompt, cwd=tmp_path, repository_root=tmp_path, config=CONFIG,
-        registry=registry_for(prompt, questions, raw_for(questions, selected["id"]), calls), **kwargs)
+        registry=registry_for(prompt, questions, raw_for(questions, selected["signature"]), calls), **kwargs)
     assert len(calls) == 1
     return result
 

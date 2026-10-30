@@ -20,7 +20,7 @@ def main():
         source.write_text('export function greet(name: string) { return "Hello " + name; }')
         original = source.read_bytes()
         data = outline(source)
-        selected = data['callables'][0]['id']  # Explicit fixture choice, not inference.
+        selected = data['callables'][0]['name']  # Explicit fixture choice, not inference.
         block = QuestionBlock(BLOCK_DIR)
         questions = {name: question.to_predict_dict() for name, question in block.questions.items()}
         questions['method']['criteria'] = {

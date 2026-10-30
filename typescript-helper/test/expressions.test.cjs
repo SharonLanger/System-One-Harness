@@ -68,7 +68,7 @@ test('recursive wrappers/computed/nested forms promote while destructuring stays
   fs.writeFileSync(file,source);
   try {
     const result=outline(file);
-    assert.deepEqual(result.callables.map(c=>c.name),['wrapped','asserted','sat','nonnull','[key]','deep','outer','local','m',`<anonymous@1:${source.indexOf('()=>7')+1}>`,'[key]']);
+    assert.deepEqual(result.callables.map(c=>c.name),['wrapped','asserted','sat','nonnull','[key]','deep','outer','[key]']);
     assert.equal(result.diagnostics.length,1);
     for(const d of result.diagnostics) assert.equal(d.code,'unsupported_callable');
     fs.writeFileSync(file,'const invalid = { method( {');

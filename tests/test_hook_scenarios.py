@@ -16,7 +16,7 @@ TRACKED = ROOT/'tests/fixtures/typescript/basic.ts'
 
 def configure(case, path, *, index=0, confidence=.95, sentinel=False):
     data=outline(path); q=questions_for(data)
-    selected='none_or_unclear' if sentinel else data['callables'][index]['id']
+    selected='none_or_unclear' if sentinel else data['callables'][index]['signature']
     case['path']=path; case['data']=data
     case['event']['prompt']=f'Explain `{path}`: how does the selected callable work?'
     case['spec'].write_text(json.dumps({'prompt':case['event']['prompt'],'questions':q,
@@ -163,17 +163,17 @@ def test_bound_expression_full_hook_labels_binding_extracts_only_callable(tmp_pa
     context=json.loads(output['additionalContext'].split('\n',1)[1])
     assert context['code']==raw and context['callable']==candidate
     assert context['coverage']=='partial' and context['path']==str(case['path'])
-    assert events(case)[1]['questions']['method']['criteria'][candidate['id']]==signature
+    assert events(case)[1]['questions']['method']['criteria'][candidate['name']]==signature
     assert case['path'].read_bytes()==before
 
 
 @pytest.mark.parametrize('source,index,name,signature,raw', [
-    ('function outer() { const local = () => { return "😀"; }; return local; }', 1, 'local',
-     'local = () =>', '() => { return "😀"; }'),
+    ('function outer() { const local = () => { return "😀"; }; return local; }', 0, 'outer',
+     'function outer()', 'function outer() { const local = () => { return "😀"; }; return local; }'),
     ('export default function () { return "🙃"; }', 0, '<default>',
      'export default function ()', 'export default function () { return "🙃"; }'),
 ])
-def test_recursive_and_anonymous_default_full_hook(tmp_path, source, index, name, signature, raw):
+def test_outer_boundary_and_anonymous_default_full_hook(tmp_path, source, index, name, signature, raw):
     case=hook_case(tmp_path,text=source); configure(case,case['path'],index=index)
     before=case['path'].read_bytes(); candidate=case['data']['callables'][index]
     result=invoke(case)
@@ -184,5 +184,5 @@ def test_recursive_and_anonymous_default_full_hook(tmp_path, source, index, name
     assert context['code']==raw and context['callable']==candidate
     assert candidate['name']==name and candidate['signature']==signature
     assert context['path']==str(case['path']) and context['coverage']=='partial'
-    assert events(case)[1]['questions']['method']['criteria'][candidate['id']]==signature
+    assert events(case)[1]['questions']['method']['criteria'][candidate['name']]==signature
     assert case['path'].read_bytes()==before and len(events(case))==2

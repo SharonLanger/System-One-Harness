@@ -35,7 +35,7 @@ def test_complete_real_source_flow_exact_request_and_context(tmp_path, absolute)
     original = copy.deepcopy(prompt); before = path.read_bytes(); calls=[]
     expected = questions_for(data)
     result = flow.run(prompt, cwd=tmp_path, repository_root=tmp_path, config=CONFIG,
-                      registry=registry_for(prompt, expected, raw_for(expected, candidate["id"]), calls))
+                      registry=registry_for(prompt, expected, raw_for(expected, candidate["signature"]), calls))
     assert result["status"] == "context" and result["reason"] is None
     context = result["context"]
     assert context["code"] == 'export function greet() { return "😀"; }'
@@ -79,7 +79,7 @@ def test_ambiguous_missing_and_outside_repository(tmp_path):
 @pytest.mark.parametrize("choice,confidence,reason", [("candidate",0.1,"method_undecided"),("none_or_unclear",0.95,"no_single_match")])
 def test_rejected_and_abstained_selection(tmp_path, choice, confidence, reason):
     path=source(tmp_path,"a.ts"); data=outline(path); expected=questions_for(data)
-    selected=data["callables"][0]["id"] if choice=="candidate" else choice
+    selected=data["callables"][0]["signature"] if choice=="candidate" else choice
     prompt="Explain `a.ts`: explain greet"
     result=flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=CONFIG,
                     registry=registry_for(prompt,expected,raw_for(expected,selected,confidence=confidence),[]))
@@ -87,7 +87,7 @@ def test_rejected_and_abstained_selection(tmp_path, choice, confidence, reason):
 
 
 def test_model_failure_and_source_changed_after_selection(tmp_path):
-    path=source(tmp_path,"a.ts"); data=outline(path); expected=questions_for(data); selected=data["callables"][0]["id"]
+    path=source(tmp_path,"a.ts"); data=outline(path); expected=questions_for(data); selected=data["callables"][0]["signature"]
     prompt="Explain `a.ts`: explain greet"
     for mode in ["failure", "stale"]:
         class Fake:
@@ -111,7 +111,7 @@ def test_parser_malformed_outline_and_extraction_fail_closed(tmp_path, monkeypat
     data=outline(path); expected=questions_for(data)
     monkeypatch.setattr(flow,"collect_project_context",lambda *args,**kwargs:{"bad":"shape"})
     result=flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=CONFIG,
-                    registry=registry_for(prompt,expected,raw_for(expected,data["callables"][0]["id"]),[]))
+                    registry=registry_for(prompt,expected,raw_for(expected,data["callables"][0]["signature"]),[]))
     assert result["reason"]=="extractor_error" and result["context"] is None
 
 
@@ -132,3 +132,42 @@ def test_demo_uses_offline_real_flow():
     output=json.loads(result.stdout)
     assert output["status"]=="context" and "function greet" in output["context"]["code"]
     assert result.stderr==""
+
+
+def test_default_ts_detector_preserves_complete_mention_gates(tmp_path):
+    for prompt, reason in [
+        ('Explain `a.spec.ts`: explain run', 'excluded'),
+        ('Explain `a.ts`: compare `a.spec.ts`', 'multiple_files'),
+        ('Explain `a.d.ts`: explain run', 'excluded'),
+    ]:
+        result = flow.run(prompt, cwd=tmp_path, repository_root=tmp_path,
+                          config=CONFIG, registry=forbidden_registry())
+        assert result['reason'] == reason
+
+
+def test_omitted_pattern_uses_ts_but_explicit_default_retains_python_compatibility(tmp_path, monkeypatch):
+    configured, legacy = [], []
+    original_configured, original_legacy = flow.detect_configured_references, flow.detect_file_references
+    def configured_spy(*args, **kwargs):
+        configured.append(kwargs)
+        return original_configured(*args, **kwargs)
+    def legacy_spy(*args, **kwargs):
+        legacy.append(args[1])
+        return original_legacy(*args, **kwargs)
+    monkeypatch.setattr(flow, 'detect_configured_references', configured_spy)
+    monkeypatch.setattr(flow, 'detect_file_references', legacy_spy)
+    base = dict(cwd=tmp_path, repository_root=tmp_path, config=CONFIG, registry=forbidden_registry())
+    assert flow.run('Explain `missing.ts`: explain run', **base)['reason'] == 'missing'
+    assert len(configured) == 1 and not legacy
+    assert flow.run('Explain `missing.ts`: explain run', reference_pattern=flow.DEFAULT_REFERENCE_PATTERN, **base)['reason'] == 'missing'
+    assert len(configured) == 1 and legacy == [flow.DEFAULT_REFERENCE_PATTERN]
+    assert flow.run('Explain `missing.ts`: explain run', reference_pattern=None, **base)['reason'] == 'invalid_reference'
+
+
+@pytest.mark.parametrize('canonical_name', ['target.spec.ts', 'target.test.ts', 'target.d.ts', 'target.txt'])
+def test_generic_resolution_does_not_bypass_canonical_source_eligibility(tmp_path, canonical_name):
+    target = source(tmp_path, canonical_name)
+    (tmp_path / 'alias.ts').symlink_to(target)
+    result = flow.run('Explain `alias.ts`: explain greet', cwd=tmp_path,
+                      repository_root=tmp_path, config=CONFIG, registry=forbidden_registry())
+    assert result['reason'] == 'excluded' and result['context'] is None

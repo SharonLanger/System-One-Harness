@@ -62,7 +62,7 @@ test('class coverage includes computed/nested members and parser errors remain f
   try {
     fs.writeFileSync(file, 'class C { field=()=>1; [key]() {} } const C2=class { m() {} }; function f() { class Nested { n() {} } }');
     const result=outline(file);
-    assert.deepEqual(result.callables.map(x=>x.name),['field','[key]','m','f','n']);
+    assert.deepEqual(result.callables.map(x=>x.name),['field','[key]','m','f']);
     assert.equal(result.diagnostics.length,0);
     fs.writeFileSync(file, 'class C { broken( {');
     assert.throws(()=>outline(file), /parse/i);

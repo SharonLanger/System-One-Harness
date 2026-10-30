@@ -11,6 +11,7 @@ export interface Outline {
   schema_version: number; path: string; source_hash: string; callables: Callable[];
   diagnostics: Diagnostic[]; limitations: string[];
 }
+/** @internal Exhaustive snapshot discovery for extraction/collectors; public callers use outline (README "File outline"). */
 export function readOutline(path: string): {outline: Outline; source: string; sf: ts.SourceFile} {
   const canonical = realpathSync(path);
   const source = readFileSync(canonical, 'utf8');
@@ -51,12 +52,37 @@ export function readOutline(path: string): {outline: Outline; source: string; sf
       if (supported && node.body) {
         const pos = sf.getLineAndCharacterOfPosition(start);
         const anonymous = `<anonymous@${pos.line + 1}:${pos.character + 1}>`;
-        const name = binding ? binding.name.getText(sf) : ts.isConstructorDeclaration(node) ? 'constructor'
+        let name = binding ? binding.name.getText(sf) : ts.isConstructorDeclaration(node) ? 'constructor'
           : ts.isFunctionDeclaration(node) ? (node.name?.text ??
             (node.modifiers?.some(m => m.kind === ts.SyntaxKind.DefaultKeyword) ? '<default>' : anonymous))
           : ('name' in node && node.name ? node.name.getText(sf) : anonymous);
+        // Source headers are AST bounded. Hide nested callable bodies in
+        // defaults/decorators/computed names without hand-parsing signatures.
+        const headerStart = binding ? binding.getStart(sf) : start, headerEnd = node.body.getStart(sf);
+        const hidden: {start: number; end: number}[] = [];
+        const hideBodies = (child: ts.Node): void => {
+          if (child !== node && ts.isFunctionLike(child) && 'body' in child && child.body) {
+            const body = child.body as ts.Node;
+            if (body.getStart(sf) >= headerStart && body.end <= headerEnd) {
+              hidden.push({start: body.getStart(sf), end: body.end}); return;
+            }
+          }
+          if (child.getStart(sf) < headerEnd) ts.forEachChild(child, hideBodies);
+        };
+        ts.forEachChild(node, hideBodies);
+        const nameNode = binding?.name ?? ('name' in node ? node.name : undefined);
+        if (nameNode && ts.isComputedPropertyName(nameNode)) {
+          const nameStart = nameNode.getStart(sf);
+          for (const range of hidden.filter(r => r.start >= nameStart && r.end <= nameNode.end).sort((a,b) => b.start - a.start)) {
+            name = name.slice(0, range.start - nameStart) + '…' + name.slice(range.end - nameStart);
+          }
+        }
+        let signature = source.slice(headerStart, headerEnd);
+        for (const range of hidden.sort((a,b) => b.start - a.start)) {
+          signature = signature.slice(0, range.start - headerStart) + '…' + signature.slice(range.end - headerStart);
+        }
         callables.push({id: `${hash}:${start}:${end}`, name,
-          signature: source.slice(binding ? binding.getStart(sf) : start, node.body.getStart(sf)).trimEnd(), start, end,
+          signature: signature.trimEnd(), start, end,
           location: {line: pos.line + 1, column: pos.character + 1}});
       } else {
         const name = 'name' in node && node.name ? (node.name as ts.Node).getText(sf) : '';
@@ -77,12 +103,37 @@ export function readOutline(path: string): {outline: Outline; source: string; sf
 }
 
 
+/** Public declaration-only outline; see README "File outline". Stops at every function subtree. */
 export function outline(path: string): Outline {
-  return readOutline(path).outline;
+  const snapshot = readOutline(path);
+  const allowed = new Set<number>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isFunctionLike(node)) {
+      // Only direct named bindings, declarations and members are public peers.
+      const candidate = snapshot.outline.callables.find(c => c.start === node.getStart(snapshot.sf) && c.end === node.end);
+      if (candidate && !candidate.name.startsWith('<anonymous@')) allowed.add(candidate.start);
+      return;
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(snapshot.sf);
+  const result = snapshot.outline;
+  return {...result, callables: result.callables.filter(c => allowed.has(c.start)),
+    diagnostics: result.diagnostics.filter(d => {
+      let nested = false;
+      const check = (n: ts.Node): void => {
+        if (ts.isFunctionLike(n) && n.getStart(snapshot.sf) < d.start && n.end >= d.end) { nested = true; return; }
+        if (!nested) ts.forEachChild(n, check);
+      };
+      check(snapshot.sf); return !nested;
+    }),
+    limitations: result.limitations.map(x => x.startsWith('Runtime callable')
+      ? 'Public outline stops at every function subtree; nested definitions and unbound anonymous expressions are excluded.' : x)};
 }
 export interface CallableSource extends Omit<Outline, 'callables'> {
   callable: Callable; code: string; display_code: string;
 }
+/** Exact snapshot source slice; see README "Extract callable". */
 export function extractCallable(path: string, id: string): CallableSource {
   // Outline and code share one read snapshot; JS slice uses compiler UTF-16 offsets.
   const snapshot = readOutline(path);
@@ -103,6 +154,7 @@ export interface LocalContext extends CallableSource {
   coverage: 'partial'; dependencies: LocalDependency[]; gaps: Diagnostic[];
   collection: {max_depth: number; max_dependency_chars: number; dependency_chars: number};
 }
+/** Bounded partial same-file declarations; see README "Local context". */
 export function collectLocalContext(path: string, id: string,
   options: {maxDepth?: number; maxDependencyChars?: number} = {}): LocalContext {
   const maxDepth = options.maxDepth ?? 2, maxChars = options.maxDependencyChars ?? 12000;
@@ -250,3 +302,7 @@ export function collectLocalContext(path: string, id: string,
 }
 
 export {collectProjectContext} from './project';
+
+export {listCalledCallables} from './calls';
+
+export {detectReferences, resolveReference} from './files';

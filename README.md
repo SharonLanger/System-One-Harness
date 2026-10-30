@@ -92,6 +92,9 @@ npm --prefix typescript-helper test
 python -m pytest -q
 ```
 
+- [TypeScript utility contracts](typescript-helper/README.md): detection, path resolution,
+  signature-only outlines, exact extraction, called-callable navigation and context collection.
+- [Supporting utility implementation evidence](docs/supporting-utilities-results.md): test-first changes and validation.
 - [Experiment guide](experiments/README.md): runnable scripts, inputs, reports,
   model settings, and diagnostic logs.
 - [Mac live setup](docs/real-laya-mac.md): explicit first real-model probe.

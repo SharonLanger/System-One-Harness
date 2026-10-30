@@ -1,6 +1,8 @@
 const {test}=require('node:test'), assert=require('node:assert/strict');
 const fs=require('node:fs'), os=require('node:os'), path=require('node:path');
-const {outline,extractCallable}=require('../dist/index.js');
+const {readOutline,extractCallable}=require('../dist/index.js');
+// Exhaustive discovery remains private to extraction/collectors; public contract lives in support-contract.test.cjs.
+const outline = file => readOutline(file).outline;
 function check(file,source,expected,diagnosticCount=0) {
   fs.writeFileSync(file,source);
   const result=outline(file);
@@ -50,7 +52,7 @@ for(const newline of ['\n','\r\n']) test('recursive/special callable matrix '+JS
       ['[`template`]','[`template`]()','[`template`]() {}']]],
     ['const object = { [key]: function () {}, get [other]() { return 1; }, [(() => "computed")()]() {} };',[
       ['[key]','[key]: function ()','function () {}'], ['[other]','get [other]()','get [other]() { return 1; }'],
-      ['[(() => "computed")()]','[(() => "computed")()]()','[(() => "computed")()]() {}'],
+      ['[(() => …)()]','[(() => …)()]()','[(() => "computed")()]() {}'],
       ['<anonymous>','() =>','() => "computed"']]],
   ];
   const source=('// 😀 prefix\n'+units.map(x=>x[0]).join('\n')).replaceAll('\n',newline);

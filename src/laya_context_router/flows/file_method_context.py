@@ -3,13 +3,14 @@ from pathlib import Path
 import re
 from ..log_utils import log
 
-from ..building_blocks.file_reference_utils import detect_file_references
+from ..building_blocks.file_reference_utils import detect_file_references, detect_configured_references
 from ..building_blocks.resolve_file import resolve_file
 from ..building_blocks.typescript import DEFAULT_HELPER, TypeScriptError, outline, collect_project_context
 from ..building_blocks.questions.method_selection.block import run as select_method
 
 # V1 recognizes complete .ts paths; callers may still supply their own pattern.
 DEFAULT_REFERENCE_PATTERN = re.compile(r'''(?<![\w./-])(?P<quote>["'`])?(?P<path>(?(quote)[^"'`\r\n]+|[^\s"'`<>:,;!?()]+)\.ts)(?(quote)(?P=quote))(?::\d+(?::\d+)?)?(?=$|[\s"'`<>:,;!?()]|\.(?=$|\s))''')
+_OMITTED_REFERENCE_PATTERN = object()
 ELIGIBLE = re.compile(r'^\s*Explain\s+`(?P<target>[^`\r\n]+)`\s*:\s*(?P<question>\S[\s\S]*)$', re.IGNORECASE)
 
 
@@ -24,7 +25,7 @@ def _confined(path, root):
 
 
 def run(prompt, *, cwd, repository_root, config, registry,
-        reference_pattern=DEFAULT_REFERENCE_PATTERN, node='node', helper=DEFAULT_HELPER,
+        reference_pattern=_OMITTED_REFERENCE_PATTERN, node='node', helper=DEFAULT_HELPER,
         timeout=5.0, max_candidates=64, max_input_chars=16000,
         fallback_config=None, fallback_max_input_chars=16000,
         max_dependency_depth=2, max_dependency_chars=12000):
@@ -44,7 +45,13 @@ def run(prompt, *, cwd, repository_root, config, registry,
     if not isinstance(prompt, str) or not re.match(r'^\s*Explain\b', prompt, re.IGNORECASE):
         return _noop('ineligible_request')
     try:
-        references = detect_file_references(prompt, reference_pattern)
+        references = (detect_configured_references(prompt,
+            {'include_patterns': [r'\.ts$'], 'exclude_patterns': []}, node=node, helper=helper, timeout=timeout)
+            if reference_pattern is _OMITTED_REFERENCE_PATTERN
+            else detect_file_references(prompt, reference_pattern))
+    except TypeScriptError as exc:
+        log("ERROR", "extractor", "reference_transport_failed", error=exc)
+        return _noop('extractor_error')
     except (ValueError, TypeError) as exc:
         log("ERROR", "flow", "reference_failed", error=exc)
         return _noop('invalid_reference')
@@ -60,11 +67,16 @@ def run(prompt, *, cwd, repository_root, config, registry,
     if reference.kind != 'production_code' or not reference.path.endswith('.ts'):
         return _noop('excluded')
     try:
-        resolution = resolve_file(reference, cwd=cwd, repository_root=repository_root)
+        resolution = resolve_file(reference, cwd=cwd, repository_root=repository_root,
+                                  node=node, helper=helper, timeout=timeout)
         log("DEBUG", "flow", "file_resolved", resolution=resolution)
         if resolution.status != 'resolved':
             return _noop(resolution.status)
         path = resolution.selected_path
+        # A generic resolver can return a differently named symlink target;
+        # eligibility remains this flow's production-TypeScript policy.
+        if not path.name.endswith('.ts') or path.name.endswith(('.spec.ts', '.test.ts', '.d.ts')):
+            return _noop('excluded')
         root = Path(repository_root).resolve(strict=True)
         if not _confined(path, root):
             return _noop('source_changed')
@@ -81,7 +93,7 @@ def run(prompt, *, cwd, repository_root, config, registry,
             # Fixed, opt-in representation experiment; never retry an explicit
             # negative/multi signal, failure, or a second-round rejection.
             second_text = prompt + '\n\nFallback candidate signatures (same source snapshot):\n' + '\n'.join(
-                f"{candidate['id']}: {candidate['signature']}" for candidate in source_outline['callables'])
+                f"{candidate['signature']}" for candidate in source_outline['callables'])
             selection = select_method(second_text, source_outline, config=fallback_config, registry=registry,
                                       max_candidates=max_candidates, max_input_chars=fallback_max_input_chars)
     except TimeoutError as exc:

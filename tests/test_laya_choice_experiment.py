@@ -116,6 +116,7 @@ def test_direct_script_imports_checkout_src_from_unrelated_cwd_without_pythonpat
     experiments.mkdir(parents=True)
     shutil.copy2(ROOT / "experiments" / "laya_choice.py", experiments)
     shutil.copy2(ROOT / "experiments" / "support.py", experiments)
+    shutil.copy2(ROOT / "experiments" / "summary.py", experiments)
     shutil.copytree(ROOT / "experiments" / "inputs", experiments / "inputs")
     (project / "src").symlink_to(ROOT / "src", target_is_directory=True)
     sdk = experiments / "laya_mlx.py"

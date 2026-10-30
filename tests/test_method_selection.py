@@ -22,14 +22,27 @@ def source_outline(tmp_path):
     return outline(source)
 
 
+def label_for(data, candidate):
+    name = candidate['name']
+    if sum(c['name'] == name for c in data['callables']) > 1 or name == 'none_or_unclear':
+        name += f"@{candidate['location']['line']}:{candidate['location']['column']}"
+    return name
+
+
 def questions_for(data):
     return {"method": {"type": "choice", "instructions": METHOD,
-                       "criteria": {**{c["id"]: c["signature"] for c in data["callables"]}, "none_or_unclear": NONE}},
+                       "criteria": {**{label_for(data, c): c["signature"] for c in data["callables"]}, "none_or_unclear": NONE}},
             "multiple_relevant": {"type": "noul", "instructions": MULTIPLE}}
 
 
 def raw_for(questions, selected, multiple=0.1, confidence=0.95):
     keys = list(questions["method"]["criteria"])
+    if selected not in keys:
+        # Test callers may select a unique description; the raw model answer
+        # must use its readable criterion label.
+        matches = [key for key, description in questions['method']['criteria'].items() if description == selected]
+        if len(matches) == 1:
+            selected = matches[0]
     probs = {key: (0.9 if key == selected else 0.1 / (len(keys)-1)) for key in keys}
     return {"answers": {"method": {"type": "choice", "choice": selected, "probabilities": probs, "answer_confidence": confidence},
                         "multiple_relevant": {"type": "noul", "noul": multiple, "answer_confidence": 0.95}}}
@@ -62,7 +75,7 @@ def test_fixed_requests_real_outline_actual_pipeline(tmp_path, text, index, mult
     selected = "none_or_unclear" if index is None else data["callables"][index]["id"]
     calls = []
     result = run(text, data, config=RunConfig("mock-selection", 0.2, "fr"),
-                 registry=registry_for(text, payload, raw_for(payload, selected, multiple), calls))
+                 registry=registry_for(text, payload, raw_for(payload, "none_or_unclear" if index is None else data["callables"][index]["signature"], multiple), calls))
     assert result["reason"] == reason
     expected_id = selected if reason is None else None
     assert result["selected_id"] == expected_id
@@ -77,7 +90,7 @@ def test_fixed_requests_real_outline_actual_pipeline(tmp_path, text, index, mult
 
 
 def test_policy_rejections_and_unknown_choice_fail_closed(tmp_path):
-    data = source_outline(tmp_path); payload = questions_for(data); selected = data["callables"][0]["id"]
+    data = source_outline(tmp_path); payload = questions_for(data); selected = data["callables"][0]["signature"]
     for confidence, multiple, reason in [(0.1, 0.1, "method_undecided"), (0.95, 0.5, "multiple_undecided")]:
         response = raw_for(payload, selected, multiple, confidence)
         result = run("Explain same", data, config=RunConfig("mock-selection", 0.2, "fr"),
@@ -106,7 +119,7 @@ def test_empty_and_budgets_refuse_before_loader_with_no_truncation(tmp_path):
     for budget in [size, size+1]:
         calls=[]
         result = run("x", data, config=RunConfig("mock-selection", 0.2, "fr"),
-                     registry=registry_for("x", payload, raw_for(payload, data["callables"][0]["id"]), calls),
+                     registry=registry_for("x", payload, raw_for(payload, data["callables"][0]["signature"]), calls),
                      max_input_chars=budget, max_candidates=2)
         assert result["selected_id"] == data["callables"][0]["id"] and len(calls)==1
 

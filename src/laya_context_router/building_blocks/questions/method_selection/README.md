@@ -1,21 +1,17 @@
 # Method selection baseline
 
-These are new provisional signature-only questions, not a recovered original
-working method definition. Captured Laya fixtures establish response processing;
-controlled method responses establish mechanics, not selection accuracy.
+These provisional signature-only questions establish deterministic mechanics with controlled model responses; they do not claim calibrated live selection accuracy.
 
-`block.run(text, source_outline, config=..., registry=...)` builds `method` criteria
-from opaque source-bound candidate IDs and signatures, with `none_or_unclear`.
-`multiple_relevant` is independently bound to its own named policy. Only an accepted
-candidate and accepted `multiple_relevant=no` select a method. Sentinel, rejection,
-or multiple methods return no selection. Unknown model IDs fail adapter validation.
+`block.run(text, source_outline, config=..., registry=...)` builds `method` criteria with readable method identifiers as keys and source signatures as descriptions, plus `none_or_unclear`. For example:
 
-Result: `selected_id`, `reason`, named `decisions`, and `candidate_map` with the
-original range/location/path/hash. This map never goes into the SDK question payload.
-One actual shared QuestionBlock call handles both questions and real interpretation.
-Dynamic template criteria are copied; policies and expected answers never go to Laya.
+```json
+{"calculateInvoiceTotal":"export function calculateInvoiceTotal(invoice: Invoice): number","calculateInvoiceTotalWithAdjustment":"export function calculateInvoiceTotalWithAdjustment(invoice: Invoice, adjustment: number): number","none_or_unclear":"No single matching callable, or unclear request."}
+```
 
-No candidates means no call. Defaults:64 candidates;16000 input Unicode characters
-(prompt plus compact question JSON, not tokens). Budgets reject explicitly before
-inference without truncation. Thresholds are illustrative, not calibrated. Broader
-callables and dependency context remain incomplete.
+A unique name is its label. Same-name candidates with different signatures use `name@line:column`; identical signatures still produce `ambiguous_candidates` before inference. Opaque snapshot IDs never appear in the model criteria. `label_map` maps accepted readable answers back to internal IDs, while `candidate_map` retains range/location/path/hash keyed by ID. Both maps remain outside inference inputs.
+
+`multiple_relevant` retains its own named policy. Only accepted method and accepted `multiple_relevant=no` select an ID. Sentinel/rejection/multiple answers produce no selection; unknown labels fail adapter validation. Result fields are `selected_id`, `reason`, named `decisions`, `candidate_map` and `label_map`.
+
+One shared QuestionBlock call handles both questions and interpretation. Templates are copied; policies and expected answers never enter model payloads. Empty candidates skip inference. Defaults remain 64 candidates and 16000 input Unicode characters (prompt plus compact question JSON, not tokens); overflow refuses without truncation. Thresholds are unchanged and illustrative.
+
+See [TypeScript utility contracts](../../../../../typescript-helper/README.md) for the public outline boundary and snapshot identity rules; tests are `tests/test_method_selection.py`, `tests/test_readable_method_selection.py` and `tests/test_method_ambiguity_fallback.py`.

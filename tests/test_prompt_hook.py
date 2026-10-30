@@ -19,7 +19,7 @@ HEADER = 'Selected TypeScript context (partial):\n'
 def hook_case(tmp_path, text='function greet() { return "😀"; }'):
     repo = tmp_path/'repo'; repo.mkdir(); cwd = repo/'nested'; cwd.mkdir()
     path = cwd/'a.ts'; path.write_text(text)
-    data = outline(path); q = questions_for(data); chosen = data['callables'][0]['id']
+    data = outline(path); q = questions_for(data); chosen = data['callables'][0]['signature']
     event = {'session_id':'synthetic-session','transcript_path':'unused.jsonl','permission_mode':'default',
              'hook_event_name':'UserPromptSubmit','cwd':str(cwd),'prompt':'Explain `a.ts`: how does greet work?'}
     config = repo/'config.json'; config.write_text(json.dumps({'model':'mock-hook','temperature':.2,'lang':'fr'}))
@@ -226,7 +226,7 @@ def test_duplicate_json_and_oversize_context_fail_closed(tmp_path):
     assert_noop(invoke(case,payload)); assert not case['log'].exists()
     case['path'].write_text('function greet() { return "'+ 'x'*5000 +'"; }')
     data=outline(case['path']); q=questions_for(data)
-    spec={'prompt':case['event']['prompt'],'questions':q,'raw':raw_for(q,data['callables'][0]['id'])}
+    spec={'prompt':case['event']['prompt'],'questions':q,'raw':raw_for(q,data['callables'][0]['signature'])}
     case['spec'].write_text(json.dumps(spec))
     result=invoke(case); assert_noop(result); assert 'context_budget_exceeded' in result.stderr
 

@@ -12,6 +12,7 @@ export interface ProjectContext extends Omit<LocalContext, 'gaps'> {
   gaps: ProjectGap[];
   project: {repository_root: string; config_path: string | null; config_hash: string | null; config_sources: ConfigSource[]};
 }
+/** Confined, budgeted partial project declarations; see README "Project context". */
 export function collectProjectContext(path: string, id: string,
   options: {repositoryRoot: string; maxDepth?: number; maxDependencyChars?: number}): ProjectContext {
   const maxDepth = options.maxDepth ?? 2, maxChars = options.maxDependencyChars ?? 12000;

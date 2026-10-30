@@ -1,8 +1,9 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {outline,collectLocalContext}=require('../dist/index.js');
+const {readOutline,collectLocalContext}=require('../dist/index.js');
 function fixture(source,run){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'laya-local-')),file=path.join(dir,'a.ts');fs.writeFileSync(file,source);try{run(file);}finally{fs.rmSync(dir,{recursive:true});}}
-function collect(file,name,options){return collectLocalContext(file,outline(file).callables.find(c=>c.name===name).id,options);}
+// Collector closure fixtures intentionally use private exhaustive identities.
+function collect(file,name,options){return collectLocalContext(file,readOutline(file).outline.callables.find(c=>c.name===name).id,options);}
 test('semantic dependencies preserve aliases, types, and raw statements, excluding shadows',()=>{
  const source='import {remote as aliased} from "./missing";\nconst value = 7;\nconst hidden = 99;\ntype Result = number;\nfunction helper(x: number) { return value + x; }\nfunction chosen(hidden: number): Result { return helper(hidden) + aliased(); }';
  fixture(source,file=>{const r=collect(file,'chosen');assert.deepEqual(r.dependencies.map(d=>d.code),['import {remote as aliased} from "./missing";','const value = 7;','type Result = number;','function helper(x: number) { return value + x; }']);assert.ok(r.gaps.some(g=>g.code==='external_dependency'));assert.equal(r.coverage,'partial');for(const d of r.dependencies){assert.equal(source.slice(d.start,d.end),d.code);assert.equal(d.path,r.path);assert.equal(d.source_hash,r.source_hash);assert.ok(d.symbol_ids.length);}assert.equal(r.code,'function chosen(hidden: number): Result { return helper(hidden) + aliased(); }');assert.deepEqual(collect(file,'chosen'),r);});

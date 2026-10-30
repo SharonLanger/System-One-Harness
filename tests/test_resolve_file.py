@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 
 import pytest
 
@@ -37,7 +36,7 @@ def test_basename_search_unique_ambiguous_and_stable(tmp_path):
 
 def test_missing_explicit_path_never_falls_back_and_directories(tmp_path):
     make(tmp_path, "actual/x.ts")
-    for reference, status in [("missing/x.ts", "missing"), ("absent.ts", "missing"), ("actual", "excluded")]:
+    for reference, status in [("missing/x.ts", "missing"), ("absent.ts", "missing"), ("actual", "not_file")]:
         result = resolve_file(reference, cwd=tmp_path, repository_root=tmp_path)
         assert result.status == status
         assert result.selected_path is None
@@ -46,12 +45,12 @@ def test_missing_explicit_path_never_falls_back_and_directories(tmp_path):
 
 
 @pytest.mark.parametrize("suffix", ["spec.ts", "test.ts", "d.ts", "tsx", "js", "json", "TS"])
-def test_exclusions_precede_lookup(tmp_path, suffix):
+def test_generic_resolver_accepts_all_explicit_file_types(tmp_path, suffix):
     path = make(tmp_path, f"src/a.{suffix}")
     for reference in [path.name, str(path)]:
         result = resolve_file(reference, cwd=tmp_path, repository_root=tmp_path)
-        assert result.status == "excluded"
-        assert result.selected_path is None
+        assert result.status == "resolved"
+        assert result.selected_path == path
 
 
 def test_traversal_symlink_escape_and_in_root_symlink(tmp_path):
@@ -69,33 +68,33 @@ def test_traversal_symlink_escape_and_in_root_symlink(tmp_path):
 
 
 @pytest.mark.parametrize("target_name", ["target.spec.ts", "target.test.ts", "target.d.ts", "target.txt", "target.TS"])
-def test_exact_symlink_to_ineligible_canonical_target_is_excluded(tmp_path, target_name):
+def test_exact_symlink_accepts_generic_canonical_targets(tmp_path, target_name):
     target = make(tmp_path, f"src/{target_name}")
     alias = tmp_path / "alias.ts"
     alias.symlink_to(target)
     for reference in ["alias.ts", "./alias.ts", str(alias)]:
         result = resolve_file(reference, cwd=tmp_path, repository_root=tmp_path)
-        assert result.status == "excluded"
-        assert result.selected_path is None
-        assert result.candidates == ()
+        assert result.status == "resolved"
+        assert result.selected_path == target
+        assert result.candidates == (target,)
 
 
 @pytest.mark.parametrize("target_name", ["target.spec.ts", "target.test.ts", "target.d.ts", "target.txt", "target.TS"])
-def test_basename_scan_skips_ineligible_canonical_targets(tmp_path, target_name):
+def test_basename_scan_accepts_and_deduplicates_generic_canonical_targets(tmp_path, target_name):
     target = make(tmp_path, f"targets/{target_name}")
     alias = tmp_path / "aliases" / "alias.ts"
     alias.parent.mkdir()
     alias.symlink_to(target)
     result = resolve_file("alias.ts", cwd=tmp_path, repository_root=tmp_path)
-    assert result.status == "missing"
-    assert result.selected_path is None
-    assert result.candidates == ()
+    assert result.status == "resolved"
+    assert result.selected_path == target
+    assert result.candidates == (target,)
 
     valid = make(tmp_path, "production/alias.ts")
     result = resolve_file("alias.ts", cwd=tmp_path, repository_root=tmp_path)
-    assert result.status == "resolved"
-    assert result.selected_path == valid
-    assert result.candidates == (valid,)
+    assert result.status == "ambiguous"
+    assert result.selected_path is None
+    assert result.candidates == tuple(sorted((target, valid)))
 
 
 def test_basename_scan_preserves_and_deduplicates_production_symlink_targets(tmp_path):
@@ -127,25 +126,11 @@ def test_unicode_spaces_and_no_mutation(tmp_path):
     assert after == before
 
 
-def test_stat_permission_failure_is_inaccessible(tmp_path, monkeypatch):
-    path = make(tmp_path, "a.ts")
-    original = Path.stat
-    def denied(self, *args, **kwargs):
-        if self == path:
-            raise PermissionError("controlled denial")
-        return original(self, *args, **kwargs)
-    monkeypatch.setattr(Path, "stat", denied)
-    result = resolve_file("a.ts", cwd=tmp_path, repository_root=tmp_path)
-    assert result.status == "inaccessible"
-    assert result.selected_path is None
-
-
-def test_scan_error_does_not_guess_unique_candidate(tmp_path, monkeypatch):
-    path = make(tmp_path, "src/a.ts")
-    def failed_walk(root, *, topdown, onerror, followlinks):
-        onerror(PermissionError("controlled scan failure"))
-        yield str(path.parent), [], [path.name]
-    monkeypatch.setattr(os, "walk", failed_walk)
+def test_helper_io_failure_maps_to_inaccessible(tmp_path, monkeypatch):
+    # Filesystem failure injection belongs in the TS suite. This proves adapter mapping.
+    monkeypatch.setattr("laya_context_router.building_blocks.typescript.resolve_reference",
+        lambda *args, **kwargs: {"status": "error", "data": None,
+            "diagnostics": [{"code": "io_error", "message": "controlled scan failure"}]})
     result = resolve_file("a.ts", cwd=tmp_path, repository_root=tmp_path)
     assert result.status == "inaccessible"
     assert result.selected_path is None

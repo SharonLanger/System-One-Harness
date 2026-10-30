@@ -30,9 +30,20 @@ def run(text, source_outline, *, config, registry, max_candidates=64, max_input_
             raise ValueError('invalid or duplicate candidate')
         mapping[candidate['id']] = {**deepcopy(candidate), 'path': source_outline['path'],
                                    'source_hash': source_outline['source_hash']}
+    name_counts = {name: sum(c['name'] == name for c in candidates)
+                   for name in {c['name'] for c in candidates}}
+    labels = {}
+    for candidate in candidates:
+        label = candidate['name']
+        if name_counts[label] > 1 or label == 'none_or_unclear':
+            location = candidate.get('location', {})
+            label += f"@{location.get('line', '?')}:{location.get('column', '?')}"
+        if label in labels:
+            raise ValueError('duplicate readable candidate label')
+        labels[label] = candidate['id']
     def result(reason, decisions=None, selected_id=None):
         return {'selected_id': selected_id, 'reason': reason, 'decisions': decisions or {},
-                'candidate_map': deepcopy(mapping)}
+                'candidate_map': deepcopy(mapping), 'label_map': deepcopy(labels)}
     if not candidates:
         return result('no_candidates')
     if len(candidates) > max_candidates:
@@ -42,7 +53,7 @@ def run(text, source_outline, *, config, registry, max_candidates=64, max_input_
     block = QuestionBlock(BLOCK_DIR)
     payloads = {name: q.to_predict_dict() for name, q in block.questions.items()}
     sentinel = payloads['method']['criteria']['none_or_unclear']
-    payloads['method']['criteria'] = {c['id']: c['signature'] for c in candidates}
+    payloads['method']['criteria'] = {label: mapping[source_id]['signature'] for label, source_id in labels.items()}
     payloads['method']['criteria']['none_or_unclear'] = sentinel
     size = len(text) + len(json.dumps(payloads, ensure_ascii=False, separators=(',', ':')))
     if size > max_input_chars:
@@ -57,6 +68,6 @@ def run(text, source_outline, *, config, registry, max_candidates=64, max_input_
         return result('multiple_undecided', decisions)
     if multiple['answer'] == 'yes':
         return result('multiple_relevant', decisions)
-    if method['answer'] not in mapping:
+    if method['answer'] not in labels:
         return result('unknown_candidate', decisions)
-    return result(None, decisions, method['answer'])
+    return result(None, decisions, labels[method['answer']])

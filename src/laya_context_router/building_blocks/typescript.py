@@ -1,4 +1,4 @@
-"""Bounded subprocess bridge to the compiler-based, non-executing source helper."""
+"""Bounded transport/schema adapter. See typescript-helper/README.md for utility contracts."""
 import json
 from pathlib import Path
 import re
@@ -62,10 +62,10 @@ def _request(path: str | Path, request: dict, *, node: str, helper: str | Path,
     if not helper.is_file():
         log("ERROR", "extractor", "helper_missing", helper=helper, path=path)
         raise TypeScriptError(f"TypeScript helper build missing: {helper}; run npm run build")
-    path = Path(path).resolve()
+    path = Path(path).resolve() if path is not None else None
     try:
         result = subprocess.run([str(node), str(helper.resolve())],
-            input=json.dumps({**request, "path": str(path)}),
+            input=json.dumps({**request, **({"path": str(path)} if path is not None else {})}),
             text=True, encoding="utf-8", capture_output=True, timeout=timeout, check=False)
     except FileNotFoundError as exc:
         log("ERROR", "extractor", "node_unavailable", error=exc, path=path)
@@ -252,3 +252,81 @@ def collect_project_context(path: str | Path, callable_id: str, *, repository_ro
     log("DEBUG", "extractor", "context_validated", path=path, context=data)
     return data
 
+
+def _validate_outcome(data):
+    if (not isinstance(data, dict) or data.get('status') not in ('ok', 'partial', 'error')
+            or not isinstance(data.get('diagnostics'), list)
+            or any(not isinstance(d, dict) or not all(isinstance(d.get(k), str) and d[k]
+                for k in ('code', 'message')) for d in data['diagnostics'])
+            or (data['status'] == 'error') != (data.get('data') is None)
+            or (data['status'] in ('partial', 'error') and not data['diagnostics'])
+            or (data['status'] == 'ok' and data['diagnostics'])):
+        raise TypeScriptError('invalid utility outcome schema')
+    if data['status'] == 'error':
+        log('ERROR', 'extractor', 'utility_failed', diagnostics=data['diagnostics'])
+    return data
+
+
+def detect_references(text: str, config=None, *, node='node', helper=DEFAULT_HELPER, timeout=5.0):
+    """Configured lexical detection; see TypeScript README. No filesystem reads."""
+    data = _validate_outcome(_request(None, {'action': 'detect_references', 'text': text,
+        **({'config': config} if config is not None else {})}, node=node, helper=helper, timeout=timeout))
+    if data['status'] == 'error':
+        return data
+    if not isinstance(data['data'], dict) or not isinstance(data['data'].get('references'), list):
+        raise TypeScriptError('invalid detection schema')
+    for item in data['data']['references']:
+        if (not isinstance(item, dict) or not all(isinstance(item.get(k), str) and item[k]
+                for k in ('path', 'filename', 'category'))
+                or not _integer(item.get('start')) or not _integer(item.get('end'))
+                or item['end'] <= item['start']):
+            raise TypeScriptError('invalid detection schema')
+    return data
+
+
+def resolve_reference(reference: str, *, cwd, repository_root, node='node', helper=DEFAULT_HELPER, timeout=5.0):
+    """Generic repository-confined path resolution; policy lives in TypeScript."""
+    data = _validate_outcome(_request(None, {'action': 'resolve_reference', 'reference': reference,
+        'cwd': str(Path(cwd).resolve()), 'repository_root': str(Path(repository_root).resolve())},
+        node=node, helper=helper, timeout=timeout))
+    if data['status'] == 'error':
+        return data
+    value = data['data']
+    if (not isinstance(value, dict) or value.get('resolution') not in
+            ('resolved', 'missing', 'ambiguous', 'outside_repository', 'not_file')
+            or not isinstance(value.get('candidates'), list)
+            or any(not isinstance(p, str) or not Path(p).is_absolute() for p in value['candidates'])
+            or value['candidates'] != sorted(set(value['candidates']))
+            or (value['resolution'] == 'resolved' and (not isinstance(value.get('selected_path'), str)
+                or value['candidates'] != [value['selected_path']]))
+            or (value['resolution'] != 'resolved' and value.get('selected_path') is not None)
+            or (value['resolution'] == 'ambiguous' and len(value['candidates']) < 2)):
+        raise TypeScriptError('invalid resolution schema')
+    return data
+
+
+def list_called_callables(path, callable_id, *, repository_root, node='node', helper=DEFAULT_HELPER, timeout=5.0):
+    """Return navigation metadata across the whole selected block, never bodies."""
+    root = Path(repository_root).resolve()
+    data = _validate_outcome(_request(path, {'action': 'list_called_callables', 'id': callable_id,
+        'repository_root': str(root)}, node=node, helper=helper, timeout=timeout))
+    if any(not _integer(d.get('start')) or not _integer(d.get('end')) or d['end'] < d['start'] for d in data['diagnostics']):
+        raise TypeScriptError('invalid call-list schema: diagnostic range')
+    if data['status'] == 'error':
+        return data
+    if not isinstance(data['data'], dict) or not isinstance(data['data'].get('calls'), list):
+        raise TypeScriptError('invalid call-list schema')
+    keys = []
+    for item in data['data']['calls']:
+        if (not isinstance(item, dict) or set(item) != {'path', 'id', 'name', 'signature'}
+                or not all(isinstance(item.get(k), str) and item[k] for k in item)
+                or not _project_path(item['path'], root)
+                or not re.fullmatch(r'[0-9a-f]{64}:[0-9]+:[0-9]+', item['id'])):
+            raise TypeScriptError('invalid call-list schema')
+        _, start, end = item['id'].split(':')
+        if int(end) <= int(start):
+            raise TypeScriptError('invalid call-list schema')
+        keys.append((item['path'], item['id']))
+    if keys != sorted(set(keys)):
+        raise TypeScriptError('invalid call-list schema: ordering')
+    return data

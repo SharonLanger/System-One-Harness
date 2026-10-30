@@ -12,18 +12,18 @@ root = Path(__file__).resolve().parents[1]
 source = root / 'tests/fixtures/typescript/basic.ts'
 # Explicit fixture candidate and raw response; no inference from the prompt.
 source_outline = outline(source)
-chosen = source_outline['callables'][0]['id']
-ids = [c['id'] for c in source_outline['callables']] + ['none_or_unclear']
+chosen = source_outline['callables'][0]['name']
+labels = [c['name'] for c in source_outline['callables']] + ['none_or_unclear']
 raw = {'answers': {
     'method': {'type': 'choice', 'choice': chosen, 'answer_confidence': 0.95,
-               'probabilities': {key: 0.9 if key == chosen else 0.1 / (len(ids)-1) for key in ids}},
+               'probabilities': {key: 0.9 if key == chosen else 0.1 / (len(labels)-1) for key in labels}},
     'multiple_relevant': {'type': 'noul', 'noul': 0.1, 'answer_confidence': 0.95}}}
 
 
 class MockAgent:
     def predict(self, text, questions):
         assert text == 'Explain `tests/fixtures/typescript/basic.ts`: how does greet work?'
-        assert list(questions['method']['criteria']) == ids
+        assert list(questions['method']['criteria']) == labels
         return deepcopy(raw)
 
 
