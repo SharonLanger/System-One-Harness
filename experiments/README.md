@@ -1,5 +1,129 @@
 # Experiments
 
+## Copy a command and run it
+
+Run these commands **from the repository root**, with your usual Python
+environment activated. Choose one command at a time; each script is independent.
+For IDE Play, run the script without arguments to use its default input. To use
+an alternate input, put the flags below in the IDE's script arguments field.
+
+**Start here: real Laya through the hook, using the expanded inventory file.**
+
+```bash
+python experiments/hook_user_prompt_submit.py --input experiments/inputs/hook_inventory.json --deadline 120
+```
+
+- `--input` selects the saved JSON event: edit its `prompt` to change the request.
+- `--deadline 120` gives the hook 120 seconds for its work, including model
+  loading and inference. It does not pause for 120 seconds when work finishes
+  sooner. Without this flag the limit is 10 seconds, which may be too short for
+  a cold model load. The replay allows another 10 seconds before killing the
+  child; native SDK work may not stop immediately at the inner deadline.
+- These flags belong to this replay script. Other scripts support only the
+  flags shown below; `--deadline` is not a general Laya setting.
+
+The replay prints questions, responses, enrichment, rules, and decisions after
+the child finishes. Open the newest folder under
+`experiments/results/hook_user_prompt_submit/`: `summary.md` is readable,
+`details.json` contains the captured data, and `trace.jsonl` contains this hook
+PID's log entries. A no-op can still have a complete model response and rejected
+decision. If no request was observed, the report says so explicitly.
+
+**Try the other four files with the same hook:**
+
+```bash
+python experiments/hook_user_prompt_submit.py --input experiments/inputs/hook_packing.json --deadline 120
+python experiments/hook_user_prompt_submit.py --input experiments/inputs/hook_pricing.json --deadline 120
+python experiments/hook_user_prompt_submit.py --input experiments/inputs/hook_shipment.json --deadline 120
+python experiments/hook_user_prompt_submit.py --input experiments/inputs/hook_reporting.json --deadline 120
+```
+
+Omit `--input` to use the original `inputs/hook_user_prompt_submit.json`.
+Optional `--config /absolute/path/run-config.json` supplies the hook's model
+configuration, with `model`, `temperature`, and `lang` fields. This is separate
+from the event input. Replaying does not register a live Claude hook.
+
+**Connection probe only — no Laya, questions, or rules:**
+
+```bash
+python experiments/hook_prompt_probe.py
+```
+
+Edit `inputs/hook_prompt_probe.json` to change the marker message or synthetic
+event. Optional `--config /path/probe.json` selects another probe configuration;
+this is not a model configuration. `--hook` is for the live Claude command and
+waits for event JSON on stdin, so do not add it for a normal Play/replay run.
+See [live setup](HOOKS.md#connect-it-on-your-mac).
+
+**Direct Laya calls — choose a question type:**
+
+```bash
+python experiments/laya_choice.py
+python experiments/laya_noul.py
+python experiments/laya_score.py
+python experiments/laya_multiple_questions.py
+python experiments/laya_compare_models.py
+```
+
+Edit the matching `experiments/inputs/<script-name>.json` for questions, text,
+and configuration. These scripts do not accept `--input`. They accept `--model`,
+`--temperature`, and `--lang` overrides. For example:
+
+```bash
+python experiments/laya_choice.py --temperature 0.2
+python experiments/laya_compare_models.py --temperature 0.2 --compare-temperature 0.7
+```
+
+To select another compatible checkpoint, add `--model "YOUR_MODEL_ID"`;
+comparison also supports `--compare-model "YOUR_SECOND_MODEL_ID"`. Replace those
+placeholders with real model IDs. The comparison script makes two requests.
+
+**One building block — questions, enrichment, rules, and method selection:**
+
+```bash
+python experiments/block_method_selection.py
+python experiments/block_method_selection.py --temperature 0.2
+```
+
+Edit `inputs/block_method_selection.json` for the prompt and synthetic outline.
+This script also accepts `--model` and `--lang`, but not `--input`. Questions and
+rules are loaded from the shared method-selection block, as [explained here](HOOKS.md#what-the-existing-real-experiment-does).
+
+**Complete file/method flows — default, controller, or static method:**
+
+```bash
+python experiments/flow_method_context.py
+python experiments/flow_connected_project.py
+python experiments/flow_connected_project.py --input experiments/inputs/flow_connected_project_controller.json
+python experiments/flow_connected_project.py --input experiments/inputs/flow_connected_project_static.json
+```
+
+Both flow scripts accept `--input`. Their JSON uses `text` and `config`, unlike
+hook event JSON, which uses `prompt`, `cwd`, and `hook_event_name`. Do not swap
+these two input formats. Change model settings in the flow input's `config`.
+
+**Repeat prompts, or intentionally try a missing file:**
+
+```bash
+python experiments/repeat_scenario.py
+python experiments/flow_missing_file.py
+```
+
+Edit their matching input JSON files; neither script accepts CLI options.
+The repeat script calls real Laya for each prompt (up to five). The missing-file
+script intentionally produces a no-op without calling Laya.
+
+**Prerequisites for file extraction:** install Node dependencies once with
+`npm --prefix typescript-helper ci`, then run
+`npm --prefix typescript-helper run build`. Build again after helper source
+changes; no rebuild is needed just to edit prompts. This applies to file flows
+and real hook replay. The connection probe and static-outline block do not need
+Node. Model-calling experiments need your working `laya_mlx`/MLX environment.
+
+**Helpers, not experiments:** `experiment_runner.py`, `support.py`, `summary.py`,
+`block_method_selection_summary.py`, and `hook_trace.py` are imported by the
+scripts above. Do not run them to launch experiments.
+
 To understand the prompt hook and first check the live Claude connection, see
 [the hook guide](HOOKS.md). Run `hook_prompt_probe.py` for a simple, configurable
 context response with immediate invocation logging and no Laya call. Its
@@ -63,7 +187,9 @@ experiments/results/laya_noul/2026-10-30_14-32-05/summary.md
 experiments/results/laya_noul/2026-10-30_14-32-05/details.json
 ```
 
-The results subfolder always equals the script stem. Each run has its own
+The results subfolder normally equals the script stem. `flow_method_context.py`
+uses the input filename stem when passed `--input`; `flow_connected_project.py`
+and hook replay keep their script stem for alternate inputs. Each run has its own
 directory named `YYYY-MM-DD_HH-MM-SS`, using the Mac's local time. Same-second
 collisions use `_001`, `_002`, etc., allocated without overwriting another run.
 Store the timezone offset and UTC start time in the report too. Directory names
@@ -71,12 +197,13 @@ sort chronologically under an unchanged local clock; daylight-saving or manual
 clock changes require comparing the recorded UTC timestamps.
 
 `results/` and captured personal hook inputs must be ignored by Git. Commit only
-synthetic, shareable sample inputs. Inputs are read relative to the script, not
-the shell working directory.
+synthetic, shareable sample inputs. Default inputs are located relative to the
+script. Explicit relative `--input`/`--config` paths are relative to your current
+shell directory; use absolute paths when running elsewhere.
 
 ## Input and configuration
 
-Each input JSON contains `text`, named `questions`, and `config`:
+Direct Laya input JSON contains `text`, named `questions`, and `config`:
 
 ```json
 {
@@ -191,8 +318,8 @@ does not imply that every edge will be resolved; inspect `dependencies`,
 `gaps`, and `limitations` in each run's `details.json`.
 
 The flow scripts accept `--input /path/to/input.json` to try another saved
-prompt/configuration. Reports go under the invoking script's own stem, with a
-timestamped summary and details file. For example, run the direct imported
+prompt/configuration. Report-folder naming is described under Locations above,
+with a timestamped summary and details file. For example, run the direct imported
 function chain from any working directory with:
 
 ```bash
