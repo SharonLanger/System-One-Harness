@@ -127,4 +127,12 @@ Project root comes from the existing explicit configuration option. Event cwd is
 
 Context returns one `hookSpecificOutput` JSON object. Normal no-op returns zero stdout bytes and exit0; handled errors also remain nonblocking but log an explicit error outcome. Diagnostics use stderr. Logs include invocation/session IDs, reason/code and output byte counts; replay captures exact stdout independently. See [hook usage](docs/hook-usage.md) and [phase evidence](docs/phases/hook-gateway/progress.md).
 
-`hooks/user_prompt_submit.py` remains a forwarding compatibility launcher with no separate input parsing or feature pipeline. Final plugin manifest/hooks JSON and preferred plugin installation instructions remain pending Sharon's supplied assets. No plugin or global hook is installed by this change.
+`hooks/user_prompt_submit.py` remains a forwarding compatibility launcher with no separate input parsing or feature pipeline. The supplied plugin in `plugins/hook-laya/` invokes the same gateway through `scripts/hook.py`.
+
+To load it for a local Claude session, activate the Python/Laya environment used during setup, then run from your target project:
+
+```bash
+claude --plugin-dir /absolute/path/to/laya-context-router/plugins/hook-laya
+```
+
+The hook passes Claude's `CLAUDE_PROJECT_DIR` explicitly as `--repository-root` and enables the existing flow with `--real`. See [plugin setup](plugins/hook-laya/README.md) for prerequisites and configuration. Loading is manual; repository setup does not activate the plugin.
