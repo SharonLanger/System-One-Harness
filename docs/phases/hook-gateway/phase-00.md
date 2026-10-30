@@ -29,3 +29,5 @@ Both are selection policy baseline cases; assigned to Astra, unchanged. Upper-la
 Forwarded selection reasons: no_candidates, candidate_budget_exceeded, ambiguous_candidates, input_budget_exceeded, method_undecided, no_single_match, multiple_undecided, multiple_relevant, unknown_candidate. Resolver statuses forwarded by flow remain explicit unsupported/missing/ambiguous resolution outcomes to enumerate at adapter work.
 
 Phase0 status: baseline inventoried; upper-layer work permitted. Official schema and reviewed root API remain release dependencies.
+
+D04 — stale selection-policy fixtures reconciled: Astra inspected Sharon's commit 5cd63cd027365099be0842316b0807af1c62607f, which removed distance_from_boundary from method selection. High-confidence noul=0.5 correctly means multiple_relevant. Corrected two stale expected values and added true low-answer-confidence multiple_undecided cases at block/flow layers, preserving one-call/no-fallback assertions. Production policy unchanged. Both affected modules: 28 passed in19.54s.

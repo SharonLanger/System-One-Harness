@@ -65,7 +65,7 @@ def test_opt_in_two_round_sequence_terminates(tmp_path, second_outcome):
 @pytest.mark.parametrize('choice,confidence,multiple,reason', [
     ('candidate', .95, .1, None), ('none_or_unclear', .95, .1, 'no_single_match'),
     ('candidate', .95, .9, 'multiple_relevant'), ('candidate', .1, .9, 'method_undecided'),
-    ('candidate', .1, .5, 'method_undecided'), ('candidate', .95, .5, 'multiple_undecided'),
+    ('candidate', .1, .5, 'method_undecided'), ('candidate', .95, .5, 'multiple_relevant'),
 ])
 def test_explicit_outcomes_never_trigger_fallback(tmp_path, choice, confidence, multiple, reason):
     _, data, prompt, _, q = setup(tmp_path)
@@ -120,3 +120,13 @@ def test_distinct_blocks_independent_policies_and_actual_flow_A_B_A(tmp_path):
     # .8 passes method policy (.3) but fails distinct department policy (.9).
     assert not decisions['department']['decided'] and decisions['churn_risk']['decided']
     assert len(loads) == 2 and calls[0] is calls[2] and calls[0] is not calls[1] and not remaining
+
+
+def test_low_multiple_confidence_does_not_trigger_fallback(tmp_path):
+    _, data, prompt, _, q = setup(tmp_path)
+    response = raw_for(q, data['callables'][0]['signature'])
+    response['answers']['multiple_relevant']['answer_confidence'] = 0.1
+    reg, remaining, _, calls = sequence_registry([(A, prompt, q, response)])
+    result = execute(tmp_path, prompt, reg, fallback_config=B)
+    assert result['reason'] == 'multiple_undecided'
+    assert result['context'] is None and len(calls) == 1 and not remaining
