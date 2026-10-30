@@ -1,0 +1,10 @@
+{
+  "text": "I ate an apple.",
+  "questions": {
+    "fruit_mentioned": {
+      "type": "noul",
+      "instructions": "Is a fruit mentioned?"
+    }
+  },
+  "config": {"model": "aac6fef/laya-typed-decisions-mlx", "temperature": null, "lang": "en"}
+}
