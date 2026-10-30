@@ -1,5 +1,10 @@
 # Experiments
 
+To understand the prompt hook and first check the live Claude connection, see
+[the hook guide](HOOKS.md). Run `hook_prompt_probe.py` for a simple, configurable
+context response with immediate invocation logging and no Laya call. Its
+`--hook` mode accepts Claude's stdin; its default mode replays a synthetic event.
+
 Direct adapter experiments are implemented for choice, noul, score, multiple
 named questions, and configuration comparison. No live Laya execution is
 verified here. See [the implementation plan](../docs/experiments-plan.md). A mock
