@@ -1,5 +1,67 @@
 """Reporting helper: read one hook child's existing logs without rerunning Laya."""
 import json
+import re
+
+
+def fenced(text, language="text"):
+    """Keep source-code backticks from closing the report's display box."""
+    fence = "`" * max(3, 1 + max((len(m.group()) for m in re.finditer(r"`+", text)), default=0))
+    return f"{fence}{language}\n{text}\n{fence}\n"
+
+
+def hook_output_sections(details):
+    """Show captured output and prepared-only content without confusing them."""
+    prepared = next((r.get("details", {}) for r in reversed(details.get("trace", []))
+                     if r.get("component") == "hook" and r.get("event") == "response_prepared"), {})
+    rejected = next((r.get("details", {}) for r in reversed(details.get("trace", []))
+                    if r.get("component") == "hook" and r.get("event") == "response_rejected"), {})
+    actual = details.get("parsed_output")
+    specific = actual.get("hookSpecificOutput") if isinstance(actual, dict) else None
+    returned = isinstance(specific, dict) and isinstance(specific.get("additionalContext"), str)
+    lines = ["\n## Hook output — what was actually returned\n"]
+    if returned:
+        lines.append("**Returned by the hook subprocess.** Live delivery to Claude is not verified by replay.\n")
+        response = actual
+        label = "Returned"
+    else:
+        if not details.get("stdout", "").strip():
+            lines.append("**No context was returned. stdout was empty.** The report's `null` is a missing "
+                         "parsed response; the hook did not send the JSON value `null` to Claude.\n")
+        else:
+            lines.append("**No valid additionalContext response was captured.** See raw stdout in details.json.\n")
+        response = prepared.get("response")
+        label = "Prepared only — NOT SENT"
+        if rejected:
+            lines.append(f"Rejection: **{rejected.get('reason')}**. "
+                         f"Context size: **{rejected.get('context_chars')}** characters; "
+                         f"limit: **{rejected.get('max_context_chars')}**.\n")
+    specific = response.get("hookSpecificOutput") if isinstance(response, dict) else None
+    context = specific.get("additionalContext") if isinstance(specific, dict) else None
+    if not isinstance(context, str):
+        lines.append("No prepared response was captured either; a payload cannot be shown from this run.\n")
+        return "\n".join(lines)
+    lines.append(f"\n### {label}: complete hook JSON\n\n"
+                 "This is the hook protocol envelope; `additionalContext` is the string added alongside the prompt.\n\n"
+                 + fenced(json.dumps(response, indent=2, ensure_ascii=False), "json"))
+    lines.append(f"\n### {label}: additionalContext — exact text\n\n"
+                 f"The box contains only the {len(context):,}-character string value, with no JSON-envelope escaping.\n\n"
+                 + fenced(context))
+    # The existing hook embeds a JSON context object after its first header line.
+    # Decode only for display; never alter the string returned by the hook.
+    try:
+        header, body = context.split("\n", 1)
+        content = json.loads(body)
+    except (ValueError, TypeError):
+        content = None
+    if isinstance(content, dict):
+        if isinstance(content.get("code"), str):
+            lines.append("\n### Selected method code inside that context\n\n"
+                         "This is one field of the payload above, not the entire additionalContext.\n\n"
+                         + fenced(content["code"], "typescript"))
+        lines.append("\n<details>\n<summary>All context fields, formatted for reading</summary>\n\n"
+                     "Display formatting only; the exact original string is shown above.\n\n"
+                     + fenced(json.dumps(content, indent=2, ensure_ascii=False), "json") + "\n</details>\n")
+    return "\n".join(lines)
 
 
 def read_trace(path, offset, pid):
@@ -75,6 +137,7 @@ def render_summary(details):
              f"Hook PID: {details['hook_pid']}.\n",
              f"No-op/error reason: {reason or details['error'] or 'none recorded'}.\n",
              "This runs the real hook subprocess. It does not install a hook in Claude.\n",
+             hook_output_sections(details),
              section("Input from Claude (replayed)", details["event"])]
     calls = details["laya_calls"]
     if not calls:
@@ -95,7 +158,6 @@ def render_summary(details):
     lines.extend(f"- {r.get('time')} — {r.get('component')}.{r.get('event')}\n" for r in details["trace"])
     if not details["trace"]:
         lines.append("No entries captured.\n")
-    lines.append(section("JSON returned to Claude", details["parsed_output"]))
     lines.append(section("Diagnostics from stderr (can include SDK progress)", details["stderr"]))
     lines.append(section("Replay error", details["error"]))
     lines.append(section("Trace warnings", details["trace_warnings"]))

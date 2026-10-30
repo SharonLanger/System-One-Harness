@@ -29,6 +29,15 @@ the child finishes. Open the newest folder under
 PID's log entries. A no-op can still have a complete model response and rejected
 decision. If no request was observed, the report says so explicitly.
 
+At the top of `summary.md`, **Hook output — what was actually returned** shows
+whether the hook returned context. It includes the complete hook JSON and a
+separate text box containing only the exact `additionalContext` value. When
+the budget rejects a payload, both boxes are labeled **Prepared only — NOT
+SENT**, with actual size and limit. Empty stdout is explained instead of showing
+an unexplained `null`. Below the boxes are the selected method code and an
+expandable view of all context fields, formatted for reading. These are display
+changes only; they do not modify the actual payload or the hook's size limit.
+
 **Try the other four files with the same hook:**
 
 ```bash
