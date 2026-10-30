@@ -127,12 +127,8 @@ Project root comes from the existing explicit configuration option. Event cwd is
 
 Context returns one `hookSpecificOutput` JSON object. Normal no-op returns zero stdout bytes and exit0; handled errors also remain nonblocking but log an explicit error outcome. Diagnostics use stderr. Logs include invocation/session IDs, reason/code and output byte counts; replay captures exact stdout independently. See [hook usage](docs/hook-usage.md) and [phase evidence](docs/phases/hook-gateway/progress.md).
 
-`hooks/user_prompt_submit.py` remains a forwarding compatibility launcher with no separate input parsing or feature pipeline. The supplied plugin in `plugins/hook-laya/` invokes the same gateway through `scripts/hook.py`.
+`hooks/user_prompt_submit.py` remains a forwarding compatibility launcher. The plugin in `plugins/hook-laya/` is configuration only and calls the gateway directly using your configured Python interpreter. Users install this repository into that interpreter's environment and choose how to enable the plugin.
 
-To load it for a local Claude session, activate the Python/Laya environment used during setup, then run from your target project:
+See [manual plugin setup](plugins/hook-laya/README.md) for Sharon's preferred copy-to-`.claude/my-plugins` and `env.CLAUDE_CODE_PLUGIN_DIRS` recipe, plus alternative loading. No installer script, automatic copying, settings edits or activation is provided.
 
-```bash
-claude --plugin-dir /absolute/path/to/laya-context-router/plugins/hook-laya
-```
-
-The hook passes Claude's `CLAUDE_PROJECT_DIR` explicitly as `--repository-root` and enables the existing flow with `--real`. See [plugin setup](plugins/hook-laya/README.md) for prerequisites and configuration. Loading is manual; repository setup does not activate the plugin.
+For each hook, the gateway reads Claude's process environment `CLAUDE_PROJECT_DIR` and adds a nullable `derived.project_dir` to the internal envelope. Original event cwd and explicit feature source root remain separate. See [project-context verification](docs/verification/plugin-project-context.md) for the user-run two-session test and worktree limitations.

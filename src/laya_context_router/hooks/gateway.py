@@ -85,7 +85,10 @@ def _expired(signum, frame):
 
 def _default_dispatch(payload, args, invocation_id, logger):
     from .dispatcher import dispatch_hook
-    return dispatch_hook(payload, args, invocation_id, logger)
+    from .project_context import enrich_project_context
+    project_dir = os.environ.get('CLAUDE_PROJECT_DIR')
+    return dispatch_hook(payload, args, invocation_id, logger,
+                         enricher=lambda envelope: enrich_project_context(envelope, project_dir, logger))
 
 def _default_log(level, event, **details):
     from ..log_utils import log

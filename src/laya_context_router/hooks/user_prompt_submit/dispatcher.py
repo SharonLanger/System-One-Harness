@@ -23,6 +23,8 @@ def dispatch_user_prompt_submit(envelope,args,logger,*,handler=None,clock=monoto
         request=PromptRequest(prompt,envelope,args)
         logger('INFO','hook_input_ingested',session_id=envelope.common['session_id'],
                fields=sorted(envelope.raw_payload),prompt_chars=len(prompt),cwd=envelope.common['cwd'],
+               project_dir=envelope.derived.get('project_dir'),
+               project_dir_source='CLAUDE_PROJECT_DIR' if 'project_dir' in envelope.derived else None,
                project_root_source='explicit_configuration' if getattr(args,'repository_root',None) else None)
         logger('INFO','feature_started',session_id=envelope.common['session_id'],
                feature_id='prompt_context_enrichment')
