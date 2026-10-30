@@ -7,7 +7,8 @@ from ..building_blocks.resolve_file import resolve_file
 from ..building_blocks.typescript import DEFAULT_HELPER, TypeScriptError, outline, collect_project_context
 from ..building_blocks.questions.method_selection.block import run as select_method
 
-DEFAULT_REFERENCE_PATTERN = re.compile(r'''(?P<quote>["'`])?(?P<path>(?(quote)[^"'`\r\n]+|[^\s"'`<>:,;!?()]+)\.[A-Za-z0-9]+)(?(quote)(?P=quote))(?::\d+(?::\d+)?)?''')
+# V1 recognizes complete .ts paths; callers may still supply their own pattern.
+DEFAULT_REFERENCE_PATTERN = re.compile(r'''(?<![\w./-])(?P<quote>["'`])?(?P<path>(?(quote)[^"'`\r\n]+|[^\s"'`<>:,;!?()]+)\.ts)(?(quote)(?P=quote))(?::\d+(?::\d+)?)?(?=$|[\s"'`<>:,;!?()]|\.(?=$|\s))''')
 ELIGIBLE = re.compile(r'^\s*Explain\s+`(?P<target>[^`\r\n]+)`\s*:\s*(?P<question>\S[\s\S]*)$', re.IGNORECASE)
 
 

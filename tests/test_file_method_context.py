@@ -55,7 +55,7 @@ def test_complete_real_source_flow_exact_request_and_context(tmp_path, absolute)
     ("Explain `a.ts`: compare b.ts", "multiple_files"),
     ("Explain `a.spec.ts`: what does f do?", "excluded"),
     ("Explain `a.d.ts`: what does f do?", "excluded"),
-    ("Explain `a.tsx`: what does f do?", "excluded"),
+    ("Explain `a.tsx`: what does f do?", "no_file"),
     ("Explain `a.ts`", "unsupported_request"),
 ])
 def test_ineligible_mentions_no_source_or_model(tmp_path, monkeypatch, prompt, reason):
