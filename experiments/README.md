@@ -31,12 +31,16 @@ decision. If no request was observed, the report says so explicitly.
 
 At the top of `summary.md`, **Hook output — what was actually returned** shows
 whether the hook returned context. It includes the complete hook JSON and a
-separate text box containing only the exact `additionalContext` value. When
-the budget rejects a payload, both boxes are labeled **Prepared only — NOT
-SENT**, with actual size and limit. Empty stdout is explained instead of showing
+separate text box containing only the exact `additionalContext` value. For old
+runs where the budget rejected a payload, both boxes are labeled **Prepared only
+— NOT SENT**, with actual size and limit. Empty stdout is explained instead of showing
 an unexplained `null`. Below the boxes are the selected method code and an
 expandable view of all context fields, formatted for reading. These are display
-changes only; they do not modify the actual payload or the hook's size limit.
+changes only. The hook now uses a formatter to send readable method/supporting
+code with paths and lines instead of the full internal extractor JSON.
+Exceeding 8,000 formatted characters logs `WARNING` / `context_size_warning`
+and still sends the full content. The old saved run reports remain historical
+evidence; rerun an experiment to observe the new behavior.
 
 **Try the other four files with the same hook:**
 

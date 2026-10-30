@@ -62,16 +62,17 @@ real setup; the current default Claude UserPromptSubmit timeout is 30 seconds.
 Accepted context is one `hookSpecificOutput` object containing `hookEventName`
 and string `additionalContext`. The original prompt is preserved. Safe no-ops
 and handled errors exit 0 with empty stdout; diagnostics go to stderr. Source
-context is partial, not a complete explanation or dependency graph. Input and
-context budgets refuse oversized data without truncating it. The 8,000-character
-default applies to the entire rendered string (including code, labels and
-provenance), below the documented 10,000-character overflow behavior. It is
-separate from the Laya input and dependency-source budgets.
+context is partial, not a complete explanation or dependency graph. Input
+budgets still refuse oversized input. `--max-context-chars` is now a warning
+threshold, defaulting to 8,000 characters of the formatted `additionalContext`
+string. Exceeding it logs `WARNING` / `context_size_warning` and sends the whole
+string unchanged. It does not truncate or reject the response. This is separate
+from Laya input and dependency-source budgets, which remain enforced.
 `--max-dependency-depth` defaults to2 (0–20); `--max-dependency-chars` defaults
 to12,000 (1–1,000,000 UTF16 code units in complete dependency source). Collection
 can omit complete units only with explicit gaps. Selected code stays complete.
-The final Unicode-character rendering budget counts dependency units, gaps and
-all metadata; overflow returns a no-op without a reduced-context retry.
+The final character count includes the readable method, supporting code, paths,
+line ranges and notes. Raw extractor metadata stays in logs.
 Ordinary Python output and synchronous
 native writes to fd 1 during model work are redirected to stderr; actual SDK
 background output behavior still needs a supported-environment check.
@@ -93,19 +94,42 @@ The adapter emits one JSON line shaped like this after a successful selection;
 the source and metadata shown here are illustrative, not a runtime trace:
 
 ```json
-{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Selected TypeScript context (partial):\n{\"path\":\"/repo/src/service.ts\",\"code\":\"function calculate(x: number) { return x * 2; }\",\"coverage\":\"partial\"}"}}
+{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Selected TypeScript context (partial)\n\nMethod: calculate\nFile: /repo/src/service.ts, line 1\n\n```typescript\nfunction calculate(x: number) { return x * 2; }\n```"}}
 ```
 
-The real context also includes the extractor's actual source hash, callable
-identity, line ranges, import/dependency information and numbered display code.
+The exact presentation is defined by `src/laya_context_router/context_format.py`.
+It shows the selected source once and requested supporting declarations with
+file locations. Hashes, internal IDs, UTF-16 offsets, configuration details,
+duplicate display code and generic extractor limitations are omitted from the
+model-facing text. The original validated extraction object remains intact in
+`extractor.context_validated` logs.
 This `additionalContext` accompanies the original prompt; it does not replace it.
 The input key `hook_event_name` and output key `hookEventName` have different
 spellings. A top-level `additionalContext` is incorrectly nested and can be
 ignored by Claude Code even though its JSON parses. Ineligible, ambiguous,
-oversized and handled failure cases emit **no stdout and exit 0**, with a reason
+input-budget and handled failure cases emit **no stdout and exit 0**, with a reason
 on stderr. A successful subprocess response establishes protocol output only;
 actual delivery to Claude and actual Laya inference have separate final checks.
 
 These contracts are
 checked against the unversioned official [hooks reference](https://code.claude.com/docs/en/hooks),
 retrieved 29 October 2026. No actual Claude version or delivery is claimed.
+
+## Formatter contract
+
+`format_context(extracted_context, *, include_imports=True,
+include_dependencies=True, include_notes=True)` returns a string and does not
+mutate the validated extraction result or read additional files. The selected
+method is always included in full. Import declarations and other supporting
+declarations can be enabled independently. Supporting declarations are not
+necessarily called methods: they may also be interfaces, constants, or types.
+Notes summarize missing-context categories rather than emitting every raw gap.
+
+Paths and line ranges accompany the code so a later presentation mode can show
+dependency locations instead of bodies. This formatter does not yet implement
+that mode or discover extra callees; the existing call-navigation operation is
+the source for any future list of called methods.
+
+The old tests asserting raw extractor JSON and output-size rejection describe
+the previous contract. They need updating for this new presentation and warning
+behavior. No test suite was run or modified for this manual experiment change.

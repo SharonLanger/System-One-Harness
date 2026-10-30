@@ -156,16 +156,19 @@ The real hook also logs these events with `component: hook`:
 - `invoked` (`INFO`): hook processing started.
 - `response_prepared` (`DEBUG`): full candidate response in `details.response`,
   plus `context_chars` and `max_context_chars`. This has not been sent yet.
-- `response_rejected` (`ERROR`): the response exceeded the context budget;
-  the actual and allowed sizes are shown. No context was returned.
+- `context_size_warning` (`WARNING`): the formatted context exceeds the
+  configured threshold (8,000 by default). Sizes are shown; the hook sends the
+  full context unchanged. Historical runs used `response_rejected` (`ERROR`).
 - `response_emitted` (`INFO`): the full JSON was written to stdout for Claude.
   This proves emission, not that Claude consumed it.
 - `noop` (`INFO`): the flow declined context, with its reason.
 - `failed` (`ERROR`): an exception stopped the hook; includes its traceback.
 
-For a budget rejection, inspect `response_prepared` to see what would have been
-returned. The actual hook response remains empty, so the replay correctly shows
-`null` under “JSON returned to Claude.” These entries also appear in the replay's
+For a historical budget rejection, inspect `response_prepared` to see what would
+have been returned. The actual response in those old runs is empty. Current
+runs format the selected method and supporting source as readable text, keeping
+raw hashes, diagnostics and generic limitations in the extraction logs. These
+entries also appear in the replay's
 `trace.jsonl` and execution timeline. Filter by `ERROR` to find hook failures.
 
 Five ready event inputs target five different production files:

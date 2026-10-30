@@ -11,7 +11,6 @@ import sys
 
 MAX_INPUT_CHARS = 65536
 MAX_CONTEXT_CHARS = 8000
-HEADER = 'Selected TypeScript context (partial):\n'
 
 
 def _log(level, event, **details):
@@ -61,12 +60,13 @@ def main(argv=None):
             parser.add_argument('--config')
             parser.add_argument('--real', action='store_true', help='explicit lazy live adapter opt-in; unverified until Phase20')
             parser.add_argument('--deadline', type=float, default=10.0)
-            parser.add_argument('--max-context-chars', type=int, default=MAX_CONTEXT_CHARS)
+            parser.add_argument('--max-context-chars', type=int, default=MAX_CONTEXT_CHARS,
+                                help='warning threshold for formatted context; source is sent unchanged')
             parser.add_argument('--max-dependency-depth', type=int, default=2)
             parser.add_argument('--max-dependency-chars', type=int, default=12000)
             args = parser.parse_args(argv)
             if (not math.isfinite(args.deadline) or not 0 < args.deadline <= 300
-                    or not 0 < args.max_context_chars <= MAX_CONTEXT_CHARS
+                    or not 0 < args.max_context_chars
                     or not 0 <= args.max_dependency_depth <= 20
                     or not 1 <= args.max_dependency_chars <= 1000000):
                 raise ValueError('invalid hook budget')
@@ -106,16 +106,16 @@ def main(argv=None):
                 _log('INFO', 'noop', reason=result['reason'], response=None)
                 print(f"laya hook noop: {result['reason']}", file=sys.stderr)
                 return 0
-            context = HEADER + json.dumps(result['context'], ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+            from laya_context_router.context_format import format_context
+            context = format_context(result['context'])
             response = {'hookSpecificOutput': {
                 'hookEventName': 'UserPromptSubmit', 'additionalContext': context}}
             _log('DEBUG', 'response_prepared', response=response,
                  context_chars=len(context), max_context_chars=args.max_context_chars)
             if len(context) > args.max_context_chars:
-                _log('ERROR', 'response_rejected', reason='context_budget_exceeded',
+                _log('WARNING', 'context_size_warning',
                      context_chars=len(context), max_context_chars=args.max_context_chars,
-                     returned_response=None)
-                raise ValueError('context_budget_exceeded')
+                     action='send_unchanged')
             output = json.dumps(response,
                 ensure_ascii=False, separators=(',', ':'), allow_nan=False)
     except SystemExit:
