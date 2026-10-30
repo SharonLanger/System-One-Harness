@@ -14,6 +14,15 @@ MAX_CONTEXT_CHARS = 8000
 HEADER = 'Selected TypeScript context (partial):\n'
 
 
+def _log(level, event, **details):
+    # Preserve the hook's handled no-op if the package is not installed.
+    try:
+        from laya_context_router.log_utils import log
+    except ImportError:
+        return
+    log(level, 'hook', event, **details)
+
+
 def _expired(signum, frame):
     raise TimeoutError('hook deadline exceeded')
 
@@ -44,6 +53,7 @@ def main(argv=None):
     output = None
     previous_handler = None
     try:
+        _log('INFO', 'invoked')
         # All Python and native SDK progress output belongs on stderr.
         with _isolate_protocol_stdout():
             parser = argparse.ArgumentParser(description=__doc__)
@@ -93,18 +103,26 @@ def main(argv=None):
                          registry=AgentRegistry(real=True), max_dependency_depth=args.max_dependency_depth,
                          max_dependency_chars=args.max_dependency_chars)
             if result['status'] != 'context':
+                _log('INFO', 'noop', reason=result['reason'], response=None)
                 print(f"laya hook noop: {result['reason']}", file=sys.stderr)
                 return 0
             context = HEADER + json.dumps(result['context'], ensure_ascii=False, separators=(',', ':'), allow_nan=False)
+            response = {'hookSpecificOutput': {
+                'hookEventName': 'UserPromptSubmit', 'additionalContext': context}}
+            _log('DEBUG', 'response_prepared', response=response,
+                 context_chars=len(context), max_context_chars=args.max_context_chars)
             if len(context) > args.max_context_chars:
+                _log('ERROR', 'response_rejected', reason='context_budget_exceeded',
+                     context_chars=len(context), max_context_chars=args.max_context_chars,
+                     returned_response=None)
                 raise ValueError('context_budget_exceeded')
-            output = json.dumps({'hookSpecificOutput': {
-                'hookEventName': 'UserPromptSubmit', 'additionalContext': context}},
+            output = json.dumps(response,
                 ensure_ascii=False, separators=(',', ':'), allow_nan=False)
     except SystemExit:
         # argparse uses exit2 for errors, which would block the user's prompt.
         return 0
     except Exception as exc:
+        _log('ERROR', 'failed', error=exc, returned_response=None)
         print(f'laya hook noop: {type(exc).__name__}: {exc}', file=sys.stderr)
         return 0
     finally:
@@ -112,7 +130,8 @@ def main(argv=None):
             signal.setitimer(signal.ITIMER_REAL, 0)
             signal.signal(signal.SIGALRM, previous_handler)
     if output is not None:
-        print(output)
+        print(output, flush=True)
+        _log('INFO', 'response_emitted', response=response)
     return 0
 
 
