@@ -5,6 +5,20 @@ named questions, and configuration comparison. No live Laya execution is
 verified here. See [the implementation plan](../docs/experiments-plan.md). A mock
 run does not count as a completed real experiment.
 
+The first building-block experiment is `block_method_selection.py`. It passes a
+clearly synthetic request and callable outline to the existing method-selection
+block, which constructs its dynamic questions, submits one model request, and
+applies the block's existing acceptance rules. The candidate signatures,
+synthetic path, and source hash in `inputs/block_method_selection.json` do not
+describe a real source file. The outline is static JSON input: no Node build or
+source scan is required. Its default prompt asks about one callable; edit the
+synthetic `text` field to explore a request that may require multiple methods.
+Reports capture the exact submitted question payload, raw SDK response,
+enriched response when possible, per-question
+decisions and rule reasons, and final selected candidate or no-op reason. A
+pre-inference no-op has no captured questions or raw response; a technical
+failure is recorded with its stage and error.
+
 An experiment is a manually runnable Python script exercising an existing
 project entry point with explicit synthetic inputs. Experiments use real Laya
 on Sharon's Mac; automated tests inject mocks. They do not change production
@@ -138,7 +152,7 @@ Keep private captures out of Git.
 
 ## Later scenarios to remember
 
-- One building block, then the existing method-context flow.
+- The existing method-context flow, following this first building-block experiment.
 - Missing file and nonexistent method references: show the actual no-op reason.
 - A genuine controlled technical failure: show error stage and diagnostics.
   A no-match/no-op is not itself a technical error.
