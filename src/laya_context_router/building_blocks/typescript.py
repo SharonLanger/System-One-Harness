@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+from ..log_utils import log
 
 
 class TypeScriptError(RuntimeError):
@@ -53,10 +54,13 @@ def _request(path: str | Path, request: dict, *, node: str, helper: str | Path,
     must supply an explicit built helper path with its pinned dependency present.
     Target source is parsed, never imported, transpiled, or executed.
     """
+    log("INFO", "extractor", "request_started", path=path, request=request,
+        node=node, helper=helper, timeout=timeout)
     if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not 0 < timeout <= 60:
         raise ValueError("timeout must be positive and at most 60 seconds")
     helper = Path(helper)
     if not helper.is_file():
+        log("ERROR", "extractor", "helper_missing", helper=helper, path=path)
         raise TypeScriptError(f"TypeScript helper build missing: {helper}; run npm run build")
     path = Path(path).resolve()
     try:
@@ -64,16 +68,22 @@ def _request(path: str | Path, request: dict, *, node: str, helper: str | Path,
             input=json.dumps({**request, "path": str(path)}),
             text=True, encoding="utf-8", capture_output=True, timeout=timeout, check=False)
     except FileNotFoundError as exc:
+        log("ERROR", "extractor", "node_unavailable", error=exc, path=path)
         raise TypeScriptError(f"Node executable unavailable: {node}") from exc
     except subprocess.TimeoutExpired as exc:
+        log("ERROR", "extractor", "helper_timeout", error=exc, path=path)
         raise TypeScriptError("TypeScript helper timed out") from exc
     except OSError as exc:
+        log("ERROR", "extractor", "helper_start_failed", error=exc, path=path)
         raise TypeScriptError(f"TypeScript helper startup failed: {exc}") from exc
+    log("DEBUG", "extractor", "helper_returned", path=path, action=request.get("action"),
+        exit_code=result.returncode, stdout=result.stdout, stderr=result.stderr)
     if result.returncode:
         raise TypeScriptError(f"TypeScript helper failed ({result.returncode}): {result.stderr.strip()}")
     try:
         data = json.loads(result.stdout)
     except (ValueError, TypeError) as exc:
+        log("ERROR", "extractor", "invalid_json", error=exc, path=path)
         raise TypeScriptError("TypeScript helper returned invalid JSON stdout") from exc
     return data
 
@@ -82,7 +92,9 @@ def outline(path: str | Path, *, node: str = "node", helper: str | Path = DEFAUL
             timeout: float = 5.0) -> dict:
     """Return a validated compiler outline; source is parsed, never executed."""
     data = _request(path, {"action": "outline"}, node=node, helper=helper, timeout=timeout)
-    return _validate_outline(data, Path(path).resolve())
+    result = _validate_outline(data, Path(path).resolve())
+    log("DEBUG", "extractor", "outline_validated", path=path, outline=result)
+    return result
 
 
 def extract_callable(path: str | Path, callable_id: str, *, node: str = "node",
@@ -237,4 +249,6 @@ def collect_project_context(path: str | Path, callable_id: str, *, repository_ro
         existing = source_hashes.setdefault(gap["path"], gap["source_hash"])
         if existing != gap["source_hash"]:
             raise TypeScriptError("invalid project context schema: inconsistent gap snapshot")
+    log("DEBUG", "extractor", "context_validated", path=path, context=data)
     return data
+

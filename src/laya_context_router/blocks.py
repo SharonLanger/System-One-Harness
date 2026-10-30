@@ -5,13 +5,18 @@ from .questions.models import Question
 from .answers.rules import load_named_rules
 from .answers.interpret import interpret
 from .laya.predict import predict
+from .log_utils import log
 
 class QuestionBlock:
     def __init__(self,directory):
         self.directory=Path(directory)
+        log("INFO", "questions", "load_started", block=self.directory)
         self.questions=load_questions(self.directory/'questions.json')
         if not self.questions: raise ValueError('block questions cannot be empty')
         self.policies=load_named_rules(self.directory/'rules.json',self.questions)
+        log("DEBUG", "questions", "loaded", block=self.directory,
+            questions={name:q.to_predict_dict() for name,q in self.questions.items()},
+            rules=self.policies)
 
     def run(self,text,*,config,registry,question_payloads=None):
         if question_payloads is None:
@@ -23,5 +28,8 @@ class QuestionBlock:
             for name,payload in question_payloads.items():
                 if not isinstance(payload,dict): raise ValueError('dynamic question must be an object')
                 questions[name]=Question.from_dict({**payload,'name':name}).to_predict_dict()
+        log("DEBUG", "questions", "prepared", block=self.directory,
+            dynamic=question_payloads is not None, questions=questions)
         raw=predict(text,questions,config=config,registry=registry)
         return interpret(raw,questions,self.policies)
+

@@ -2,6 +2,7 @@
 from copy import deepcopy
 import json
 import math
+from ..log_utils import log
 
 DEFAULT_MODEL = 'aac6fef/laya-typed-decisions-mlx'
 
@@ -90,5 +91,15 @@ def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, co
         registry = AgentRegistry(loader=loader, real=real)
     elif loader is not None or real:
         raise ValueError('registry owns loader and mode')
-    raw = registry.get_agent(config).predict(text, deepcopy(questions), **config.predict_kwargs())
-    return deepcopy(validate_response(raw, questions))
+    log("DEBUG", "laya", "prediction_started", text=text, questions=questions,
+        model=config.model, temperature=config.temperature, lang=config.lang)
+    try:
+        raw = registry.get_agent(config).predict(text, deepcopy(questions), **config.predict_kwargs())
+        log("DEBUG", "laya", "response_received", response=raw)
+        result = deepcopy(validate_response(raw, questions))
+    except Exception as exc:
+        log("ERROR", "laya", "prediction_failed", error=exc)
+        raise
+    log("INFO", "laya", "response_validated")
+    return result
+

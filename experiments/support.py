@@ -4,6 +4,14 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import os
+import sys
+
+# Hook replay also imports this helper directly from the experiments directory.
+REPO_SRC = Path(__file__).resolve().parents[1] / "src"
+if str(REPO_SRC) not in sys.path:
+    sys.path.insert(0, str(REPO_SRC))
+from laya_context_router.log_utils import LOG_PATH, log
 
 
 class ObservingRegistry:
@@ -27,7 +35,11 @@ class ObservingRegistry:
 
 def start_record(script: str, entry_point: str, execution_mode: str) -> dict:
     now = datetime.now().astimezone()
+    log("INFO", "experiment", "started", script=script, entry_point=entry_point,
+        execution_mode=execution_mode)
     return {
+        "pid": os.getpid(),
+        "log_path": str(LOG_PATH),
         "script": script,
         "entry_point": entry_point,
         "schema_version": 1,
@@ -63,4 +75,10 @@ def json_safe(value):
 def write_report(output_dir: Path, details: dict, summary: str) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     (output_dir / "details.json").write_text(json.dumps(details, indent=2, ensure_ascii=False) + "\n")
-    (output_dir / "summary.md").write_text(summary.rstrip() + "\n")
+    summary = summary.rstrip() + f"\n\nDebug log: `{LOG_PATH}`; experiment PID: `{os.getpid()}`.\n"
+    (output_dir / "summary.md").write_text(summary)
+    log("INFO", "experiment", "report_saved", script=details.get("run", {}).get("script"),
+        output_dir=output_dir, status=details.get("run", {}).get("status"),
+        error_details=details.get("error"), result=details.get("result"),
+        hook_stderr=details.get("stderr"))
+

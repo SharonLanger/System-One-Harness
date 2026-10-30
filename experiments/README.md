@@ -225,3 +225,38 @@ python /path/to/laya-context-router/experiments/repeat_scenario.py
 Reports are saved under the matching `experiments/results/<script-stem>/`
 directory, with a timestamped `summary.md` and `details.json` for each run.
 
+
+## Debug log
+
+All experiment layers append to `logs/debug.jsonl` at the repository root.
+Run any experiment as usual; no flag or setup is needed. Each JSONL line has
+time (including timezone), level, PID, parent PID, component, event, and details.
+The experiment's `details.json` run metadata and saved `summary.md` identify
+its PID and log path. The first log event names the experiment script.
+
+Ordinary experiments run in one Python process. Hook replay launches a child
+Python process, whose parent PID links it to the experiment. The Node extractor
+is logged at its Python subprocess boundary, including its request, stdout and
+stderr. Therefore all processes use one file rather than separate PID files.
+PIDs can be reused by the OS: use the timestamp and experiment started event
+when looking at older runs.
+
+Search for `"component": "extractor"` or `"level": "ERROR"` to investigate
+`extractor_error`. Logs include the helper path, target file, request, raw helper
+output, validated outline/context, and original exceptions with tracebacks.
+`helper_returned` means the subprocess returned; `outline_validated` or
+`context_validated` means its data passed validation. A missing next event helps
+locate where execution stopped.
+
+Question logs show loaded definitions/rules and the prepared dynamic payload.
+Laya logs show requested settings, agent load/reuse and raw responses.
+Enrichment logs show added properties and the enriched prediction; rule logs
+show the conditions evaluated and the extracted answer/acceptance reason.
+Flow logs record the selected method and final context/no-op status.
+
+This is simple local debugging: all levels are written, with no rotation,
+server, new flow context, or change to selection rules. Entries can contain full
+prompts, model responses and source code; `logs/` is ignored by Git. Delete the
+file whenever desired. Logging is best effort: a file-write failure must not
+change the flow result, and logging writes nothing to hook stdout.
+

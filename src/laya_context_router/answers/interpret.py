@@ -1,6 +1,7 @@
 """Named runtime decisions, without ground truth or report machinery."""
 from .enrich import enrich_prediction
 from .rules import accepts
+from ..log_utils import log
 from ..laya.predict import validate_questions, validate_response
 
 
@@ -24,10 +25,18 @@ def interpret(raw,questions,policies):
         try:
             prediction=answers.get(name) if isinstance(answers,dict) else None
             validate_response({'answers':{name:prediction}},{name:question})
+            log("DEBUG", "enrichment", "started", question=name, prediction=prediction)
             enriched=enrich_prediction(prediction)
+            log("DEBUG", "enrichment", "completed", question=name, enriched=enriched,
+                added_properties={k:v for k,v in enriched.items() if k not in prediction})
+            log("DEBUG", "rules", "evaluation_started", question=name, policy=policies[name].name,
+                conditions=policies[name].conditions_for(enriched['type']))
             decided,reason=accepts(enriched,policies[name])
             answer=extract_answer(enriched) if decided else 'undecided'
         except (ValueError,TypeError,KeyError) as exc:
+            log("ERROR", "answers", "interpretation_failed", question=name, error=exc)
             answer,decided,reason='undecided',False,f'invalid_prediction:{exc}'
         decisions[name]={'answer':answer,'decided':decided,'reason':reason}
+        log("INFO", "rules", "decision", question=name, decision=decisions[name])
     return decisions
+

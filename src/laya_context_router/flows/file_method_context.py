@@ -1,6 +1,7 @@
 """Narrow explanation request -> one exact callable, with explicit no-op reasons."""
 from pathlib import Path
 import re
+from ..log_utils import log
 
 from ..building_blocks.file_reference_utils import detect_file_references
 from ..building_blocks.resolve_file import resolve_file
@@ -13,6 +14,7 @@ ELIGIBLE = re.compile(r'^\s*Explain\s+`(?P<target>[^`\r\n]+)`\s*:\s*(?P<question
 
 
 def _noop(reason):
+    log("INFO", "flow", "finished", flow="file_method_context", status="noop", reason=reason)
     return {'status': 'noop', 'reason': reason, 'context': None}
 
 
@@ -32,6 +34,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
     trigger, not a general intent classifier. All source work is read-only; only
     SDK load/predict is injected for offline use. Dependency context is partial.
     """
+    log("INFO", "flow", "started", flow="file_method_context", prompt=prompt,
+        cwd=cwd, repository_root=repository_root)
     if (type(max_dependency_depth) is not int or not 0 <= max_dependency_depth <= 20
             or type(max_dependency_chars) is not int or not 1 <= max_dependency_chars <= 1000000):
         return _noop('invalid_dependency_budget')
@@ -41,8 +45,10 @@ def run(prompt, *, cwd, repository_root, config, registry,
         return _noop('ineligible_request')
     try:
         references = detect_file_references(prompt, reference_pattern)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError) as exc:
+        log("ERROR", "flow", "reference_failed", error=exc)
         return _noop('invalid_reference')
+    log("DEBUG", "flow", "references_detected", references=references)
     if not references:
         return _noop('no_file')
     if len(references) != 1:
@@ -55,6 +61,7 @@ def run(prompt, *, cwd, repository_root, config, registry,
         return _noop('excluded')
     try:
         resolution = resolve_file(reference, cwd=cwd, repository_root=repository_root)
+        log("DEBUG", "flow", "file_resolved", resolution=resolution)
         if resolution.status != 'resolved':
             return _noop(resolution.status)
         path = resolution.selected_path
@@ -62,7 +69,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
         if not _confined(path, root):
             return _noop('source_changed')
         source_outline = outline(path, node=node, helper=helper, timeout=timeout)
-    except (OSError, ValueError, TypeError, TypeScriptError):
+    except (OSError, ValueError, TypeError, TypeScriptError) as exc:
+        log("ERROR", "extractor", "resolve_or_outline_failed", error=exc, reference=reference.path)
         return _noop('extractor_error')
     try:
         selection = select_method(prompt, source_outline, config=config, registry=registry,
@@ -76,10 +84,13 @@ def run(prompt, *, cwd, repository_root, config, registry,
                 f"{candidate['id']}: {candidate['signature']}" for candidate in source_outline['callables'])
             selection = select_method(second_text, source_outline, config=fallback_config, registry=registry,
                                       max_candidates=max_candidates, max_input_chars=fallback_max_input_chars)
-    except TimeoutError:
+    except TimeoutError as exc:
+        log("ERROR", "flow", "selection_timeout", error=exc)
         return _noop('deadline_exceeded')
-    except Exception:
+    except Exception as exc:
+        log("ERROR", "flow", "selection_failed", error=exc)
         return _noop('model_error')
+    log("DEBUG", "flow", "method_selected", selection=selection)
     if selection['selected_id'] is None:
         return _noop(selection['reason'])
     try:
@@ -91,8 +102,14 @@ def run(prompt, *, cwd, repository_root, config, registry,
         if (context['path'] != mapped['path'] or context['source_hash'] != mapped['source_hash']
                 or context['callable'] != {k: v for k, v in mapped.items() if k not in {'path', 'source_hash'}}
                 or not isinstance(context['code'], str) or not context['code']):
+            log("ERROR", "extractor", "context_snapshot_mismatch", expected=mapped, context=context)
             return _noop('extractor_error')
         context['coverage'] = 'partial'
+        log("INFO", "flow", "finished", flow="file_method_context", status="context",
+            path=path, callable=context['callable'])
         return {'status': 'context', 'reason': None, 'context': context}
-    except (OSError, ValueError, TypeError, KeyError, TypeScriptError):
+    except (OSError, ValueError, TypeError, KeyError, TypeScriptError) as exc:
+        log("ERROR", "extractor", "context_collection_failed", error=exc,
+            path=path, selected_id=selection['selected_id'])
         return _noop('extractor_error')
+

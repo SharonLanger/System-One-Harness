@@ -9,3 +9,7 @@ experiments/results/
 experiments/inputs/captured_*
 node_modules/
 typescript-helper/dist/
+
+# Local diagnostic logs (may contain prompts and source code).
+logs/
+
