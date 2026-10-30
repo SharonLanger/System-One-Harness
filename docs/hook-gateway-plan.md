@@ -15,11 +15,11 @@ Sharon will supply the plugin folder, plugin manifest JSON, and hooks JSON. Thei
 
 ## 2. Names: components and methods
 
-Use **Hook Gateway** as the shared process boundary. It receives every registered command-hook invocation through ONE public executable entry, proposed as `python -m laya_context_router.hook_gateway --hook UserPromptSubmit`. The hook name is the only event-specific command argument. Existing operational configuration (project root, model settings, deadlines, budgets, explicit real-mode opt-in) remains available through one shared configuration mechanism; do not remove it while adding the hook-name argument. Final launch syntax awaits Sharon's hooks JSON.
+Use **Hook Gateway** as the shared process boundary. It receives every registered command-hook invocation through ONE public executable entry, proposed as `python -m laya_context_router.hooks.gateway --hook UserPromptSubmit`. The hook name is the only event-specific command argument. Existing operational configuration (project root, model settings, deadlines, budgets, explicit real-mode opt-in) remains available through one shared configuration mechanism; do not remove it while adding the hook-name argument. Final launch syntax awaits Sharon's hooks JSON.
 
 Names of components are not executable functions:
 
-- Hook Gateway: shared process boundary; public method `main(argv=None)` in `laya_context_router.hook_gateway`.
+- Hook Gateway: shared process boundary; public method `main(argv=None)` in `laya_context_router.hooks.gateway`.
 - Main dispatcher: internal method `dispatch_hook(envelope, services)`.
 - UserPromptSubmit dispatcher: event-specific method `dispatch_user_prompt_submit(envelope, services)`.
 - Prompt Context Enrichment: feature name; internal method `enrich_prompt_context(request, services)`.
@@ -30,13 +30,13 @@ This preserves one public entry point, with ordinary internal methods below it. 
 
 ## 3. Proposed code placement
 
-The plugin folder contains registration assets supplied by Sharon. The application gateway belongs in the package, separate from registration assets. Keep `hooks` for event-specific dispatchers inside the package, rather than using a top-level folder as the application entry.
+The plugin folder contains registration assets supplied by Sharon. The application gateway belongs in the package, separate from registration assets. Keep the gateway, contracts, and event-specific dispatchers together inside the package `hooks` folder, rather than using a top-level folder as the application entry.
 
 Proposed paths (not created by this plan):
 
 ```text
-src/laya_context_router/hook_gateway.py
-src/laya_context_router/hook_contracts.py
+src/laya_context_router/hooks/gateway.py
+src/laya_context_router/hooks/contracts.py
 src/laya_context_router/hooks/user_prompt_submit/dispatcher.py
 src/laya_context_router/hooks/user_prompt_submit/prompt_context_enrichment.py
 src/laya_context_router/flows/file_method_context.py  # existing flow reused

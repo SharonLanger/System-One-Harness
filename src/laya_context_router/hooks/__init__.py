@@ -1,1 +1,1 @@
-"""Event-specific input adapters; no process I/O."""
+"""Hook process gateway, shared contracts, and event-specific dispatchers."""

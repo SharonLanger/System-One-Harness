@@ -1,6 +1,6 @@
 """Prepare context configuration and reuse the existing root-mode flow."""
 from pathlib import Path
-from ...hook_contracts import Failure
+from ..contracts import Failure
 
 
 def _prepare_feature_config(request):
@@ -43,7 +43,7 @@ _FAILURE_REASONS=frozenset({'deadline_exceeded','extractor_error','invalid_depen
 
 def _map_flow_result(result, *, project_root, max_dependency_depth=2,
                      max_dependency_chars=12000,formatter=None):
-    from ...hook_contracts import Context,Noop
+    from ..contracts import Context,Noop
     invalid=Failure('invalid_flow_result','feature')
     if not isinstance(result,dict) or not {'status','reason','context'}<=result.keys():
         return invalid
@@ -100,7 +100,7 @@ def enrich_prompt_context(request,logger,*,flow=None,registry=None,formatter=Non
         max_dependency_depth=depth,max_dependency_chars=budget)
     mapped=_map_flow_result(result,project_root=prepared['project_root'],
         max_dependency_depth=depth,max_dependency_chars=budget,formatter=formatter)
-    from ...hook_contracts import Context
+    from ..contracts import Context
     if isinstance(mapped,Context):
         limit=getattr(request.config,'max_context_chars',8000)
         if len(mapped.text)>limit:
