@@ -91,7 +91,7 @@ def test_fixed_requests_real_outline_actual_pipeline(tmp_path, text, index, mult
 
 def test_policy_rejections_and_unknown_choice_fail_closed(tmp_path):
     data = source_outline(tmp_path); payload = questions_for(data); selected = data["callables"][0]["signature"]
-    for confidence, multiple, reason in [(0.1, 0.1, "method_undecided"), (0.95, 0.5, "multiple_undecided")]:
+    for confidence, multiple, reason in [(0.1, 0.1, "method_undecided"), (0.95, 0.5, "multiple_relevant")]:
         response = raw_for(payload, selected, multiple, confidence)
         result = run("Explain same", data, config=RunConfig("mock-selection", 0.2, "fr"),
                      registry=registry_for("Explain same", payload, response, []))
@@ -149,3 +149,13 @@ def test_duplicate_ids_and_invalid_budgets_rejected(tmp_path):
     for limits in [{"max_candidates": True}, {"max_candidates": -1}, {"max_input_chars": 0}]:
         with pytest.raises(ValueError, match="budget"):
             run("x", data, config=RunConfig(), registry=registry, **limits)
+
+
+def test_low_multiple_answer_confidence_refuses_selection(tmp_path):
+    data = source_outline(tmp_path)
+    payload = questions_for(data)
+    response = raw_for(payload, data['callables'][0]['signature'])
+    response['answers']['multiple_relevant']['answer_confidence'] = 0.1
+    result = run('Explain same', data, config=RunConfig('mock-selection', 0.2, 'fr'),
+                 registry=registry_for('Explain same', payload, response, []))
+    assert result['reason'] == 'multiple_undecided' and result['selected_id'] is None

@@ -125,7 +125,7 @@ def test_invalid_required_fields(tmp_path,key,value):
     assert_noop(invoke(case)); assert not case['log'].exists()
 
 
-@pytest.mark.parametrize('mode', ['unmatched','event','outside','no-real','bad-source'])
+@pytest.mark.parametrize('mode', ['unmatched','event','no-real','bad-source'])
 def test_hook_noop_before_sdk(tmp_path,mode):
     case=hook_case(tmp_path)
     if mode=='unmatched': case['event']['prompt']='hello'
@@ -289,13 +289,16 @@ def test_warning_boundary_logs_exact_emitted_payload(tmp_path,delta):
     response=json.loads(result.stdout)
     assert response['hookSpecificOutput']['additionalContext']==expected
     records=[json.loads(line) for line in trace.read_text().splitlines()]
-    hook=[record for record in records if record['component']=='hook']
-    for event in ['response_prepared','response_emitted']:
-        assert [record['details']['response'] for record in hook if record['event']==event]==[response]
+    hook=[record for record in records if record['component']=='hook_gateway']
+    prepared=[r['details'] for r in hook if r['event']=='response_prepared']
+    final=[r['details'] for r in hook if r['event']=='gateway_finished'][-1]
+    assert len(prepared)==1 and prepared[0]['serialized_bytes']==len(result.stdout.encode())
+    assert 'response' not in prepared[0]
+    assert final['response_present'] and final['stdout_bytes_written']==len(result.stdout.encode())
     warnings=[record for record in hook if record['event']=='context_size_warning']
     assert bool(warnings)==(delta<0)
     if warnings:
-        assert warnings[0]['details']=={'context_chars':len(expected),'max_context_chars':threshold,'action':'send_unchanged'}
+        assert {k:warnings[0]['details'][k] for k in ('context_chars','max_context_chars','action')}=={'context_chars':len(expected),'max_context_chars':threshold,'action':'send_unchanged'}
     assert len(expected.encode('utf-8'))>len(expected)
 
 
@@ -334,7 +337,8 @@ def test_noop_logs_reason_without_prepared_or_emitted_payload(tmp_path):
     result=invoke(case)
     assert_noop(result)
     records=[json.loads(line) for line in trace.read_text().splitlines()]
-    hook=[record for record in records if record['component']=='hook']
-    noop=[record for record in hook if record['event']=='noop']
-    assert len(noop)==1 and noop[0]['details']=={'reason':'no_file','response':None}
+    hook=[record for record in records if record['component']=='hook_gateway']
+    noop=[record for record in hook if record['event']=='gateway_finished']
+    assert len(noop)==1 and noop[0]['details']['reason']=='no_file'
+    assert noop[0]['details']['response_present'] is False and noop[0]['details']['stdout_bytes_written']==0
     assert not any(record['event'] in {'response_prepared','response_emitted'} for record in hook)

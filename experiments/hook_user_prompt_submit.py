@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 from support import LOG_PATH, log, allocate_result_dir, start_record, write_report
-from hook_trace import read_trace, collect_calls, render_summary
+from hook_trace import read_trace, collect_calls, render_summary, gateway_outcome
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DEFAULT_INPUT = HERE / "inputs/hook_user_prompt_submit.json"
@@ -26,7 +26,7 @@ def classify(stderr, decoded):
         benign = {"missing", "not_file", "ambiguous", "inaccessible", "outside_repository",
                   "no_file", "multiple_files", "unsupported_request", "ineligible_request", "excluded",
                   "method_undecided", "no_single_match", "multiple_undecided", "multiple_relevant",
-                  "ambiguous_candidates", "input_budget_exceeded", "invalid_reference"}
+                  "ambiguous_candidates", "input_budget_exceeded", "candidate_budget_exceeded"}
         return "noop" if reason in benign else "technical_error"
     return "technical_error"
 
@@ -38,7 +38,7 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, help="optional RunConfig JSON passed to the real hook")
     args = parser.parse_args(argv)
     stamp, started = datetime.now().astimezone(), datetime.now().astimezone()
-    details = {"run": start_record("hook_user_prompt_submit.py", "hooks/user_prompt_submit.py subprocess", "real"),
+    details = {"run": start_record("hook_user_prompt_submit.py", "laya_context_router.hook_gateway subprocess", "real"),
                "input_path": str(args.input), "event": None, "exit_code": None,
                "stdout": "", "stderr": "", "parsed_output": None, "observed_status": "technical_error",
                "deadline_seconds": args.deadline, "error": None, "hook_pid": None,
@@ -53,7 +53,7 @@ def main(argv=None):
         details["event"] = event
         env = dict(os.environ)
         env["PYTHONPATH"] = os.pathsep.join([str(ROOT / "src"), env.get("PYTHONPATH", "")]).rstrip(os.pathsep)
-        command = [sys.executable, str(ROOT / "hooks/user_prompt_submit.py"),
+        command = [sys.executable, "-m", "laya_context_router.hook_gateway", "--hook", "UserPromptSubmit",
                    "--repository-root", str(ROOT), "--real", "--deadline", str(args.deadline)]
         if args.config:
             command.extend(["--config", str(args.config.resolve())])
@@ -103,6 +103,13 @@ def main(argv=None):
     details["trace"] = trace
     details["trace_warnings"].extend(warnings)
     details["laya_calls"] = collect_calls(trace)
+    final=gateway_outcome(details)
+    details['application_outcome']=final or None
+    if final and details['error'] is None and details['exit_code']==0:
+        if final.get('outcome')=='error':details['observed_status']='technical_error'
+        elif final.get('outcome')=='noop' and not details['stdout']:details['observed_status']='noop'
+        elif final.get('outcome')!='context' or details['parsed_output'] is None:
+            details['observed_status']='technical_error' 
     details["run"]["status"] = "failed" if details["observed_status"] == "technical_error" else "completed"
     details["run"]["duration_seconds"] = round((datetime.now().astimezone() - started).total_seconds(), 3)
     out = allocate_result_dir(HERE / "results/hook_user_prompt_submit", stamp)

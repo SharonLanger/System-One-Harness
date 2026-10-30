@@ -1,0 +1,101 @@
+# Coverage ledger — verified core implementation
+
+All 93 accepted IDs are indexed in test-coverage.json with phase, level, fixture/parameter input, expected outcome/source, executable assertions, exact pytest nodes and JUnit-derived results. 91 IDs passed; conditional plugin/live F11/F12 are deferred.
+
+A02–A05 and A07–A13 map only relevant matrix parameters. A01 explicitly checks one dispatch. S01/S02 count flow/formatter calls. F03 exercises missing/ambiguous source, no candidate and a real helper timeout before model access.
+
+Final source/test commit: 23eb571ffc8411aef0b78f3ac7a31a015dba8e0f. Python: 795 passed, 3 existing skips. TypeScript: 122 passed. No skip satisfies an implemented plan ID. See verification-results.json and phase-06.md.
+
+- **A01** — phase 01; passed; 7 parameter cases. valid --hook plus matching payload dispatches exactly once.
+- **A02** — phase 01; passed; 1 parameter cases. Missing --hook argument
+- **A03** — phase 01; passed; 2 parameter cases. Empty or whitespace-only hook argument
+- **A04** — phase 01; passed; 2 parameter cases. Duplicate --hook options, including equal values
+- **A05** — phase 01; passed; 1 parameter cases. Unknown CLI option
+- **A06** — phase 01; passed; 2 parameter cases. event argument/payload mismatch fails before dispatch, preserving both values in diagnostics.
+- **A07** — phase 01; passed; 1 parameter cases. Strict JSON input cases: ['']
+- **A08** — phase 01; passed; 1 parameter cases. Strict JSON input cases: ['{']
+- **A09** — phase 01; passed; 1 parameter cases. Strict JSON input cases: ['[]']
+- **A10** — phase 01; passed; 2 parameter cases. Strict JSON input cases: ['1', 'true']
+- **A11** — phase 01; passed; 1 parameter cases. Strict JSON input cases: ['null']
+- **A12** — phase 01; passed; 3 parameter cases. Strict JSON input cases: ['{"hook_event_name":"X","hook_event_name":"X"}', '{"hook_event_name":"X","prompt":"first","prompt":"second"}']
+- **A13** — phase 01; passed; 2 parameter cases. Strict JSON input cases: ['{"hook_event_name":"X"} {}', 'progress\n{}']
+- **A14** — phase 01; passed; 1 parameter cases. Unicode including emoji and escaped newlines survives exactly.
+- **A15** — phase 01; passed; 1 parameter cases. at input limit accepted; one character over rejected; retain existing character-vs-byte budget semantics explicitly.
+- **A16** — phase 01; passed; 1 parameter cases. deadline bounds a process waiting on unfinished stdin.
+- **A17** — phase 01; passed; 1 parameter cases. unknown but well-formed event yields unsupported_event without importing/loading LAYA.
+- **B01** — phase 02; passed; 4 parameter cases. remove EACH required common field independently and assert error stage/field plus zero downstream calls.
+- **B02** — phase 02; passed; 28 parameter cases. replace EACH common field with null, number, bool, array, object; assert no coercion.
+- **B03** — phase 02; passed; 28 parameter cases. reject empty session ID/event and whitespace-only identifiers; define string-field emptiness rules in fixtures.
+- **B04** — phase 02; passed; 29 parameter cases. reject relative/non-string cwd; retain absolute cwd as metadata.
+- **B05** — phase 02; passed; 1 parameter cases. transcript path need not exist; no transcript read occurs for this feature.
+- **B06** — phase 02; passed; 1 parameter cases. unfamiliar nonempty permission_mode string survives unchanged.
+- **B07** — phase 02; passed; 2 parameter cases. extra nested input fields retained unchanged, never automatically sent to LAYA.
+- **B08** — phase 02; passed; 1 parameter cases. no optional fields present remains valid.
+- **B09** — phase 03; passed; 6 parameter cases. delete prompt or give it null/non-string values: event-specific failure.
+- **B10** — phase 03; passed; 4 parameter cases. empty prompt remains valid input and produces the existing expected no-op.
+- **B11** — phase 03; passed; 3 parameter cases. whitespace/backticks/quotes in prompt unchanged.
+- **B12** — phase 02; passed; 2 parameter cases. raw payload unchanged after every layer; no shared mutable derived dictionaries across invocations.
+- **C01** — phase 02; passed; 1 parameter cases. identity enrichment changes no values and creates no filesystem/model side effects.
+- **C02** — phase 04; passed; 2 parameter cases. explicit configured root arrives in feature request with correct provenance.
+- **C03** — phase 04; passed; 6 parameter cases. missing, relative, nonexistent, or non-directory root fails before feature work.
+- **C04** — phase 04; passed; 3 parameter cases. nested cwd does not change configured root.
+- **C05** — phase 04; passed; 3 parameter cases. changed cwd, including a different existing directory, does not silently select another root.
+- **C06** — phase 04; passed; 3 parameter cases. process working directory differs from event cwd/root; project references still resolve by root.
+- **C07** — phase 02; passed; 6 parameter cases. injected enrichment output cannot override common fields or configured root; reject an invalid derived object at the boundary. No real future root resolver is implemented for this test.
+- **C08** — phase 04; passed; 4 parameter cases. fixture has same filename under cwd and root; documented root-based selection is enforced.
+- **C09** — phase 04; passed; 5 parameter cases. traversal and symlink escape remain rejected by source access policy.
+- **C10** — phase 04; passed; 4 parameter cases. rendered context paths are project-relative; no unintended machine path leakage.
+- **C11** — phase 04; passed; 1 parameter cases. root path with spaces/Unicode works, no shell interpolation.
+- **C12** — phase 02; passed; 2 parameter cases. no git discovery, parent-directory guessing, transcript parsing, or state files added by identity seam.
+- **D01** — phase 02; passed; 1 parameter cases. exact invocation order: common validation, seam, event validation, handler.
+- **D02** — phase 02; passed; 32 parameter cases. common validation failure prevents event dispatcher and handler.
+- **D03** — phase 03; passed; 6 parameter cases. event validation failure prevents handler.
+- **D04** — phase 03; passed; 3 parameter cases. UserPromptSubmit calls only Prompt Context Enrichment once.
+- **D05** — phase 03; passed; 2 parameter cases. internal methods never reread stdin or emit protocol stdout.
+- **D06** — phase 03; passed; 3 parameter cases. Context traverses both dispatchers unchanged until serialization.
+- **D07** — phase 03; passed; 6 parameter cases. multiple_relevant traverses as Noop with the exact reason.
+- **D08** — phase 03; passed; 8 parameter cases. typed Failure preserves stage/code; unexpected handler exception is logged as error.
+- **D09** — phase 03; passed; 19 parameter cases. unknown result variant/missing text/wrong text type/empty context rejected before emission.
+- **D10** — phase 03; passed; 3 parameter cases. repeated invocations have independent IDs and no duplicated handler registration or model calls.
+- **D11** — phase 03; passed; 2 parameter cases. real mode absent never imports/loads model; config flags retain current semantics.
+- **D12** — phase 03; passed; 27 parameter cases. maintain an explicit adapter mapping for every actual flow reason: expected ambiguity/no-match becomes Noop; operational/model/extractor errors become Failure internally. Preserve empty stdout/exit 0 outward behavior. Unrecognized reasons fail explicitly; no substring-based guesses. Record the mapping after inspecting the actual flow in Phase 4.
+- **E01** — phase 05; passed; 1 parameter cases. Context gives exact event envelope, one JSON object, newline, correct escaping.
+- **E02** — phase 05; passed; 7 parameter cases. Noop gives ZERO stdout bytes and exit 0; assert it is neither `{}` nor `null`.
+- **E03** — phase 05; passed; 10 parameter cases. handled validation/processing error gives empty stdout/exit 0, ERROR log and stderr diagnostic.
+- **E04** — phase 05; passed; 8 parameter cases. Python print, native fd1 writes and SDK loading progress remain off stdout on success/noop/error.
+- **E05** — phase 05; passed; 1 parameter cases. final no-op log has reason, response_present false and byte count zero; no response_prepared/emitted record.
+- **E06** — phase 05; passed; 9 parameter cases. context byte count uses UTF-8 encoded length, including newline; emoji catches character/byte confusion.
+- **E07** — phase 05; passed; 2 parameter cases. emission logged only after successful write/flush; broken pipe cannot report emission success.
+- **E08** — phase 05; passed; 8 parameter cases. common and event logs correlate to the same invocation/session; invalid session logs remain useful.
+- **E09** — phase 05; passed; 5 parameter cases. logger failure causes stderr diagnostic without altering stdout payload or misclassifying feature outcome.
+- **E10** — phase 05; passed; 3 parameter cases. new gateway/dispatcher records exclude raw prompt; any existing debug option does not change output. Do not assert that legacy lower-level logs are globally redacted.
+- **E11** — phase 05; passed; 1 parameter cases. concurrent gateway invocations have distinct invocation IDs and correctly correlated captured records. Characterize shared-file logger behavior separately; cross-process locking/global logger hardening is deferred unless an existing required guarantee is broken.
+- **E12** — phase 05; passed; 2 parameter cases. replay captures actual stdout independently of response_prepared; missing parsed response is report null, never transmitted JSON null.
+- **F01** — phase 05; passed; 4 parameter cases. synthetic TypeScript prompt through actual gateway, dispatcher, flow, helper, formatter with only model mocked; compare manually specified expected context.
+- **F02** — phase 05; passed; 3 parameter cases. controlled model chooses multiple_relevant; assert no context extraction/emission beyond what the existing flow requires.
+- **F03** — phase 05; passed; 15 parameter cases. missing/ambiguous file, no candidate, unclear selection, rejected confidence, malformed model response, model timeout and helper timeout each produce their documented outcome.
+- **F04** — phase 05; passed; 1 parameter cases. selected code, relevant dependencies, partial coverage and source text remain faithful.
+- **F05** — phase 05; passed; 4 parameter cases. quote/Unicode/path/line metadata examples match the current formatter's agreed root-relative contract.
+- **F06** — phase 05; passed; 6 parameter cases. input deadline, model-load deadline, prediction deadline and cleanup each remain bounded.
+- **F07** — phase 05; passed; 4 parameter cases. dependency limits and current final-context warning/send-unchanged policy remain covered; do not restore old truncation/no-op expectations accidentally.
+- **F08** — phase 05; passed; 2 parameter cases. fixtures/source files unchanged by hook invocation; no session logging database or new persistent state.
+- **F09** — phase 05; passed; 2 parameter cases. experiment runner, trace collector and IDE launch callers point at gateway after migration; no stale executable invocation.
+- **F10** — phase 05; passed; 2 parameter cases. repeated subprocesses exercise independent lifetimes and uncontaminated protocol output.
+- **F11** — phase 07; deferred_conditional; 0 parameter cases. when supplied, validate plugin registration command syntax and event argument/payload agreement with fixtures; do not require real activation for contract tests.
+- **F12** — phase 07; deferred_live; 0 parameter cases. one isolated live Claude verification is a later separately reported check, after registration/setup is supplied; subprocess success alone is not harness-delivery proof.
+- **S01** — phase 04; passed; 5 parameter cases. Valid typed request, accepted collector context, one flow call and one formatter call; root/config forwarded unchanged.
+- **S02** — phase 04; passed; 2 parameter cases. Valid typed request, multiple_relevant result, one flow call and zero formatter calls.
+- **S03** — phase 04; passed; 4 parameter cases. Missing session: omit required session_id. Expect field-specific Failure before event/feature calls; invocation ID still present in error record.
+- **S04** — phase 04; passed; 1 parameter cases. Mismatched event: argument UserPromptSubmit, payload Stop. Expect event_mismatch before event contract or model access.
+- **S05** — phase 04; passed; 1 parameter cases. Unsupported event: matching unknown event names and minimal JSON. Expect unsupported_event no-op without requiring prompt, root or UserPromptSubmit metadata.
+- **S06** — phase 04; passed; 1 parameter cases. Missing prompt: otherwise valid envelope, prompt absent. Expect UserPromptSubmit validation failure, handler zero calls.
+- **S07** — phase 04; passed; 4 parameter cases. Empty prompt: prompt is empty string. Expect a valid typed request preserving the string; fake handler returns no-match. It must not be confused with missing prompt.
+- **S08** — phase 04; passed; 18 parameter cases. Operational failure: fake flow raises an error or returns each recognized failure reason. Expect Failure, no formatter, error stage/code retained; outer protocol remains nonblocking.
+- **S09** — phase 04; passed; 20 parameter cases. Bad handler return: null, object with unknown variant, Context with non-string/empty text. Expect invalid_result Failure, never serialize null or malformed output.
+- **S10** — phase 04; passed; 7 parameter cases. Unicode context: context contains emoji, quotes, backslashes and newlines. Expect reversible JSON encoding and correct byte count including newline.
+- **S11** — phase 04; passed; 1 parameter cases. Extra fields: raw payload has unknown nested metadata. Expect retained raw object, no mutation and no metadata forwarded to LAYA as prompt text.
+- **S12** — phase 04; passed; 1 parameter cases. Repeated calls: same session, two invocations. Expect distinct invocation IDs, separate derived state, one handler call per invocation, no cached outcome leakage.
+- **S13** — phase 04; passed; 6 parameter cases. Missing root: valid event but missing required feature configuration. Expect configuration Failure before source/model access; unsupported event still unaffected.
+- **S14** — phase 04; passed; 3 parameter cases. Root/cwd separation: root differs from raw cwd. Expect raw cwd preserved and the agreed root API given configured root with provenance. Test against the other agent's final API, not a guessed parameter convention.
+- **S15** — phase 04; passed; 1 parameter cases. Model disabled: explicit real opt-in absent. Expect the agreed disabled outcome with no SDK import/load/predict; preserve current external no-output behavior.
+- **S16** — phase 04; passed; 8 parameter cases. Formatter failure: flow succeeds but formatter throws. Expect formatting Failure, no Context emission; distinguish it from method-selection failure.

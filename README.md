@@ -111,3 +111,20 @@ For source-level details, start with `src/laya_context_router/` (Python flow,
 questions, rules, logging), `typescript-helper/` (TypeScript AST helper),
 `experiments/` (manual real-model entry points), and `hooks/` (Claude hook
 adapter).
+
+
+## Shared hook gateway
+
+The public entry is `python -m laya_context_router.hook_gateway --hook UserPromptSubmit`. It reads one JSON event from stdin and validates the supplied event name against `--hook`. Common ingestion calls the UserPromptSubmit dispatcher, which calls the prompt-context enrichment handler. Unsupported events return empty stdout without model work.
+
+For an installed development checkout, replay a saved event explicitly:
+
+```bash
+python -m laya_context_router.hook_gateway --hook UserPromptSubmit --repository-root /absolute/project --config /absolute/run-config.json --real < event.json
+```
+
+Project root comes from the existing explicit configuration option. Event cwd is retained as metadata; root mode resolves source references and displays paths relative to the configured root. No root is guessed from cwd. `--real` is required to enable the model.
+
+Context returns one `hookSpecificOutput` JSON object. Normal no-op returns zero stdout bytes and exit0; handled errors also remain nonblocking but log an explicit error outcome. Diagnostics use stderr. Logs include invocation/session IDs, reason/code and output byte counts; replay captures exact stdout independently. See [hook usage](docs/hook-usage.md) and [phase evidence](docs/phases/hook-gateway/progress.md).
+
+`hooks/user_prompt_submit.py` remains a forwarding compatibility launcher with no separate input parsing or feature pipeline. Final plugin manifest/hooks JSON and preferred plugin installation instructions remain pending Sharon's supplied assets. No plugin or global hook is installed by this change.
