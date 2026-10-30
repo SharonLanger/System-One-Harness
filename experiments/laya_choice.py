@@ -19,6 +19,7 @@ from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.predict import predict
 from laya_context_router.laya.registry import AgentRegistry
 from support import ObservingRegistry, allocate_result_dir, json_safe, start_record, write_report
+from summary import render_summary
 
 INPUT_PATH = HERE / "inputs" / "laya_choice.json"
 
@@ -81,7 +82,7 @@ def run(*, input_path=INPUT_PATH, loader=None, registry=None, model=None,
         printer("Sending choice question")
         response = predict(text, questions, config=config, registry=observer)
         details["raw_response"] = json_safe(observer.raw_response)
-        answer = response["answers"].get(next(iter(questions)))
+        answer = next(iter(response.get("answers", {}).values()), None)
         details["result"] = {"answer": answer}
         details["run"]["status"] = "success"
         printer("Received response")
@@ -98,25 +99,7 @@ def run(*, input_path=INPUT_PATH, loader=None, registry=None, model=None,
         out_root = Path(output_root) if output_root else HERE / "results" / "laya_choice"
         out_dir = allocate_result_dir(out_root, stamp)
         details["run"]["result_directory"] = str(out_dir)
-        requested = details["model_config"]["requested"]
-        if requested is None:
-            requested = {"model": "unavailable", "temperature": None, "lang": "unavailable"}
-        summary = "\n".join([
-            "# Laya choice experiment", "",
-            f"- Status: **{details['run']['status']}**",
-            f"- Started: {record['started_local']} ({record['timezone_offset']})",
-            f"- UTC: {record['started_utc']}",
-            f"- Requested model: `{requested['model']}`",
-            f"- Requested temperature: {requested['temperature'] if requested['temperature'] is not None else 'SDK default'}",
-            f"- Language: `{requested['lang']}`",
-            f"- Input text: {details['input']!r}",
-            f"- Questions: `{json.dumps(details['questions'], ensure_ascii=False)}`",
-            f"- Response: `{json.dumps(details['raw_response'], ensure_ascii=False)}`",
-            f"- Outcome: `{json.dumps(details['result'], ensure_ascii=False)}`",
-            f"- Processing: enrichment {details['processing']['enrichment']}; rules {details['processing']['rules']}",
-            f"- Duration: {details['run']['duration_seconds']} seconds",
-            f"- Error: `{json.dumps(details['error'], ensure_ascii=False)}`",
-        ])
+        summary = render_summary(details)
         write_report(out_dir, details, summary)
         printer(f"Saved summary: {out_dir / 'summary.md'}")
         printer(f"Saved details: {out_dir / 'details.json'}")

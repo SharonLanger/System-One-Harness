@@ -95,11 +95,22 @@ mapping or invent a second checkpoint.
 
 Terminal output shows progress, requested model and temperature (`SDK default`
 when null), raw response, final answer, and saved report paths. `summary.md` is
-the human-readable view; `details.json` is the structured source of truth.
-Reports preserve input, submitted questions, requested settings, raw response,
-final result, timing, processing state, and errors. Requested settings do not
-prove the actual checkpoint or effective SDK temperature. Basic adapter calls
-mark enrichment and rules as `not_run`.
+the readable report: it states the requested model, temperature, and language;
+shows the input text and each question's exact instructions and criteria; then
+describes each answer by type. Choice reports show the selected choice and its
+probabilities, noul reports show the numeric value, and score reports show the
+raw score and legend. Multiple-question reports add a compact answer table.
+Comparison reports show both configurations and outcomes and record whether
+the registry returned the same agent object. Confidence fields appear when the
+response provides them. Failure reports identify the stage and error and show
+captured raw data when available; large raw data stays in `details.json`.
+
+`details.json` remains the structured source of truth. Reports preserve input,
+submitted questions, requested settings, raw response, final result, timing,
+processing state, and errors. Requested settings do not prove the actual
+checkpoint or effective SDK temperature. Basic adapter calls mark enrichment
+and rules as `not_run`; the summary describes that the call was direct and did
+not run enrichment or rules.
 
 Success means the request and response contract worked, not that the model chose
 an expected semantic answer. Errors are reported visibly and return a nonzero

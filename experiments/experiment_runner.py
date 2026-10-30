@@ -18,6 +18,7 @@ from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.predict import predict
 from laya_context_router.laya.registry import AgentRegistry
 from support import ObservingRegistry, allocate_result_dir, json_safe, start_record, write_report
+from summary import render_summary
 
 
 def execute(stem, label, input_path, *, loader=None, registry=None, model=None,
@@ -113,18 +114,7 @@ def execute(stem, label, input_path, *, loader=None, registry=None, model=None,
         out_root = Path(output_root) if output_root else Path(__file__).resolve().parent / "results" / stem
         out_dir = allocate_result_dir(out_root, stamp)
         record["result_directory"] = str(out_dir)
-        req = details["model_config"]["requested"] or {"model": "unavailable", "temperature": None, "lang": "unavailable"}
-        summary = "\n".join([f"# {label} experiment", "", f"- Status: **{record['status']}**",
-            f"- Started: {record['started_local']} ({record['timezone_offset']})", f"- UTC: {record['started_utc']}",
-            f"- Requested model: `{req['model']}`", f"- Requested temperature: {req['temperature'] if req['temperature'] is not None else 'SDK default'}",
-            f"- Language: `{req['lang']}`", f"- Input text: {details['input']!r}",
-            *([f"- Comparison configuration: `{json.dumps(details['model_config'].get('comparison_requested'), ensure_ascii=False)}`"] if details['model_config'].get('comparison_requested') else []),
-            *([f"- Same agent object reused: `{details['model_config'].get('same_agent_object_reused')}`"] if 'same_agent_object_reused' in details['model_config'] else []),
-            f"- Questions: `{json.dumps(details['questions'], ensure_ascii=False)}`",
-            f"- Raw response: `{json.dumps(details['raw_response'], ensure_ascii=False)}`",
-            f"- Outcome: `{json.dumps(details['result'], ensure_ascii=False)}`",
-            f"- Processing: enrichment {details['processing']['enrichment']}; rules {details['processing']['rules']}",
-            f"- Duration: {record['duration_seconds']} seconds", f"- Error: `{json.dumps(details['error'], ensure_ascii=False)}`"])
+        summary = render_summary(details)
         write_report(out_dir, details, summary)
         printer(f"Saved summary: {out_dir / 'summary.md'}")
         printer(f"Saved details: {out_dir / 'details.json'}")
