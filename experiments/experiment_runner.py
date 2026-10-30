@@ -4,7 +4,15 @@ from __future__ import annotations
 from datetime import datetime
 import json
 from pathlib import Path
+import sys
 import time
+
+# Also work when this helper is opened directly from an IDE. The experiment
+# entry points add this path themselves, but direct execution starts here.
+HERE = Path(__file__).resolve().parent
+REPO_SRC = HERE.parent / "src"
+if str(REPO_SRC) not in sys.path:
+    sys.path.insert(0, str(REPO_SRC))
 
 from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.predict import predict
@@ -124,3 +132,8 @@ def execute(stem, label, input_path, *, loader=None, registry=None, model=None,
         printer(f"ERROR saving results: {type(exc).__name__}: {exc}")
         return 1
     return 0 if record["status"] == "success" else 1
+
+
+if __name__ == "__main__":
+    print("This is a shared helper. Run laya_choice.py, laya_noul.py, "
+          "laya_score.py, laya_multiple_questions.py, or laya_compare_models.py instead.")
