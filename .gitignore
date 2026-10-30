@@ -5,11 +5,10 @@ __pycache__/
 node_modules/
 dist/
 build/
-experiments/results/
 experiments/inputs/captured_*
 node_modules/
 typescript-helper/dist/
-
+.idea
 # Local diagnostic logs (may contain prompts and source code).
 logs/
 
