@@ -59,3 +59,24 @@ def test_main_to_event_to_handler_and_extra_metadata():
     assert result==Context('known') and len(calls)==1
     assert calls[0].envelope.raw_payload['future']=={'x':[1]}
     assert p['future']=={'x':[1]}
+
+
+@pytest.mark.parametrize('output',[Context('known'),Noop('multiple_relevant'),Failure('model_error','feature')])
+def test_feature_completion_metadata(output):
+    records=[];ticks=iter([3.0,3.25])
+    result=dispatch_user_prompt_submit(ingest_common(event(),'id'),ARGS,
+        lambda l,e,**d:records.append((l,e,d)),handler=lambda *a:output,clock=lambda:next(ticks))
+    final=records[-1][2]
+    assert final['duration_seconds']==0.25
+    assert final['outcome']==('context' if isinstance(output,Context) else ('noop' if isinstance(output,Noop) else 'error'))
+    assert final['reason']==('multiple_relevant' if isinstance(output,Noop) else None)
+    assert final['code']==('model_error' if isinstance(output,Failure) else None)
+
+def test_unexpected_exception_has_completion_record():
+    records=[]
+    def handler(*a):raise RuntimeError('planned')
+    with pytest.raises(RuntimeError):
+        dispatch_user_prompt_submit(ingest_common(event(),'id'),ARGS,
+            lambda l,e,**d:records.append((e,d)),handler=handler,clock=lambda:1.0)
+    assert records[-1][0]=='feature_finished'
+    assert records[-1][1]['outcome']=='error' and records[-1][1]['code']=='feature_exception'

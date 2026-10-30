@@ -39,7 +39,7 @@ def dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher=
     try:
         if not isinstance(payload,dict):raise ValidationError('invalid_object','input')
         name=require_string(payload,'hook_event_name','input')
-        if name!=args.hook:raise ValidationError('event_mismatch','input','hook_event_name')
+        if name!=args.hook:raise ValidationError('event_mismatch','input','hook_event_name',command_hook=args.hook,payload_hook=name)
         registry = {'UserPromptSubmit':_user_prompt_dispatch} if dispatchers is None else dispatchers
         if name not in registry:return Noop('unsupported_event')
         envelope=ingest_common(payload,invocation_id)
@@ -54,4 +54,5 @@ def dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher=
                fields=sorted(envelope.common),derived_fields=sorted(envelope.derived))
         return validate_result(registry[name](envelope,args,logger))
     except ValidationError as exc:
+        if exc.evidence:logger('ERROR','input_rejected',**exc.evidence)
         return Failure(exc.code,exc.stage,exc.field,str(exc))

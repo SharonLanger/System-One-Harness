@@ -45,12 +45,17 @@ from laya_context_router.hook_gateway import main
 from laya_context_router.hook_contracts import Context, Noop, Failure
 records=[]
 def dispatch(*args):
+    args[-1]('INFO','common_input_validated',session_id='validated')
     print('python noise')
     os.write(1,b'native noise\\n')
     if MODE=='throw': raise ValueError('planned')
     return {'context':Context('Known 😀'), 'noop':Noop('multiple_relevant'),
             'failure':Failure('planned','feature'), 'invalid':None}.get(MODE)
-main(['--hook','UserPromptSubmit'],dispatcher=dispatch,logger=lambda l,e,**d:records.append({'event':e,**d}))
+def logger(l,e,**d):
+    print('logger noise')
+    os.write(1,b'logger native noise\\n')
+    records.append({'event':e,**d})
+main(['--hook','UserPromptSubmit'],dispatcher=dispatch,logger=logger)
 open(LOG,'w').write(json.dumps(records))
 '''.replace('MODE',repr(mode)).replace('LOG',repr(str(tmp_path/'log.json')))
     r=subprocess.run([sys.executable,'-c',script],input='{"hook_event_name":"UserPromptSubmit"}',
@@ -60,6 +65,8 @@ open(LOG,'w').write(json.dumps(records))
     assert r.stdout == ('{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Known 😀"}}\n' if mode=='context' else '')
     final=json.loads((tmp_path/'log.json').read_text())[-1]
     assert final['event']=='gateway_finished'
+    assert final['session_id']=='validated'
+    assert 'logger noise' in r.stderr and 'logger native noise' in r.stderr
     assert final['stdout_bytes_written']==len(r.stdout.encode())
     assert final['response_present']==(mode=='context')
     assert final['outcome']==({'context':'context','noop':'noop'}.get(mode,'error'))
@@ -98,3 +105,26 @@ def test_import_does_not_load_sdk():
         "import sys; import laya_context_router.hook_gateway; assert 'laya_mlx' not in sys.modules"],
         capture_output=True,env={**os.environ,'PYTHONPATH':str(ROOT/'src')},timeout=5)
     assert r.returncode==0 and r.stdout==b''
+
+
+@pytest.mark.parametrize('result',[Failure(1,'input'),Failure('x',True),Failure('x','input',field=4),
+    Failure('x','input',message=None), Context('text',feature_id=None),Noop('reason',feature_id=1)])
+def test_malformed_outcome_fields(result):
+    with pytest.raises(ValidationError):serialize_response(result,'X')
+
+def test_mismatch_keeps_both_event_names():
+    with pytest.raises(ValidationError) as exc:
+        parse_payload('{"hook_event_name":"Stop"}','UserPromptSubmit')
+    assert exc.value.evidence=={'command_hook':'UserPromptSubmit','payload_hook':'Stop'}
+
+@pytest.mark.parametrize('mode',['context','noop','error'])
+def test_throwing_logger_never_changes_protocol(mode):
+    script="""from laya_context_router.hook_gateway import main
+from laya_context_router.hook_contracts import Context,Noop,Failure
+def logger(*a,**k):raise OSError('planned')
+main(['--hook','X'],dispatcher=lambda *a:RESULT,logger=logger)
+""".replace('RESULT',{'context':"Context('known')",'noop':"Noop('no_match')",'error':"Failure('planned','feature')"}[mode])
+    r=subprocess.run([sys.executable,'-c',script],input='{"hook_event_name":"X"}',text=True,
+        capture_output=True,timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
+    assert r.returncode==0 and 'logging failed' in r.stderr
+    assert r.stdout==('{"hookSpecificOutput":{"hookEventName":"X","additionalContext":"known"}}\n' if mode=='context' else '')

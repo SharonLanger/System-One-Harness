@@ -53,7 +53,7 @@ def parse_payload(text, hook):
     if not isinstance(name, str) or not name.strip():
         raise ValidationError('invalid_field', 'input', 'hook_event_name')
     if name != hook:
-        raise ValidationError('event_mismatch', 'input', 'hook_event_name')
+        raise ValidationError('event_mismatch', 'input', 'hook_event_name', command_hook=hook, payload_hook=name)
     return payload
 
 def serialize_response(result, hook):
@@ -94,14 +94,21 @@ def main(argv=None, *, dispatcher=None, logger=None):
     invocation_id = str(uuid4())
     log_impl = logger or _default_log
     args = None
+    validated_session = None
     result = Failure('not_started', 'gateway')
     written = 0
     timer_started = False
     previous_handler = None
     def log(level, event, **details):
+        nonlocal validated_session
+        if event == 'common_input_validated':
+            validated_session = details.get('session_id')
+        metadata = {'invocation_id': invocation_id,
+                    'hook_event_name': args.hook if args else None,
+                    'session_id': validated_session, **details}
         try:
-            log_impl(level, event, invocation_id=invocation_id,
-                     hook_event_name=args.hook if args else None, **details)
+            with isolate_stdout():
+                log_impl(level, event, **metadata)
         except TimeoutError:
             raise
         except Exception as exc:
@@ -133,7 +140,8 @@ def main(argv=None, *, dispatcher=None, logger=None):
         result = Failure(getattr(exc, 'code', None) if isinstance(exc, ValidationError) else
                          ('deadline_exceeded' if isinstance(exc, TimeoutError) else 'gateway_error'),
                          getattr(exc, 'stage', 'gateway'), getattr(exc, 'field', None), str(exc))
-        log('ERROR', 'gateway_error', code=result.code, stage=result.stage, field=result.field)
+        log('ERROR', 'gateway_error', code=result.code, stage=result.stage, field=result.field,
+            **getattr(exc, 'evidence', {}))
         print(f'laya hook error: {result.message}', file=sys.stderr)
     finally:
         if timer_started:
