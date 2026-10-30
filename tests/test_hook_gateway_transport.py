@@ -38,7 +38,7 @@ def test_literal_output():
     assert serialize_response(Failure('invalid_field','input','prompt'),'X')==''
 
 ROOT=Path(__file__).resolve().parents[1]
-@pytest.mark.parametrize('mode', ['context','noop','failure','invalid','throw'])
+@pytest.mark.parametrize('mode', ['context','noop','failure','invalid','throw','timeout'])
 def test_process_noise_output_and_final_record(tmp_path,mode):
     script='''import json, os
 from laya_context_router.hook_gateway import main
@@ -49,6 +49,7 @@ def dispatch(*args):
     print('python noise')
     os.write(1,b'native noise\\n')
     if MODE=='throw': raise ValueError('planned')
+    if MODE=='timeout': raise TimeoutError('planned deadline')
     return {'context':Context('Known 😀'), 'noop':Noop('multiple_relevant'),
             'failure':Failure('planned','feature'), 'invalid':None}.get(MODE)
 def logger(l,e,**d):
@@ -66,6 +67,7 @@ open(LOG,'w').write(json.dumps(records))
     final=json.loads((tmp_path/'log.json').read_text())[-1]
     assert final['event']=='gateway_finished'
     assert final['session_id']=='validated'
+    if mode=='timeout': assert final['code']=='deadline_exceeded'
     assert 'logger noise' in r.stderr and 'logger native noise' in r.stderr
     assert final['stdout_bytes_written']==len(r.stdout.encode())
     assert final['response_present']==(mode=='context')
@@ -128,3 +130,25 @@ main(['--hook','X'],dispatcher=lambda *a:RESULT,logger=logger)
         capture_output=True,timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
     assert r.returncode==0 and 'logging failed' in r.stderr
     assert r.stdout==('{"hookSpecificOutput":{"hookEventName":"X","additionalContext":"known"}}\n' if mode=='context' else '')
+
+def test_concurrent_invocations_have_distinct_correlated_ids(tmp_path):
+    from concurrent.futures import ThreadPoolExecutor
+    script='''import json
+from laya_context_router.hook_gateway import main
+records=[]
+main(['--hook','UserPromptSubmit','--repository-root',ROOT],logger=lambda l,e,**d:records.append({'event':e,**d}))
+open(LOG,'w').write(json.dumps(records))
+'''
+    def run(index):
+        log=tmp_path/f'{index}.json'
+        code=script.replace('ROOT',repr(str(tmp_path))).replace('LOG',repr(str(log)))
+        p={'hook_event_name':'UserPromptSubmit','session_id':'same-session','cwd':str(tmp_path),'prompt':'x'}
+        r=subprocess.run([sys.executable,'-c',code],input=json.dumps(p),text=True,capture_output=True,
+            timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
+        assert r.returncode==0 and r.stdout==''
+        records=json.loads(log.read_text())
+        assert len({x['invocation_id'] for x in records})==1
+        assert records[-1]['session_id']=='same-session'
+        return records[-1]['invocation_id']
+    with ThreadPoolExecutor(max_workers=2) as pool:ids=list(pool.map(run,[0,1]))
+    assert ids[0]!=ids[1]
