@@ -3,6 +3,9 @@
 Reusable Python decisions with a lazy Laya SDK boundary. Implementation is staged
 in [the plan](docs/implementation-plan.md) and [progress](docs/progress.md).
 
+See [configuration conventions](docs/configuration-conventions.md) for model and
+policy examples, unique-key requirements, and the V1 duplicate-key handling scope.
+
 ```bash
 python -m pip install -e '.[test]'
 python -m pytest -q
