@@ -8,7 +8,7 @@ import traceback
 LOG_PATH = Path(__file__).resolve().parents[2] / "logs" / "debug.jsonl"
 
 
-def log(level, component, event, *, error=None, **details):
+def log(level, component, event, *, error=None, raise_on_error=False, **details):
     """Best-effort JSONL; capture exceptions before callers convert them to no-ops."""
     try:
         record = {
@@ -33,6 +33,8 @@ def log(level, component, event, *, error=None, **details):
         # Preserve the hook deadline if its signal interrupts logging.
         raise
     except Exception:
+        if raise_on_error:
+            raise
         # Debugging must not replace a flow result or corrupt hook stdout.
         pass
 

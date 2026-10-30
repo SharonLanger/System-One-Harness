@@ -141,3 +141,14 @@ the source for any future list of called methods.
 
 Durable formatter and hook tests cover plain presentation, exact source retention,
 project-root display paths and warning-only output thresholds.
+
+
+## Shared gateway entry and compatibility
+
+New registrations should call `python -m laya_context_router.hook_gateway --hook UserPromptSubmit` with the existing operational arguments (`--repository-root`, optional `--config`, explicit `--real`, deadlines and budgets). The earlier script path is now a forwarding wrapper; the legacy recipe above remains usable. This document does not install or activate a hook. Final plugin registration and installation preference remain pending supplied assets.
+
+The gateway requires session_id, transcript_path, cwd, hook_event_name and prompt for UserPromptSubmit. permission_mode is optional. Transcript text is not read. Fields follow the pinned official Anthropic SDK contract documented in the field ledger; installed CLI delivery remains unverified. Unknown event names return unsupported_event without feature requirements.
+
+The gateway resolves file references from configured project root through the reviewed opt-in root mode. Changing event/process cwd, including an unrelated directory, does not change root selection or display paths. Legacy direct flow/resolver callers retain default behavior. Source traversal, symlink and repository-prefix escapes still fail containment. This intentionally replaces the old launcher's outside-cwd rejection; malformed/relative cwd and invalid explicit root remain errors.
+
+Replay output comes from captured stdout. Gateway logs contain metadata, not full response content. A prepared-byte count does not prove emission; an incomplete/failed write may have delivered partial bytes. Final output-write metadata and parsed stdout are separate evidence, and neither is a Claude acknowledgement.

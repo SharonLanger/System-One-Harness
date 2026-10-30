@@ -1,6 +1,6 @@
 # LCR Hook Gateway — three-layer entry design and test plan
 
-Status: PLAN ONLY. No application code, plugin configuration, hooks, or tests have been changed or executed for this proposal.
+Status: implementation in progress on PR2; phase evidence is authoritative for executed checks. Original design and critical review follow, with D07/D02 amendments below.
 Prepared for Sharon, 30 October 2026. Revision 2: critical review, top-down implementation phases, unit scenarios, and concurrent PR workflow.
 
 This revision is ready for Sol to implement when Sharon starts that work. Planning here does not create a branch, PR, application commit, or merge.
@@ -67,7 +67,7 @@ Proposed envelope fields:
 - `raw_payload`: unmodified full input object, including additional fields.
 - `derived`: application-derived information, initially empty.
 
-For the first supported UserPromptSubmit adapter, the application requires nonempty `session_id`, absolute string `cwd`, and exact `hook_event_name`; the event dispatcher requires string `prompt`. Retain `transcript_path` and `permission_mode` as common metadata. Phase 0 must verify whether these two metadata fields are guaranteed by the supported Claude contract before classifying them as required: do not require unused metadata solely because one replay fixture contains it. If optional, absence is accepted; when present, require a nonempty string without reading the transcript or enforcing a fixed permission-mode enum. Check nonempty identifiers without silently trimming or rewriting them. The final Phase 0 field ledger must state required/optional, type, empty/null policy, source, and validating layer for every consumed field. Tests follow that ledger. Different events can have different common-field requirements; no universal event-schema assumption.
+For the first supported UserPromptSubmit adapter, the application requires nonempty `session_id`, absolute string `cwd`, and exact `hook_event_name`; the event dispatcher requires string `prompt`. The pinned official Anthropic SDK contract resolves the provisional fields: transcript_path is required nonempty string; permission_mode is optional and validated as nonempty string when supplied. Never read the transcript or enforce a fixed permission-mode enum. Check nonempty identifiers without silently trimming or rewriting them. The final Phase 0 field ledger must state required/optional, type, empty/null policy, source, and validating layer for every consumed field. Tests follow that ledger. Different events can have different common-field requirements; no universal event-schema assumption.
 
 Retain additional payload fields unchanged for forward compatibility. Missing required fields, nulls, and wrong types are validation failures, never valid no-ops. Optional fields remain optional; do not invent values or reject an event just because it lacks an unused optional property. For valid empty user prompt text, pass the empty string through and let the feature return a normal no-op if appropriate.
 
@@ -77,7 +77,7 @@ Reserve `enrich_envelope(envelope, services)` as an identity function now: retur
 
 The existing feature already requires a repository root. During this migration, the typed feature request obtains `project_root` from the existing explicit application configuration, validated once and labeled `source: explicit_configuration`. This is configuration resolution, not the new enrichment implementation. Missing root fails before source reads/model calls. When root enrichment is later implemented, define precedence and conflict detection explicitly; no automatic git discovery, environment fallback, or session persistence is included now.
 
-The target is project-root-based reference resolution and displayed paths, following Sharon's updated requirement. Another agent owns the root/formatter change. This PR consumes that agreed API and tests its boundary; it does not independently rewrite the flow or formatter. Keep raw cwd as metadata. If the needed API has not merged, continue upper-layer work with an injected dependency and mark real-flow integration blocked on that PR. Do not temporarily substitute root into a parameter named cwd or remove the existing containment check without the root-change owner's reviewed contract. All selected source access remains confined to the configured project root. See Phase 4 and the conflict workflow.
+The target is project-root-based reference resolution and displayed paths, following Sharon's updated requirement. The merged root/formatter/navigation change is already present at984aa. Astra D07 approves an explicit resolve_from_project_root=False extension to the existing flow/resolver facade, preserving legacy defaults. Gateway opts in with True; the facade documents translating configured root into the generic helper lookup-base argument while raw event cwd stays unchanged. Reuse the existing search algorithm and source containment. No new resolver or navigation operation is introduced. All selected source access remains confined to the configured project root. See Phase 4 and the conflict workflow.
 
 ## 6. Layer 2: UserPromptSubmit dispatcher
 
@@ -406,3 +406,12 @@ Revision-2 review is a design review, not verification of code or executed tests
 ## Implementation progress (partial)
 
 Phases0–3 implemented on feat/hook-gateway, draft PR2, with separate tested commits and Astra-reviewed deviations D01–D06 in phase evidence. Phase4 contains independently tested preparation/result-mapping helpers and an explicit root_api_unavailable error boundary. It does not run real selection. Phases5–7 are not completed. The active hook/callers remain unchanged. Official schema verification and the reviewed root-based resolution API remain hard integration/release gates. See docs/phases/hook-gateway for actual test evidence and partial coverage ledger. Do not merge this unfinished replacement or interpret its passing unit tests as live context delivery.
+
+
+## D07/D02 amendments after merged-root clarification
+
+The separate root-flow API dependency was inferred incorrectly. The merged root/formatter/navigation work is already in main. This branch now owns the narrow explicit resolve_from_project_root opt-in reviewed by Astra. Legacy flow/resolver callers retain defaults; new gateway calls root mode with raw cwd retained separately. This replaces earlier waiting/ownership language wherever inconsistent.
+
+Structural schema verification uses official Anthropic SDK source pinned at https://github.com/anthropics/claude-agent-sdk-python/blob/1ea8cb74ddcdadbfaa9b20dfa8268e18047851e7/src/claude_agent_sdk/types.py . This resolves D02 for core schema; live installed CLI/registration/receipt remain Phase7 checks. Required transcript_path fixtures and matrices are updated.
+
+The temporary root_api_unavailable handler is removed. Gateway invokes the real selection flow, existing helper and formatter. The old hooks/user_prompt_submit.py path is a forwarding wrapper only, retained until Sharon supplies final plugin bindings and external callers can retire it. Replay/IDE experiment callers use the shared gateway through the updated experiment runner.

@@ -9,32 +9,56 @@ def fenced(text, language="text"):
     return f"{fence}{language}\n{text}\n{fence}\n"
 
 
+def current_hook_records(details):
+    records=[r for r in details.get('trace',[]) if r.get('component') in {'hook','hook_gateway'}]
+    pid=details.get('hook_pid')
+    if pid is not None:records=[r for r in records if r.get('pid')==pid]
+    starts=[r for r in records if r.get('event')=='gateway_received']
+    ends=[r for r in records if r.get('event')=='gateway_finished']
+    anchor=(starts or ends or [None])[-1]
+    invocation=anchor.get('details',{}).get('invocation_id') if anchor else None
+    if invocation is not None:
+        records=[r for r in records if r.get('component')=='hook_gateway'
+                 and r.get('details',{}).get('invocation_id')==invocation]
+    return records
+
+
+def gateway_outcome(details):
+    return next((r.get('details',{}) for r in reversed(current_hook_records(details))
+                 if r.get('event')=='gateway_finished'),{})
+
+
 def hook_output_sections(details):
-    """Show captured output and prepared-only content without confusing them."""
-    prepared = next((r.get("details", {}) for r in reversed(details.get("trace", []))
-                     if r.get("component") == "hook" and r.get("event") == "response_prepared"), {})
-    rejected = next((r.get("details", {}) for r in reversed(details.get("trace", []))
-                    if r.get("component") == "hook" and r.get("event") == "response_rejected"), {})
-    actual = details.get("parsed_output")
-    specific = actual.get("hookSpecificOutput") if isinstance(actual, dict) else None
-    returned = isinstance(specific, dict) and isinstance(specific.get("additionalContext"), str)
-    lines = ["\n## Hook output — what was actually returned\n"]
+    """Captured stdout proves returned bytes; preparation is metadata only."""
+    records=current_hook_records(details)
+    prepared=next((r.get('details',{}) for r in reversed(records)
+                   if r.get('event')=='response_prepared'),{})
+    rejected=next((r.get('details',{}) for r in reversed(records)
+                   if r.get('event')=='response_rejected'),{})
+    final=gateway_outcome(details)
+    raw=details.get('stdout','')
+    try:actual=json.loads(raw)
+    except (ValueError,TypeError):actual=None
+    specific=actual.get('hookSpecificOutput') if isinstance(actual,dict) else None
+    returned=isinstance(specific,dict) and isinstance(specific.get('additionalContext'),str)
+    partial=final.get('code')=='stdout_write_failed' or bool(prepared and (not final or final.get('stdout_bytes_written') is None))
+    lines=['\n## Hook output — what was actually returned\n']
     if returned:
-        lines.append("**Returned by the hook subprocess.** Live delivery to Claude is not verified by replay.\n")
-        response = actual
-        label = "Returned"
+        lines.append('**Returned by the hook subprocess.** Live delivery to Claude is not verified by replay.\n')
+        response=actual;label='Returned'
     else:
-        if not details.get("stdout", "").strip():
-            lines.append("**No context was returned. stdout was empty.** The report's `null` is a missing "
-                         "parsed response; the hook did not send the JSON value `null` to Claude.\n")
+        if partial or raw.strip():
+            lines.append('**Complete response not captured; partial delivery may have occurred.** See raw stdout in details.json.\n')
         else:
-            lines.append("**No valid additionalContext response was captured.** See raw stdout in details.json.\n")
-        response = prepared.get("response")
-        label = "Prepared only — NOT SENT"
+            lines.append("**No context was returned. stdout was empty.** The report's `null` is a missing parsed response; the hook did not send JSON `null`.\n")
+        response=prepared.get('response')
+        label='Prepared only — delivery not confirmed'
         if rejected:
-            lines.append(f"Rejection: **{rejected.get('reason')}**. "
-                         f"Context size: **{rejected.get('context_chars')}** characters; "
-                         f"limit: **{rejected.get('max_context_chars')}**.\n")
+            lines.append(f"Rejection: **{rejected.get('reason')}**.\n")
+    if prepared and 'response' not in prepared:
+        lines.append(f"Preparation metadata: event **{prepared.get('hook_event_name','unknown')}**, serialized bytes **{prepared.get('serialized_bytes','unknown')}**. Prepared payload content was not logged.\n")
+    if final:
+        lines.append(f"Gateway outcome: **{final.get('outcome')}**; reason/code **{final.get('reason') or final.get('code')}**; bytes written **{final.get('stdout_bytes_written')}**. This is not a Claude receipt.\n")
     specific = response.get("hookSpecificOutput") if isinstance(response, dict) else None
     context = specific.get("additionalContext") if isinstance(specific, dict) else None
     if not isinstance(context, str):
@@ -128,7 +152,8 @@ def render_summary(details):
 
     finished = next((record.get("details", {}) for record in reversed(details["trace"])
                      if record.get("component") == "flow" and record.get("event") == "finished"), {})
-    reason = finished.get("reason")
+    final = gateway_outcome(details)
+    reason = (final.get("reason") or final.get("code")) if final else finished.get("reason")
     if reason is None:
         reason = next((line.strip() for line in reversed(details["stderr"].splitlines())
                        if "laya hook noop:" in line), None)

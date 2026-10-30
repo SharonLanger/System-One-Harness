@@ -1,4 +1,4 @@
-"""Private adapter preparation; real-flow integration awaits reviewed root API."""
+"""Prepare context configuration and reuse the existing root-mode flow."""
 from pathlib import Path
 from ...hook_contracts import Failure
 

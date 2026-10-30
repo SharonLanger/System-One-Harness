@@ -16,7 +16,7 @@ def test_bad_arguments(argv):
 
 @pytest.mark.parametrize('payload', ['', '{', '[]', 'null','1','true','{}',
     '{"hook_event_name":"X","hook_event_name":"X"}',
-    '{"hook_event_name":"X"} {}', '{"hook_event_name":"X","n":NaN}'])
+    '{"hook_event_name":"X"} {}', '{"hook_event_name":"X","n":NaN}', 'progress\n{}', '{"hook_event_name":"X","prompt":"first","prompt":"second"}'])
 def test_bad_input(payload):
     with pytest.raises(ValidationError): parse_payload(payload, 'X')
 
@@ -96,8 +96,12 @@ def test_broken_pipe_never_records_success(monkeypatch):
     monkeypatch.setattr(g,'isolate_stdout',nullcontext)
     monkeypatch.setattr(sys,'stdin',io.StringIO('{"hook_event_name":"X"}'))
     monkeypatch.setattr(sys,'stdout',Broken())
-    assert g.main(['--hook','X'],dispatcher=lambda *a:Context('x'),
-                  logger=lambda l,e,**d:records.append({'event':e,**d}))==0
+    saved_fd=os.dup(1)
+    try:
+        assert g.main(['--hook','X'],dispatcher=lambda *a:Context('x'),
+                      logger=lambda l,e,**d:records.append({'event':e,**d}))==0
+    finally:
+        os.dup2(saved_fd,1);os.close(saved_fd)
     assert records[-1]['outcome']=='error'
     assert records[-1]['stdout_bytes_written'] is None
     assert records[-1]['response_present'] is False
@@ -152,3 +156,36 @@ open(LOG,'w').write(json.dumps(records))
         return records[-1]['invocation_id']
     with ThreadPoolExecutor(max_workers=2) as pool:ids=list(pool.map(run,[0,1]))
     assert ids[0]!=ids[1]
+
+def test_closed_pipe_records_error_and_exits_zero(tmp_path):
+    script='''import json
+from laya_context_router.hook_gateway import main
+from laya_context_router.hook_contracts import Context
+records=[]
+main(['--hook','X'],dispatcher=lambda *a:Context('known'),logger=lambda l,e,**d:records.append({'event':e,**d}))
+open(LOG,'w').write(json.dumps(records))
+'''.replace('LOG',repr(str(tmp_path/'records.json')))
+    p=subprocess.Popen([sys.executable,'-c',script],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
+        text=True,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
+    p.stdout.close();p.stdin.write('{"hook_event_name":"X"}');p.stdin.close()
+    p.wait(timeout=5)
+    assert p.returncode==0
+    assert 'BrokenPipeError' in p.stderr.read()
+    records=json.loads((tmp_path/'records.json').read_text())
+    final=records[-1]
+    assert final['outcome']=='error' and final['code']=='stdout_write_failed'
+    assert final['stdout_bytes_written'] is None and final['response_present'] is False
+    assert not any(r['event']=='response_emitted' for r in records)
+
+
+def test_duplicate_prompt_rejected_without_dispatch(tmp_path):
+    script="""from laya_context_router.hook_gateway import main
+calls=[]
+def dispatch(*a):calls.append(1);raise AssertionError('dispatch ran')
+main(['--hook','X'],dispatcher=dispatch)
+assert calls==[]
+"""
+    r=subprocess.run([sys.executable,'-c',script],
+        input='{"hook_event_name":"X","prompt":"first","prompt":"second"}',text=True,capture_output=True,
+        timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
+    assert r.returncode==0 and r.stdout=='' and 'invalid_json' in r.stderr

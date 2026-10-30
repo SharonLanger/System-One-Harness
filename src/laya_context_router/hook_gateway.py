@@ -7,6 +7,7 @@ import os
 import signal
 import sys
 from uuid import uuid4
+from time import monotonic
 
 from .hook_contracts import Context, Noop, Failure, ValidationError, validate_result
 from .json_utils import _unique_pairs
@@ -88,73 +89,116 @@ def _default_dispatch(payload, args, invocation_id, logger):
 
 def _default_log(level, event, **details):
     from .log_utils import log
-    log(level, 'hook_gateway', event, **details)
+    log(level, 'hook_gateway', event, raise_on_error=True, **details)
 
 def main(argv=None, *, dispatcher=None, logger=None):
-    invocation_id = str(uuid4())
-    log_impl = logger or _default_log
-    args = None
-    validated_session = None
-    result = Failure('not_started', 'gateway')
-    written = 0
-    timer_started = False
-    previous_handler = None
-    def log(level, event, **details):
+    started=monotonic()
+    invocation_id=str(uuid4())
+    log_impl=logger or _default_log
+    args=None
+    result=Failure('not_started','gateway')
+    written=0
+    timer_started=False
+    previous_handler=None
+    expired=False
+    logging_disabled=False
+    validated_session=None
+
+    def expire(signum,frame):
+        nonlocal expired
+        expired=True
+        raise TimeoutError('hook deadline exceeded')
+
+    def log(level,event,**details):
         nonlocal validated_session
-        if event == 'common_input_validated':
-            validated_session = details.get('session_id')
-        metadata = {'invocation_id': invocation_id,
-                    'hook_event_name': args.hook if args else None,
-                    'session_id': validated_session, **details}
+        if not timer_started or expired or logging_disabled:
+            return
+        if event=='common_input_validated':
+            validated_session=details.get('session_id')
+        metadata={'invocation_id':invocation_id,'hook_event_name':args.hook,
+                  'session_id':validated_session,**details}
         try:
             with isolate_stdout():
-                log_impl(level, event, **metadata)
+                log_impl(level,event,**metadata)
         except TimeoutError:
             raise
         except Exception as exc:
-            print(f'laya logging failed: {type(exc).__name__}', file=sys.stderr)
-    try:
-        with isolate_stdout():
-            args = parse_args(argv)
-            previous_handler = signal.signal(signal.SIGALRM, _expired)
-            signal.setitimer(signal.ITIMER_REAL, args.deadline)
-            timer_started = True
-            text = sys.stdin.read(MAX_INPUT_CHARS + 1)
-            payload = parse_payload(text, args.hook)
-            log('INFO', 'gateway_received', input_chars=len(text), fields=sorted(payload))
-            result = validate_result((dispatcher or _default_dispatch)(payload, args, invocation_id, log))
-            output = serialize_response(result, args.hook)
-            if isinstance(result, Failure):
-                log('ERROR', 'gateway_error', code=result.code, stage=result.stage, field=result.field)
-                print(f'laya hook error: {result.stage}: {result.code} {result.message}', file=sys.stderr)
-            elif isinstance(result, Noop):
-                log('INFO', 'gateway_noop', reason=result.reason)
-                print(f'laya hook noop: {result.reason}', file=sys.stderr)
-            if output:
-                log('DEBUG', 'response_prepared', serialized_bytes=len(output.encode('utf-8')))
-        if output:
-            written = None  # A failed write/flush can leave an unknown partial output.
-            sys.stdout.write(output)
+            print(f'laya logging failed: {type(exc).__name__}',file=sys.stderr)
+
+    def safe_log(level,event,**details):
+        nonlocal logging_disabled
+        try:
+            log(level,event,**details)
+        except TimeoutError:
+            logging_disabled=True
+            print(f'laya hook logging deadline exceeded [{invocation_id}]',file=sys.stderr)
+
+    def recover_output():
+        # Only used after a broken pipe or timeout interrupts protocol emission.
+        try:
+            null_fd=os.open(os.devnull,os.O_WRONLY)
+            try:os.dup2(null_fd,1)
+            finally:os.close(null_fd)
             sys.stdout.flush()
-            written = len(output.encode('utf-8'))
-    except (Exception, SystemExit) as exc:
-        result = Failure(getattr(exc, 'code', None) if isinstance(exc, ValidationError) else
-                         ('deadline_exceeded' if isinstance(exc, TimeoutError) else 'gateway_error'),
-                         getattr(exc, 'stage', 'gateway'), getattr(exc, 'field', None), str(exc))
-        log('ERROR', 'gateway_error', code=result.code, stage=result.stage, field=result.field,
-            **getattr(exc, 'evidence', {}))
-        print(f'laya hook error: {result.message}', file=sys.stderr)
+        except Exception:
+            print('laya hook error: interrupted stdout cleanup failed',file=sys.stderr)
+
+    try:
+        try:
+            with isolate_stdout():
+                args=parse_args(argv)
+                remaining=args.deadline-(monotonic()-started)
+                if remaining<=0:
+                    expired=True
+                    raise TimeoutError('hook deadline exceeded during argument parsing')
+                previous_handler=signal.signal(signal.SIGALRM,expire)
+                signal.setitimer(signal.ITIMER_REAL,remaining)
+                timer_started=True
+                text=sys.stdin.read(MAX_INPUT_CHARS+1)
+                payload=parse_payload(text,args.hook)
+                log('INFO','gateway_received',input_chars=len(text),fields=sorted(payload))
+                result=validate_result((dispatcher or _default_dispatch)(payload,args,invocation_id,log))
+                if expired:
+                    raise TimeoutError('hook deadline exceeded')
+                output=serialize_response(result,args.hook)
+                if isinstance(result,Failure):
+                    log('ERROR','gateway_error',code=result.code,stage=result.stage,field=result.field)
+                    print(f'laya hook error: {result.stage}: {result.code} {result.message}',file=sys.stderr)
+                elif isinstance(result,Noop):
+                    log('INFO','gateway_noop',reason=result.reason)
+                    print(f'laya hook noop: {result.reason}',file=sys.stderr)
+                if output:
+                    log('DEBUG','response_prepared',serialized_bytes=len(output.encode('utf-8')))
+            if output:
+                written=None
+                sys.stdout.write(output)
+                sys.stdout.flush()
+                written=len(output.encode('utf-8'))
+        except (Exception,SystemExit) as exc:
+            interrupted=written is None and isinstance(exc,(BrokenPipeError,TimeoutError))
+            if interrupted:
+                recover_output()
+            if isinstance(exc,BrokenPipeError) and interrupted:
+                result=Failure('stdout_write_failed','output',message=f'{type(exc).__name__}: {exc}')
+            else:
+                result=Failure(exc.code if isinstance(exc,ValidationError) else
+                    ('deadline_exceeded' if isinstance(exc,TimeoutError) else 'gateway_error'),
+                    getattr(exc,'stage','gateway'),getattr(exc,'field',None),f'{type(exc).__name__}: {exc}')
+            safe_log('ERROR','gateway_error',code=result.code,stage=result.stage,field=result.field,
+                     **getattr(exc,'evidence',{}))
+            partial='; stdout_bytes_written=unknown' if written is None else ''
+            print(f'laya hook error: {result.code}: {result.message}{partial} [{invocation_id}]',file=sys.stderr)
+        safe_log('INFO','gateway_finished',outcome='error' if isinstance(result,Failure) else
+            ('context' if isinstance(result,Context) else 'noop'),
+            reason=result.reason if isinstance(result,Noop) else None,
+            code=result.code if isinstance(result,Failure) else None,
+            response_present=isinstance(result,Context) and bool(written),
+            stdout_bytes_written=written,exit_code=0)
+        return 0
     finally:
         if timer_started:
-            signal.setitimer(signal.ITIMER_REAL, 0)
-            signal.signal(signal.SIGALRM, previous_handler)
-    log('INFO', 'gateway_finished', outcome='error' if isinstance(result, Failure) else
-        ('context' if isinstance(result, Context) else 'noop'),
-        reason=result.reason if isinstance(result, Noop) else None,
-        code=result.code if isinstance(result, Failure) else None,
-        response_present=isinstance(result, Context) and bool(written),
-        stdout_bytes_written=written, exit_code=0)
-    return 0
+            signal.setitimer(signal.ITIMER_REAL,0)
+            signal.signal(signal.SIGALRM,previous_handler)
 
-if __name__ == '__main__':
+if __name__=='__main__':
     raise SystemExit(main())
