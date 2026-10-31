@@ -89,3 +89,22 @@ test('compiled entry loads only the standalone store and Node builtins', () => {
   const imports = [...source.matchAll(/require\("([^"]+)"\)/g)].map(match => match[1]);
   assert.deepEqual(imports.sort(), ['./session-state', 'node:util']);
 });
+
+test('load returns ordered events internally, missing state stays absent, invalid operations fail', t => {
+  const f = fixture(t);
+  const load = {operation: 'load', logsRoot: f.logsRoot, sessionId: f.request.sessionId};
+  const read = () => {
+    const result = spawnSync(process.execPath, [cli], {input: JSON.stringify(load), encoding:'utf8'});
+    assert.equal(result.status, 0);
+    assert.equal(result.stderr, '');
+    return JSON.parse(result.stdout).events;
+  };
+  assert.deepEqual(read(), []);
+  assert.equal(fs.existsSync(f.file), false);
+  assert.equal(run(JSON.stringify(f.request)).status, 0);
+  const before=fs.readFileSync(f.file);
+  assert.deepEqual(read(), before.toString().trim().split('\n').map(JSON.parse));
+  fails(JSON.stringify({...load, event}), /Load does not accept/);
+  fails(JSON.stringify({...load, operation:'unknown'}), /Unknown/);
+  assert.deepEqual(fs.readFileSync(f.file), before);
+});
