@@ -5,6 +5,36 @@ Status: design only. This PR contains the plan, README and input-authoring guide
 
 Documentation: [Run and inspect an experiment](README.md) · [Create cases and suite files](input-authoring.md). The authoring guide provides complete matching JSON examples and an annotation workflow.
 
+## 0. Sol implementation handoff and mandatory Astra escalation
+
+Implementation owner: **Sol**. Sol must read this entire plan, README.md and input-authoring.md, then implement the plan on the existing PR #21 branch. This documentation update prepares that handoff; it does not start implementation. On completion, report the implementation, verification and remaining live-only checks to Sharon. Do not merge the PR without Sharon's instruction.
+
+### Before implementation
+
+- Inspect current main, the PR branch and applicable AGENTS.md instructions; verify the current production block/SDK interfaces and dependency availability.
+- Keep implementation and task-owned verification artifacts under experiments/batch_v2/. Preserve the existing runner and production modules.
+- Map the plan's requirements to concrete implementation steps and checks. Track progress and test evidence in experiments/batch_v2/verification.md.
+- Build the reusable runner, the required examples, collector/reports and documentation together. Do not report completion while a planned deliverable is missing.
+
+### When anything fails, falls short or deviates
+
+**Sol must consult an Astra agent whenever a problem, unmet requirement, necessary plan refinement, or actual/proposed implementation deviation is discovered.** This includes unexpected test failures, incompatible interfaces, unavailable dependencies/tools, output or scoring discrepancies, missing acceptance coverage, and any need to weaken, omit or replace a planned behavior. Do not silently improvise around the plan or hide the issue by changing expected test results.
+
+1. Pause the affected implementation step and preserve the current evidence. Independent work that cannot be invalidated by the issue may continue.
+2. Spawn or resume **Astra (gpt-6-astra)** and explicitly state: "The RV2 implementation has encountered a problem or deviation from the agreed plan. Decide the recovery approach and give actionable next steps." Merely renaming a Sol agent Astra does not satisfy this requirement.
+3. Give Astra the relevant plan sections, branch/commit, expected behavior, observed behavior, exact error/test output, affected files, attempted fixes, scope constraints and any proposed alternatives. Astra must inspect enough relevant code/evidence to make the decision.
+4. Ask Astra to return: cause or remaining uncertainty; chosen recovery approach and rationale; ordered action items; necessary plan changes; tests/acceptance criteria proving recovery; and whether a user decision is genuinely required.
+5. Record the issue and Astra's decision in verification.md. If the plan needs refinement, update the relevant sections of this document and keep README/input-authoring examples consistent. Preserve a short deviation entry describing the original requirement, why it changed and Astra's rationale rather than erasing the history.
+6. Execute the agreed recovery actions and run the specified checks. Send the results back to Astra for confirmation that the issue is resolved before resuming work that depends on it. If it remains unresolved, return to Astra with the new evidence.
+
+Astra may direct implementation-level refinements within the authorized scope. This does not authorize reversing Sharon's explicit requirements, changing production/shared code outside the stated scope, fabricating results, or merging the PR. If a recovery requires a new user decision or expanded authorization, present the concrete issue, Astra's recommendation and the required decision to Sharon. If Astra is unavailable, disclose that limitation and keep the affected work blocked; do not claim the required review happened.
+
+Each deviation record must include: issue ID, plan section, expected versus actual behavior, evidence, Astra decision, action items, changed documents/files, verification commands/results and resolved/unresolved status.
+
+### Completion handoff
+
+Verify all planned deliverables and applicable checks, including the runnable fixture example and local report interaction. Summarize any deviations and Astra's resolutions. Distinguish fixture/mechanical evidence from live Mac verification and leave no unresolved issue hidden behind a completion claim. Update documentation from planned commands to verified commands only after those commands actually run successfully. Notify Sharon when PR #21 is ready for review, without merging it.
+
 ## 1. Scope and decisions
 
 RV2 is one reusable runner for many independently defined experiments. Requested action (PR #19) and context scope (PR #20) are initial block adapters, not hard-coded runner tasks. Generic experiments define their questions, choices, cases, rules and supported configurations in JSON without new Python code.
