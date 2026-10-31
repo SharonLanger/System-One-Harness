@@ -146,3 +146,47 @@ def inspect_head(tok, question, *, head_max_len, question_id=None):
             'measurement': {'instructions': {'required_tokens': len(parts['instruction_ids']), 'limit': instruction_limit, 'retained_tokens': len(instructions)},
                             'options': options, 'assembled_head_tokens': len(ids),
                             'untrimmed_head_tokens': 3 + len(parts['instruction_ids']) + sum(1 + len(o) for o in raw)}}
+
+
+def inspect_request(tok, state, questions, *, model, max_len, head_max_len, request_id=None):
+    """Measure every question before any request inference. Never alter input."""
+    from .budget import make_report
+    report = make_report(model, request_id=request_id)
+    report.update(inspection_status='complete', questions=[],
+                  tokenizer=deepcopy(getattr(tok, 'fingerprints', None)),
+                  limits={'sequence_tokens': max_len, 'head_allocation_tokens': head_max_len,
+                          'initial_option_text_tokens': 48, 'provenance': 'pinned_runtime_profile'})
+    state_ids = encode_state(tok, state)
+    for name, question in questions.items():
+        head = inspect_head(tok, question, head_max_len=head_max_len, question_id=name)
+        measurement = head['measurement']
+        head_len = len(head['ids'])
+        room = max(0, max_len-head_len-1)
+        state_kept = min(room, len(state_ids))
+        assembled = head_len + state_kept + 1
+        final = min(max_len, assembled)
+        untrimmed = measurement['untrimmed_head_tokens'] + len(state_ids) + 1
+        markers_kept = sum(p < max_len for p in head['markers'])
+        measurement['instructions']['final_retained_tokens'] = min(measurement['instructions']['retained_tokens'], max(0, max_len-1))
+        for option, marker in zip(measurement['options'], head['markers']):
+            option['final_retained_text_tokens'] = max(0, min(option['after_shared_head_text_tokens'], max_len-marker-1))
+        measurement.update(question_id=name,
+                           state={'required_tokens': len(state_ids), 'allowance': room, 'retained_tokens': state_kept,
+                                  'direction': 'left' if isinstance(state, list) else 'right'},
+                           untrimmed_sequence_tokens=untrimmed, before_final_slice_tokens=assembled,
+                           final_sequence_tokens=final,
+                           markers={'required': len(head['markers']), 'retained': markers_kept})
+        violations = head['violations']
+        if state_kept < len(state_ids):
+            violations.append(violation('state', name, len(state_ids), room, state_kept, stage='state_allowance'))
+        if untrimmed > max_len:
+            violations.append(violation('full_request', name, untrimmed, max_len, final, stage='full_request_requirement'))
+        if final < assembled:
+            violations.append(violation('final_sequence', name, assembled, max_len, final, stage='final_sequence_slice'))
+        if markers_kept < len(head['markers']):
+            violations.append(violation('option_markers', name, len(head['markers']), markers_kept, markers_kept,
+                                        stage='final_sequence_slice', unit='markers'))
+        report['questions'].append(measurement)
+        report['violations'].extend(violations)
+    report['message'] = 'Input would lose content or structure' if report['violations'] else 'All measured input is retained'
+    return report

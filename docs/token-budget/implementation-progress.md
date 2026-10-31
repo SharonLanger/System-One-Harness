@@ -42,3 +42,11 @@ Commit 3 published: `46aec1c38050c040e830f3e0138b5f58df1f5eff`.
 Expected red: `hasattr(..., 'inspect_head')` asserts missing accounting capability. New tests cover below/at/above option-text, shared-head marker-inclusive and instruction limits; the 105-token request/83-token option counterexample; and stage-local losses without summing overlaps. Command: `python -m pytest -q tests/test_token_budget_head.py`.
 
 Outcome: 14 expected missing-accounting assertions failed; green with independent parity/encoding/report regressions: 58 passed. The reproduced 83-token option is rejected by the measurement despite a 105-token full request. A 259-token assembled head is not incorrectly treated as violation of the 256 allocation parameter. Evidence: `evidence/04-{red,green}.log`.
+
+Commit 4 published: `7e241154870cced73f0131504b4f1e086dda0591`.
+
+## Commit 5 — full-request accounting
+
+Expected red: missing `inspect_request` assertion. Tests exercise state below/at/above actual profile allowances, conversation-list retention direction, final slice and structural marker loss, full-request requirement independently of earlier cuts, and all-question measurement. Command: `python -m pytest -q tests/test_token_budget_request.py`.
+
+Outcome: 11 expected missing-request assertions failed; green full accounting/independent parity regressions: 69 passed. Each question has independent allowances and all violations; report contains counts only, with stage-local and final retention separated. Evidence: `evidence/05-{red,green}.log`.
