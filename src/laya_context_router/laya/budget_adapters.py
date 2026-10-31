@@ -96,3 +96,25 @@ def encode_question(tok, definition):
     return {'instruction_ids': tok.encode(f"{question['t']} question: {question['ins'].replace(tok.mask_token, ' ')}"),
             'option_ids': [tok.encode(' ' + options[i].replace(tok.mask_token, ' ')) for i in order],
             'option_keys': [keys[i] for i in order], 'option_indices': list(order)}
+
+
+def assemble_sequence(tok, state, question, *, max_len, head_max_len):
+    """Reproduce the pinned builder for parity; callers never send this cut input."""
+    parts = encode_question(tok, question)
+    options = [[tok.mask_token_id] + ids[:48] for ids in parts['option_ids']]
+    allowance = head_max_len - sum(map(len, options))
+    if allowance < 16:
+        span_cap = max(4, (head_max_len - 16) // max(1, len(options)))
+        options = [span[:span_cap] for span in options]
+        allowance = head_max_len - sum(map(len, options))
+    head = [tok.cls_token_id] + parts['instruction_ids'][:max(8, allowance)] + [tok.sep_token_id]
+    markers = []
+    for option in options:
+        markers.append(len(head))
+        head.extend(option)
+    head.append(tok.sep_token_id)
+    state_ids = encode_state(tok, state)
+    room = max(0, max_len - len(head) - 1)
+    kept = state_ids[max(0, len(state_ids) - room):] if isinstance(state, list) else state_ids[:room]
+    return {'ids': (head + kept + [tok.sep_token_id])[:max_len],
+            'markers': [p for p in markers if p < max_len]}
