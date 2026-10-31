@@ -115,7 +115,9 @@ For real mode, preserve all existing gateway options, including the source root:
 "command": "\"/absolute/path/to/environment/bin/laya-context-router\" hook --hook UserPromptSubmit --repository-root \"${CLAUDE_PROJECT_DIR}\" --real"
 ```
 
-No plugin files or user settings are modified by installation or this PR. Restart
+Installation does not modify user plugin files or settings. This PR updates the
+repository's plugin command to use `LAYA_CONTEXT_ROUTER_CLI`; installation and
+upgrade instructions are in `plugins/README.md`. Restart
 Claude after changing its installed hook command, submit a normal prompt and
 inspect `logs --last 5`. Test Projects A and B separately. Observation must log
 `dispatcher_invoked: false` and `outcome: observed`, with zero stdout bytes.
