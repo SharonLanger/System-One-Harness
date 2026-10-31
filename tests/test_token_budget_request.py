@@ -1,8 +1,8 @@
 import json
 import pytest
 from laya_context_router.laya import budget_adapters as api
-from token_budget_support import tokenizer, sdk, sdk_tokenizer
-from test_token_budget_parity import BASE
+from token_budget_support import tokenizer
+from token_budget_support import BASE
 
 
 def inspect(state,questions=None,max_len=1024,head=256):
@@ -24,15 +24,13 @@ def test_state_exact_boundary(max_len,head,delta):
     assert json.loads(json.dumps(r,allow_nan=False))==r
 
 
-def test_list_state_left_retention_matches_sdk():
+def test_list_state_keeps_newest_mock_tokens():
     state=[{'role':'user','content':'old '*1500},{'role':'user','content':'newest intent'}]
     r=inspect(state); q=r['questions'][0]
     assert q['state']['direction']=='left'
     tok=tokenizer();result=api.assemble_sequence(tok,state,BASE,max_len=1024,head_max_len=256)
     raw=api.encode_state(tok,state);room=q['state']['allowance']
     assert result['ids'][-room-1:-1]==raw[-room:]
-    common,_,_,normal=sdk()
-    assert result['ids']==common.build_sequence(sdk_tokenizer(),state,normal(BASE),1024,256,truncate_left=True)[0]
 
 
 def test_all_questions_measured_without_inference():

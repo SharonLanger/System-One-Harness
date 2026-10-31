@@ -1,11 +1,18 @@
 # LAYA strict token-budget validation — design and implementation plan
 
 Date: 2026-10-31  
-Status: reviewed implementation handoff for **Sol**; this pull request contains documentation only. No feature code implemented.
+Status: historical design with implementation through increment 10; the user-directed mock-only cleanup below supersedes its former real-fixture testing requirements.
 Revision: small TDD commits, mandatory Astra recovery, and baseline preservation.  
 Scope: English requests and TypeScript source content within the existing application architecture.
 
 Research: [laya-token-budget-research-results.md](research-results.md).
+
+
+## Current user-directed scope (supersedes historical testing requirements)
+
+The latest explicit instruction is to keep unit tests mocked: do not call a real tokenizer or SDK, and remove the entire token-budget fixture bundle and preparation tooling. The current suite uses controlled token IDs/runtime doubles and hand-specified assembly/accounting expectations. It does **not** establish real-tokenizer or upstream SDK parity. Earlier real-fixture mandates, parity gates, and instructions against removing those fixtures below are historical and no longer govern this cleanup. The removed raw execution logs remain in Git history; only concise current validation summaries belong in the final tree.
+
+Unpublished increment 11 was preserved separately and is not part of this cleanup. No experiment edits/runs, main integration, or production inspection redesign are authorized in this step. Production loaded-tokenizer verification remains unchanged. Experiment cleanup and runtime/hash simplification remain pending. See [testing.md](testing.md).
 
 ## 1. Decisions carried into this design
 

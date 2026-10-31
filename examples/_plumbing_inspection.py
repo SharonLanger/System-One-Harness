@@ -1,7 +1,7 @@
 """Explicit synthetic provider for examples/tests, never application configuration.
 
 These controlled reports test transport, copying and decision logic. They are not
-real-tokenizer qualification; the separate pinned SDK suite provides that evidence.
+real-tokenizer qualification; unit tests do not establish SDK/tokenizer parity.
 This file is outside the installed laya_context_router package.
 """
 from types import SimpleNamespace

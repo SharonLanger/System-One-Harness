@@ -1,64 +1,43 @@
-"""Offline qualification fixtures; fail closed when explicitly prepared assets are absent."""
-from pathlib import Path
+"""Controlled token IDs for unit tests; no tokenizer or SDK qualification evidence."""
 import hashlib
 import json
+import re
+import threading
+from types import SimpleNamespace
 
-FIXTURES = Path(__file__).parent / 'fixtures/token-budget'
-ROOT = Path(__file__).resolve().parents[1]
-
-
-def fixture_paths(kind='typed'):
-    manifest = json.loads((FIXTURES / 'manifest.json').read_text())
-    vocab = ROOT / '.token-budget-fixtures/tokenizer.json'
-    assert vocab.is_file(), 'Run python scripts/prepare_token_budget_fixtures.py --download explicitly before tests'
-    assert hashlib.sha256(vocab.read_bytes()).hexdigest() == manifest['tokenizer']['sha256']
-    for name, digest in manifest['files'].items():
-        assert hashlib.sha256((FIXTURES / name).read_bytes()).hexdigest() == digest, name
-    return vocab, FIXTURES / kind / 'tokenizer_config.json'
+BASE={'type':'choice','instructions':'Choose the relevant function.','criteria':{'yes':'Relevant.','no':'Not relevant.'}}
 
 
-def tokenizer(kind='typed'):
-    from laya_context_router.laya.budget_adapters import ExactTokenizer
-    return ExactTokenizer(*fixture_paths(kind))
+class MockBackend:
+    def __init__(self):
+        self.truncation=None; self.padding=None; self.normalizer='mock'; self.vocabulary=[]
+    def to_str(self):
+        return json.dumps(vars(self),sort_keys=True)
+    def add_tokens(self,values):
+        self.vocabulary.extend(values)
 
 
-def sdk():
-    """Load unmodified pinned host helpers without the neural runtime package."""
-    import ast
-    import importlib.util
-    import sys
-    import types
-    from typing import Dict
-    package_name = '_budget_qualification_sdk'
-    if package_name + '.common' in sys.modules:
-        return sys.modules[package_name + '.common'], sys.modules[package_name + '.prepared'], sys.modules[package_name + '.tokenizer'], sys.modules[package_name].normalize
-    package = types.ModuleType(package_name)
-    package.__path__ = [str(FIXTURES / 'sdk')]
-    sys.modules[package_name] = package
-    modules = []
-    for name in ('common', 'prepared', 'tokenizer'):
-        spec = importlib.util.spec_from_file_location(package_name + '.' + name, FIXTURES / 'sdk' / (name + '.py'))
-        module = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = module
-        spec.loader.exec_module(module)
-        modules.append(module)
-    tree = ast.parse((FIXTURES / 'sdk/runtime.py').read_text())
-    fn = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == '_to_internal')
-    fn.decorator_list = []
-    namespace = {'json': json, 'Dict': Dict}
-    exec(compile(ast.Module(body=[fn], type_ignores=[]), '<pinned SDK normalizer>', 'exec'), namespace)
-    package.normalize = namespace['_to_internal']
-    return *modules, package.normalize
+class MockTokenizer:
+    """Scripted IDs take precedence; lexical fallback supplies convenient test lengths."""
+    def __init__(self,kind='typed',overrides=None):
+        self.backend=MockBackend();self.calls=[];self.overrides=overrides or {}
+        self.fingerprints={'tokenizer_sha256':'mock-vocabulary','config_sha256':'mock-'+kind,'tokenizer_version':'mock'}
+        for i,name in enumerate(('cls','sep','pad','mask')):
+            setattr(self,name+'_token','<'+name+'>');setattr(self,name+'_token_id',i)
+    def encode(self,text):
+        self.calls.append(text)
+        if text in self.overrides:return list(self.overrides[text])
+        return [10+int.from_bytes(hashlib.sha256(piece.encode()).digest()[:4],'big')
+                for piece in re.findall(r'\w+|[^\w\s]',text)]
 
 
-def sdk_tokenizer(kind='typed'):
-    # SDK requires co-located files. Prepare a temporary directory without copying
-    # the large vocabulary: the pinned wrapper reads this verified symlink.
-    import tempfile
-    _, _, module, _ = sdk()
-    vocab, config = fixture_paths(kind)
-    with tempfile.TemporaryDirectory() as name:
-        folder = Path(name)
-        (folder / 'tokenizer.json').symlink_to(vocab)
-        (folder / 'tokenizer_config.json').symlink_to(config)
-        return module.Tokenizer(folder)
+def tokenizer(kind='typed',*,overrides=None):
+    return MockTokenizer(kind,overrides)
+
+
+def mock_runtime():
+    lock=threading.RLock()
+    def encode_text(tok,text,*,add_special_tokens=False):
+        assert add_special_tokens is False
+        with lock:return {'input_ids':tok.encode(text)}
+    return SimpleNamespace(_TOKENIZE_LOCK=lock,encode_text=encode_text)

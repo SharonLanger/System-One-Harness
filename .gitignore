@@ -11,7 +11,3 @@ typescript-helper/dist/
 .idea
 # Local diagnostic logs (may contain prompts and source code).
 logs/
-
-
-# Explicitly prepared pinned tokenizer fixture; never auto-downloaded by tests.
-.token-budget-fixtures/

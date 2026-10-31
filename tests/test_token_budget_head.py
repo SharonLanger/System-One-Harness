@@ -1,7 +1,7 @@
 import pytest
 from laya_context_router.laya import budget_adapters as api
-from token_budget_support import tokenizer, sdk, sdk_tokenizer
-from test_token_budget_parity import BASE
+from token_budget_support import tokenizer
+from token_budget_support import BASE
 
 
 def inspect(q, head=256):
@@ -47,11 +47,12 @@ def test_instruction_boundary(head,delta):
     assert any(v['boundary']=='instructions' for v in r['violations'])==(delta>0)
 
 
-def test_long_option_tiny_full_request_and_no_double_count():
+def test_scripted_83_token_option_in_105_token_request_and_no_double_count():
     q=dict(BASE,criteria={'first':'Description '*80,'second':'Short.'})
-    r=inspect(q)
+    tok=tokenizer(overrides={'choice question: Choose the relevant function.':range(8), ' first: '+'Description '*80:range(83), ' second: Short.':range(3), 'A short state.':range(5)})
+    r=api.inspect_head(tok,q,head_max_len=256,question_id='q')
     assert r['measurement']['options'][0]['required_text_tokens']==83
-    assert r['measurement']['untrimmed_head_tokens']+len(api.encode_state(tokenizer(),'A short state.'))+1==105
+    assert r['measurement']['untrimmed_head_tokens']+len(api.encode_state(tok,'A short state.'))+1==105
     assert r['violations'][0]['incoming']-r['violations'][0]['retained']==35
     crowded=inspect(dict(BASE,criteria={f'c{i}':'Description '*80 for i in range(30)}))
     first=crowded['measurement']['options'][0]
@@ -69,5 +70,3 @@ def test_assembled_head_may_exceed_allocation_without_artificial_violation():
     r=inspect(q)
     assert len(r['ids'])==259
     assert not any(v['boundary']=='head_length' for v in r['violations'])
-    common,_,_,normal=sdk()
-    assert (r['ids'],r['markers'])==common.build_head(sdk_tokenizer(),normal(q),256)[:2]

@@ -1,5 +1,7 @@
 # Astra D001 — exact-base and generated-build setup recovery
 
+> Historical record. The latest user instruction supersedes the real-tokenizer/SDK fixture requirements: current unit tests use mocks only, and do not establish actual tokenizer or SDK parity. The fixture bundle, preparation script, and raw execution evidence were removed from the working tree. See [testing.md](testing.md).
+
 Astra agent `/root/sol_implementation/astra_setup_recovery` classified setup as source-snapshot/environment provenance mismatch, not product/test-contract failure. No product, test, assertion, limit or fixture changes authorized.
 
 Incidents: an oversized shell argument request and an rm-style command were rejected before execution; neither supplies test evidence. Safe copytree preserved baseline. Copied local handoff design/verification differed from canonical PR blobs only in research link/ending newline; ordinary git add omitted ten ignored tracked paths. Copytree dereferenced ignored build/typescript/node_modules symlink, and documented npm build exited1 with `Unexpected build/typescript/node_modules; inspect it before rebuilding`.
@@ -33,3 +35,7 @@ Copied the current contents of every tracked file plus the three new implementat
 ## D006 — cached capability mutation checks (increment 9)
 
 Astra approved completing increment 9's existing immutable-configuration scenario: initial verification can become stale after sequential mutation of the same tokenizer backend/special-token fields or agent methods. Capture serialized backend semantics and all eight special-token fields, check them under the existing SDK tokenizer lock, and preserve cfg/tokenizer/hook/padding/truncation checks. Snapshot stable callable receiver/function identities for predict, predict_batch, _encode_state, _to_internal and _check_question; continue refusing instance overrides. Check integrity before invoking the SDK validator. Detected mutation is InspectionUnavailable with unknown counts, one boundary report and no dispatch. No per-request file/source rehashing or new concurrent-external-mutation guarantee. Required red/green coverage includes actual backend normalizer/vocabulary mutation, special strings/IDs, all method overrides never executed, unchanged reuse, lock release and boundary logging. Existing assertions remain unchanged.
+
+## Latest user override — mock-only cleanup
+
+The user explicitly removed the prior requirement for real-tokenizer/SDK unit fixtures. Removed those fixtures and raw evidence, retained production loaded-tokenizer behavior, and replaced parity assertions with mocked boundary/accounting tests. Earlier Astra real-fixture instructions do not override this new scope. No experiment edits/runs or unpublished increment-11 publication are included. Current limitations are recorded in testing.md and implementation-progress.md.

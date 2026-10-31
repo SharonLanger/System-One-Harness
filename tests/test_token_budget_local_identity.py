@@ -57,10 +57,10 @@ def test_unbound_identity_cannot_borrow_requested_configuration(tmp_path,kind):
 
 
 def test_raw_observed_identity_in_report(tmp_path,monkeypatch):
-    from token_budget_support import sdk_tokenizer,sdk
-    from test_token_budget_parity import BASE
-    obs=local_observation(tmp_path);common,*_=sdk()
-    agent=SimpleNamespace(tok=sdk_tokenizer(),cfg={'max_len':1024,'head_max_len':256},hooks=[],model_id=str(tmp_path))
+    from token_budget_support import tokenizer,mock_runtime
+    from token_budget_support import BASE
+    obs=local_observation(tmp_path);common=mock_runtime()
+    agent=SimpleNamespace(tok=tokenizer(),cfg={'max_len':1024,'head_max_len':256},hooks=[],model_id=str(tmp_path))
     monkeypatch.setattr(api,'_observe_agent',lambda *a:(obs,common,SimpleNamespace(compose_hooks=lambda x:list(x))))
     result=api.verified_provider(agent,RunConfig()).inspect('hello',{'q':BASE})
     assert result['model']['requested_id']==RunConfig().model

@@ -1,104 +1,19 @@
-# Token-budget implementation progress
+# Token-budget implementation status
 
-Implementation resumes PR #23 on `codex/token-budget-plan-20261031`; no automatic merge.
-Remote base: `a3dd68f3d110799883203a681e933f4fb0a17d57` (tree `06a2bdad5c9d8650334f7589caf41197f9b4a79c`). Local snapshot `1faa2f3` has identical tracked tree; it does not supply remote ancestry. Publication commits are parented to the actual remote branch head. Current main `6295d5f` changes only experiment documentation relative to the source baseline.
+The branch contains implementation through increment 10. Latest published implementation commit before this cleanup: `9600df2a0684a63df280f0052314defdf5f115f0`. Increment 11 was prepared but remained unpublished; it has been preserved separately and removed from this worktree. No PR merge or main integration is included.
 
-## Untouched implementation baseline
+## User-directed mock-only cleanup
 
-Recovered fresh implementation run, after D001 setup recovery and before any feature edit: clean worktree, 441 tracked paths, exact blob/mode tree verified. Linux x86_64; Python 3.12.14, pytest 9.2.0, setuptools 84.2.1, wheel 0.48.0; Node 24.22.1, npm 11.9.0; TypeScript 5.9.3.
+The latest instruction explicitly replaces real-tokenizer unit tests with mocked boundaries and removes the fixture bundle. This overrides the historical plan's mandatory real-fixture/parity requirements.
 
-Commands: `python -m pip install -e '.[test]'`, `python -m pip install 'setuptools>=68' wheel`, `npm --prefix typescript-helper ci`, `npm --prefix typescript-helper run build`, `npm --prefix typescript-helper test`, `python -m pytest -q`. The recovered implementation-specific outputs (not the older planning baseline) are retained under `evidence/baseline-*`. Python: 1,209 passed, 3 existing skips, 223.81 s. TypeScript: 137 passed. Build: passed after D001. No source/test edits were present when resumed.
+Changes:
 
-Live Mac neural qualification and code-model execution remain pending.
+- Removed `tests/fixtures/token-budget/` in full, including copied SDK code, tokenizer/model configuration, manifest and associated licenses/notices.
+- Removed the preparation script and obsolete prepared-fixture ignore rule; test dependencies now require pytest only.
+- Replaced real encoding/SDK parity tests with controlled token IDs, rendered-input assertions and hand-specified sequence/marker expectations. Preserved accounting boundaries, all-question rejection, snapshots, error/log correlation, mutation detection and block propagation tests.
+- Removed tracked raw execution output under `docs/token-budget/evidence/`; preserved it outside the checkout and in existing Git history.
+- Production loaded-tokenizer behavior is unchanged. `ExactTokenizer` remains because production verification uses it. No experiment files were edited or experiment tests/run commands executed for this cleanup.
 
-## Commit 1 — report/error contract and migration
+Coverage limitation: current unit tests do not establish real-tokenizer or SDK parity. Historical measurements are not a current qualification claim. Experiment cleanup and runtime/hash simplification remain pending.
 
-Expected red: new test asserts `laya.budget` exists (using `find_spec` to fail an assertion, not import/setup failure). Next tests exercise JSON safety, report copy isolation, stable codes, unknown measurements, and useful exception messages. Command: `python -m pytest -q tests/test_token_budget_report.py`.
-
-Outcome: expected red 2 assertions failed for missing capability; green `python -m pytest -q tests/test_token_budget_report.py tests/test_predict.py`: 21 passed. New module has no SDK imports or prediction side effects. Evidence: `evidence/01-{red,green}.log`. Publication SHA is recorded in the next increment (a commit cannot include its own SHA).
-
-Commit 1 published: `786a8a0c2bfc711367028a29b8e5ffdac8d405fe`.
-
-## Commit 2 — pinned tokenizer and normalization
-
-The plan-permitted prepared-fixture route stores the identical vocabulary once outside Git, with pinned hash/explicit preparation script and committed per-checkpoint config/notices. Executed `python scripts/prepare_token_budget_fixtures.py --source <verified-research-tokenizer.json>` and installed declared test dependencies tokenizers 0.23.3/numpy 2.5.4. Tests fail if absent/mismatched, never download/skip.
-
-Expected red: new normalization test asserts missing `budget_adapters` capability. Command: `python -m pytest -q tests/test_token_budget_encoding.py`. Tests compare IDs with the independent Rust tokenizer engine, include literal mask replacement, English/TypeScript, state JSON, option order/custom noul labels, and independent config fingerprints.
-
-Outcome: 25 expected missing-capability assertions failed; green with report/predict regressions: 46 passed. Exact IDs compared for 20 English/TypeScript/special-token cases across both configurations and 12 concurrent repeats each; normalized state/options tested separately. No prediction integration yet. Evidence: `evidence/02-{red,green}.log`.
-
-Commit 2 published: `6c633323612a2e759ff9acffbb602e72c9db476a`.
-
-## Commit 3 — independent SDK qualification
-
-Unmodified pinned SDK `common.py`, `prepared.py`, `tokenizer.py`, and `runtime.py` are committed as hash-manifested test fixtures, with license and attribution. Tests execute the direct/cached builders and AST-extracted upstream normalizer independently of application functions. They load no neural runtime. Expected red is the new test's `hasattr(..., 'assemble_sequence')` assertion for the absent assembler. Command: `python -m pytest -q tests/test_token_budget_parity.py`.
-
-Outcome: 17 expected missing-assembler assertions failed; green qualification and encoding/report regressions: 44 passed. All 16 cross-profile cases match upstream token IDs/marker positions, direct and repeated cached paths, including list-left truncation, head-over-total and custom noul data. Concurrent repeated application assembly also matches. No golden counts generated by our own implementation serve as the parity oracle. Evidence: `evidence/03-{red,green}.log`.
-
-Commit 3 published: `46aec1c38050c040e830f3e0138b5f58df1f5eff`.
-
-## Commit 4 — head-stage loss accounting
-
-Expected red: `hasattr(..., 'inspect_head')` asserts missing accounting capability. New tests cover below/at/above option-text, shared-head marker-inclusive and instruction limits; the 105-token request/83-token option counterexample; and stage-local losses without summing overlaps. Command: `python -m pytest -q tests/test_token_budget_head.py`.
-
-Outcome: 14 expected missing-accounting assertions failed; green with independent parity/encoding/report regressions: 58 passed. The reproduced 83-token option is rejected by the measurement despite a 105-token full request. A 259-token assembled head is not incorrectly treated as violation of the 256 allocation parameter. Evidence: `evidence/04-{red,green}.log`.
-
-Commit 4 published: `7e241154870cced73f0131504b4f1e086dda0591`.
-
-## Commit 5 — full-request accounting
-
-Expected red: missing `inspect_request` assertion. Tests exercise state below/at/above actual profile allowances, conversation-list retention direction, final slice and structural marker loss, full-request requirement independently of earlier cuts, and all-question measurement. Command: `python -m pytest -q tests/test_token_budget_request.py`.
-
-Outcome: 11 expected missing-request assertions failed; green full accounting/independent parity regressions: 69 passed. Each question has independent allowances and all violations; report contains counts only, with stage-local and final retention separated. Evidence: `evidence/05-{red,green}.log`.
-
-Commit 5 published: `0e194be46e3e3bd96312bb19732bd98a73419bba`.
-
-## Commit 6 — verified model/runtime capability
-
-Expected red: new profile tests assert missing `budget_profiles` module. Tests cover independently assembled observed metadata, all identity/limit fingerprints, candidate refusal, hook refusal, lazy unsupported-agent refusal and mutation detection. Actual Mac runtime remains unqualified; these are host verification tests, not neural evidence. Command: `python -m pytest -q tests/test_token_budget_profiles.py`.
-
-Outcome: 14 expected missing-profile assertions failed; green profile/accounting/parity suite: 83 passed. Verification requires resolved checkpoint identity, effective limits, tokenizer/config bytes, exact supported runtime source hashes (including global hook composition), and matching loaded tokenizer state. The adapter encodes under the SDK's own synchronization lock. Unknown/custom opaque agents and candidate code model are refused. Live Apple Silicon execution is still pending. Evidence: `evidence/06-{red,green}.log`.
-
-Commit 6 published: `c44c62216b0d2c462217215c774b626e54b6160d`.
-
-## Commit 7 — lazy capability registry
-
-Expected red: constructor signature lacks keyword-only `inspection_provider`. Test loader argument/agent identity preservation, capability reuse, retry after failure, registry ownership, and model/config isolation. Enforcement remains deferred. Command: `python -m pytest -q tests/test_token_budget_registry.py`; full Python regression follows shared-registry changes.
-
-Outcome: 4 expected missing-provider assertions failed. Full Python regression completed normally, exit 0: 1,296 passed, 3 existing skips in 259.23 s. Original loader/predict arguments and get_agent identity remain unchanged; capability failures are not cached. Evidence: `evidence/07-{red,green}.log`.
-
-Commit 7 published: `87af21166f9c9a29bebf0b9c9f5f2b94066ce099`.
-
-## Commit 7a — Astra D002 local identity recovery
-
-Expected red: otherwise-valid observed metadata with an actual bound local directory is rejected solely for model_id inequality; further new helper tests assert the absent observation helper. D002 authorizes this narrow insertion before fixture wiring. Command: `python -m pytest -q tests/test_token_budget_local_identity.py`. All original profile assertions remain.
-
-Outcome: expected red 7 failed / 13 passed; profile regression 34 passed; focused budget/predict/live-check 138 passed. The initial full run was incomplete (D004), preserved without claiming success. Diagnostic full Python suite: 1,316 passed, 3 existing skips, captured exit 0 in 246.63s. Local identity remains bound to the actual observed model directory, revision and all prior fingerprints; candidate/unknown models remain refused. Evidence: `evidence/07a-*`.
-
-Commit 7a published: `6a21cff4b48b70dba546a7705d3a9b252d5974be`.
-
-## Commit 8 — explicit fixture capabilities and wrapper forwarding
-
-Expected red: observation wrappers lack get_inspector and readiness run_check lacks explicit provider input (3 failures). Test: `tests/test_token_budget_wrappers.py`. Offline fixtures now opt into a controlled plumbing-only capability outside the installed application package; these reports are explicitly not tokenizer qualification. Existing assertions remain unchanged. Real observation wrappers forward the actual registry capability; readiness unwraps its observation agent before invoking the default verified provider. Batch live/replay paths reuse the actual verified inspector; explicitly selected fixture mode owns its synthetic capability. No production bypass flag or mock auto-detection was introduced.
-
-Targeted regressions: 40 passed. Batch-v2: 16 passed plus 24 subtests. Isolated batch checks: 17 passed, exit 0 (D005). D003 records assertion-preserving edit staging. Full Python gate pending.
-
-Full Python gate completed: 1,319 passed, 3 existing skips in 260.19s; captured exit 0 (`08-green.exit`). All existing offline example and hook scenarios passed.
-
-Commit 8 published: `c7797592f431a42d7845cd64ecc5583416882037`.
-
-## Commit 9 — shared enforcement and authoritative diagnostics
-
-Expected red: absent inspection/zero-forward guard and private state snapshot (15 failed, 3 existing-compatible passes). New tests exercise all-question loss rejection, same report in the sole boundary ERROR, unknown/unexpected capability failures, strict JSON, request correlation, loader/input exceptions, deadlines, broken log writes and mutable caller/SDK inputs. Focused initial green: 41 passed. D006 adds cached-runtime integrity before SDK validation; expected red 13 failed/1 passed, then profile/enforcement/predict/registry checks 69 passed. Two additional special-token fields complete coverage of all eight checked fields. No existing assertions changed.
-
-The boundary validates before loading, snapshots state/questions, resolves actual agent/capability, measures every question, refuses typed errors before prediction, and otherwise sends the inspected snapshot unchanged through normal SDK prediction/response validation. Provider errors are rebound to the current request ID. Unexpected inspection details are not copied into the public report. Budget logging is a separate best-effort catch; TimeoutError propagates. The default provider retains pinned SDK validation and checks immutable tokenizer/method semantics; README/boundary/sandbox point to migration guidance. Full Python gate pending.
-
-Full Python enforcement gate passed: 1,353 passed, 3 existing skips in 271.82s, captured exit 0 (`09-green.exit`). Includes all unchanged sandbox, hook, response-validation and independent tokenizer/SDK parity tests plus D006 mutation checks. No inference-on-rejection bypass was needed.
-
-Commit 9 published: `4d86b18157d542b02b9b19438dbd5563bba275a5`.
-
-## Commit 10 — block propagation and minimal diagnostic consumer
-
-Expected red: minimal diagnostic consumer module absent (1 failed, 4 already-green propagation assertions). Both legacy QuestionBlock and V2 Block.run already propagate the exact boundary error object/report without downstream interpretation/enrichment/reduction or prediction. Dynamic V2 prepared instructions are measured, not the template. A minimal example exposes the report while preserving fitting results and adds no retry/trimming/recovery policy. The existing sandbox still returns generic model_error with one actionable shared boundary report and never enters its optional fallback on rejection. Added explicit stale-ID validator correlation regression requested in parent review; ordinary malformed-input identity remains covered by increment 9. Command: `python -m pytest -q tests/test_token_budget_blocks.py`.
-
-Green propagation/legacy/block-runtime/flow regression: 150 passed in 20.26s, captured exit 0. No production block or flow behavior changed in this increment.
+Validation: mocked budget suite passed 128 tests. Repeated with imports of tokenizers, numpy and laya_mlx actively blocked: 128 passed in 1.13s, and none of those modules were loaded. Selected non-experiment prediction/configuration/question/interpretation/block regressions passed 270 tests in 3.02s. No full-suite or experiment run was performed for this cleanup. Git diff checks passed; production executable AST is unchanged. Prior experiment edits already present in the PR remain pending cleanup; this commit makes no additional experiment changes.

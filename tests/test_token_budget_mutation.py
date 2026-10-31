@@ -2,23 +2,23 @@
 from types import SimpleNamespace
 import importlib
 import pytest
-from token_budget_support import sdk_tokenizer,sdk
+from token_budget_support import tokenizer,mock_runtime
 from test_token_budget_profiles import observation
-from test_token_budget_parity import BASE
+from token_budget_support import BASE
 from laya_context_router.laya.budget_profiles import VerifiedInspector,TYPED
 from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.budget import InspectionUnavailable
 
 @pytest.fixture
 def managed():
-    common,*_=sdk();calls=[]
+    common=mock_runtime();calls=[]
     class Agent:
         def predict(self,*a,**kw):calls.append('predict')
         def predict_batch(self,*a,**kw):calls.append('batch')
         def _encode_state(self,*a,**kw):calls.append('encode')
         def _to_internal(self,*a,**kw):calls.append('normalize')
         def _check_question(self,*a,**kw):pass
-    agent=Agent();agent.tok=sdk_tokenizer();agent.cfg={'max_len':1024,'head_max_len':256};agent.hooks=[]
+    agent=Agent();agent.tok=tokenizer();agent.cfg={'max_len':1024,'head_max_len':256};agent.hooks=[]
     inspector=VerifiedInspector(agent,RunConfig(),TYPED,observation(),common,SimpleNamespace(compose_hooks=lambda x:x))
     return agent,inspector,calls,common
 
@@ -27,8 +27,7 @@ def test_cached_tokenizer_mutation_refused_and_lock_released(managed,mutation):
     agent,inspector,_,common=managed
     if mutation=='vocabulary':agent.tok.backend.add_tokens(['brand_new_budget_token'])
     elif mutation=='normalizer':
-        from tokenizers.normalizers import Lowercase
-        agent.tok.backend.normalizer=Lowercase()
+        agent.tok.backend.normalizer='changed mock normalizer'
     else:setattr(agent.tok,mutation,99999 if mutation.endswith('_id') else 'changed')
     with pytest.raises(InspectionUnavailable) as caught:inspector.inspect('hello',{'q':BASE})
     assert caught.value.report['questions'] is None

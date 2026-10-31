@@ -1,5 +1,7 @@
 # LAYA token-budget research: results before design
 
+> Historical record. The latest user instruction supersedes the real-tokenizer/SDK fixture requirements: current unit tests use mocks only, and do not establish actual tokenizer or SDK parity. The fixture bundle, preparation script, and raw execution evidence were removed from the working tree. See [testing.md](testing.md).
+
 Date: 2026-10-31  
 Status: research completed where this environment permits; **detailed design held for discussion**.  
 Scope: English text and TypeScript source. No product code changed. No model weights downloaded and no neural inference run.

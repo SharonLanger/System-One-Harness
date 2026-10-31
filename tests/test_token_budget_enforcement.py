@@ -28,12 +28,12 @@ def boundary(forwards,provider,action=None):
     return AgentRegistry(loader=lambda *a,**k:Agent(),inspection_provider=provider)
 
 @pytest.fixture
-def exact_provider():
+def mock_provider():
     tok=tokenizer()
     return lambda agent,config:SimpleNamespace(inspect=lambda state,questions,**kw:inspect_request(tok,state,questions,model=config.model,max_len=1024,head_max_len=256,**kw))
 
 @pytest.mark.parametrize('kind',['option','instruction','state','multi'])
-def test_all_losses_refuse_without_any_forward(kind,calls,exact_provider):
+def test_all_losses_refuse_without_any_forward(kind,calls,mock_provider):
     events,forwards=calls;questions=deepcopy(REQUEST['questions']);state='hello'
     first=next(iter(questions))
     if kind=='option':questions[first]['criteria']={'a':'Description '*80,'b':'Short.'}
@@ -42,7 +42,7 @@ def test_all_losses_refuse_without_any_forward(kind,calls,exact_provider):
     else:
         questions['bad']={'type':'noul','instructions':'word '*500}
     with pytest.raises(InputTokenBudgetExceeded) as caught:
-        api.predict(state,questions,registry=boundary(forwards,exact_provider))
+        api.predict(state,questions,registry=boundary(forwards,mock_provider))
     report=caught.value.report
     assert forwards==[] and report['request_inference_started'] is False
     assert [q['question_id'] for q in report['questions']]==list(questions)
@@ -69,12 +69,12 @@ def test_deadline_is_not_wrapped_or_bypassed(where,calls,monkeypatch):
     assert caught.value is deadline and forwards==[]
 
 
-def test_logging_failure_keeps_typed_rejection(calls,monkeypatch,exact_provider):
+def test_logging_failure_keeps_typed_rejection(calls,monkeypatch,mock_provider):
     _,forwards=calls
     def broken(level,*a,**kw):
         if level=='ERROR':raise OSError('disk')
     monkeypatch.setattr(api,'log',broken)
-    with pytest.raises(InputTokenBudgetExceeded):api.predict('hello '*2000,REQUEST['questions'],registry=boundary(forwards,exact_provider))
+    with pytest.raises(InputTokenBudgetExceeded):api.predict('hello '*2000,REQUEST['questions'],registry=boundary(forwards,mock_provider))
     assert not forwards
 
 @pytest.mark.parametrize('state',['hello',{'content':'hello'},[{'role':'user','content':'hello'}]])

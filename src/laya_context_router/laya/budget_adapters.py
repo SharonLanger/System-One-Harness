@@ -1,4 +1,4 @@
-"""Pinned LAYA sequence rules, independently qualified against upstream helpers.
+"""Pinned LAYA sequence rules; unit tests use mocked token IDs.
 
 Encoding/rendering mirrors mizorewww/laya-mlx at 2159c6c (Apache-2.0).
 This implementation adds unrestricted component accounting instead of truncation.
