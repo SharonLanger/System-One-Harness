@@ -59,7 +59,9 @@ Live predictions are not promised to match the expected labels. For a new datase
 
 Each launch prints a new folder under:
 
-`experiments/batch_v2/results/<experiment-id>/<UTC-timestamp>__<unique-id>/`
+`experiments/batch_v2/results/<experiment-id>/YYYY-MM-DD_HH-MM-SS/`
+
+Names use Israel local time and the same convention as the original batch runner, for example `2026-10-31_20-25-03`. Sort names descending to see the latest first. Runs started in the same second receive `_001`, `_002`, etc. Existing result folders keep their names. The requested-action launcher's setup probes use `results/requested-action-500/probes/YYYY-MM-DD_HH-MM-SS/probe.json`.
 
 Open `report.html` locally for interactive vector/group filtering, or `comparison.md` for a readable text report. The local HTML needs no server or network. For programmatic analysis, read `results.jsonl` (one row per vector/case) and `summary.csv` (one row per vector/group).
 

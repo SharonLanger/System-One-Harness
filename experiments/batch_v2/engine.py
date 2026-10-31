@@ -4,7 +4,7 @@ import sys
 sys.dont_write_bytecode = True
 import os
 os.environ['PYTHONDONTWRITEBYTECODE']='1'
-import json, time, uuid, platform, subprocess, hashlib, importlib.metadata
+import json, time, platform, subprocess, hashlib, importlib.metadata
 from pathlib import Path
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -16,6 +16,7 @@ sys.path.insert(0,str(ROOT/'src'))
 from laya_context_router import log_utils
 log_utils.LOG_PATH=HERE/'checks/output/runtime.jsonl'
 from schema import load, validate, hash_value
+from run_paths import allocate
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def save(path,value):
@@ -195,10 +196,7 @@ def create(cases,suite,mode,rule_mode,limits):
     supported={('generic-question','choice'),('generic-question','noul'),('requested-action','choice'),('context-scope','choice')}
     if rule_mode=='replay' and (suite['adapter'],suite['question_type']) not in supported: raise ValueError('Replay parity not verified for adapter/type')
     parent=HERE/'results'/suite['experiment_id']; parent.mkdir(parents=True,exist_ok=True)
-    while True:
-        rid=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'__'+uuid.uuid4().hex[:10]; root=parent/rid
-        try: root.mkdir(); break
-        except FileExistsError: pass
+    root=allocate(parent); rid=root.name
     try: mf=model_fingerprint(suite,mode); model_error=None
     except Exception as exc: mf=None; model_error=str(exc)
     m={'schema_version':1,'run_id':rid,'cases':deepcopy(cases),'suite':deepcopy(suite),'cases_hash':hash_value(cases),'suite_hash':hash_value(suite),'mode':mode,'rule_mode':rule_mode,'limits':limits,'source_hash':source_fingerprint(),'adapter_hash':adapter_fingerprint(),'runtime_versions':versions(),'python':platform.python_version(),'model_fingerprint':mf,'model_error':model_error,'parity_revision':'rv2-offline-contracts-v1','source_revision':load(HERE/'source-snapshot.json'),'device':platform.machine(),'precision':None,'availability':{'precision':'not exposed by loader','effective_settings':'requested settings are not proof of effective settings'},'started_utc':now(),'started_local':datetime.now(ZoneInfo('Asia/Jerusalem')).isoformat(),'status':'created'}
