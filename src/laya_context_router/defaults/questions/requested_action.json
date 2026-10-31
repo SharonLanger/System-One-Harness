@@ -1,0 +1,10 @@
+{
+  "name": "requested_action",
+  "type": "choice",
+  "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits.",
+  "criteria": {
+    "explain": "Understand production or test code without changing it.",
+    "generate_tests": "Create additional tests using existing code as reference.",
+    "modify_code": "Fix, refactor, or implement production or test code."
+  }
+}
