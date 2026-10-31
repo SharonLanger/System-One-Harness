@@ -1,6 +1,6 @@
 # Reusable question blocks: design and implementation plan
 
-Status: DESIGN ONLY. No implementation or test execution authorized by this document alone.
+Status: implemented on the isolated refactor branch; see [verification.md](verification.md) for executed checks and the documented compatibility exception.
 This plan is for a reliable hackathon demo, with a small reusable interface.
 
 ## Read in this order
@@ -8,6 +8,8 @@ This plan is for a reliable hackathon demo, with a small reusable interface.
 1. This file: scope, repository baseline, phases, compatibility and completion gates.
 2. [design.md](design.md): exact configuration, inputs, preparation, runtime, outputs and flow examples.
 3. [test-plan.md](test-plan.md): concrete test cases and the evidence required before migration.
+4. [flow-usage.md](flow-usage.md): runnable API examples and composition.
+5. [verification.md](verification.md): review, case mapping and executed results.
 
 ## Outcome
 
