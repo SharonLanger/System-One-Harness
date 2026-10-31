@@ -17,7 +17,7 @@ same response later. This export reduces duplication and makes sharing and
 analysis easier; it does not accelerate the already running model or stop V2
 from writing its current files.
 
-## Just two data files and a small status file
+## Shared definitions, then a folder per temperature
 
 Write a new dated folder under `experiments/exports/<campaign-id>/`, using the
 existing Israel-local date/time naming convention. Never write inside the source
@@ -26,13 +26,29 @@ run folder or overwrite an existing export.
 | File | What it stores |
 | --- | --- |
 | `definitions.json` | Run provenance and immutable definitions: inputs/annotations, questions/ordered choices, temperatures/model configs, rules and family roles, each once under its ID |
-| `predictions.jsonl` | One line per saved model inference: inference ID, case ID, question ID, configuration ID, status, full raw response/probabilities, timing and error |
+| `predictions/temperature-1.0/q7-contrast-examples.jsonl` (and other pairs) | One question at one requested temperature; one line per inference containing IDs, status, full raw response/probabilities, timing and error |
 | `export.json` | Export format version, source run/revision, hashes, planned/found/success/error/missing counts and source completion status |
 
-JSONL means ordinary JSON with one record per line. A file containing 35,000
-records is reasonable when written and read line by line. Do not construct one
-large JSON array or load all records into memory. SQLite, a new model runner,
-parallel workers and new checkpoint machinery are outside this first change.
+Use these seven temperature folders for the current grid: `temperature-sdk-default`,
+`temperature-0.5`, `temperature-1.0`, `temperature-1.5`, `temperature-2.0`,
+`temperature-3.0` and `temperature-5.0`. Each contains the ten question files,
+named with their existing question IDs. That is 70 prediction files with 500
+records each when collection is complete. An interrupted run may contain fewer
+records; the manifest records planned/missing counts for each pair.
+
+The internal config ID `t-100` means requested temperature 1.0; it is not case
+100. `t-050` means 0.5. Keep these source IDs inside records and use the readable
+folder names above for navigation. SDK default remains distinct from numeric
+1.0 because its effective temperature is not established. Store the explicit
+configuration-ID-to-folder map and each file's question/config IDs, count, byte
+size and checksum in export.json; reject ambiguous folder mappings rather than
+silently combining configurations.
+
+JSONL means ordinary JSON with one record per line. Write/read one line at a
+time and route it to its question/temperature file, with bounded open handles.
+Do not construct a large JSON array or load all records into memory. The split
+is semantic, not arbitrary 1,000-row chunks. SQLite, a new model runner, parallel
+workers and new checkpoint machinery are outside this first change.
 
 For example, a prediction line references `case-042`, `q7-contrast-examples`
 and `t-100`; their complete definitions live in definitions.json. Preserve the
@@ -63,7 +79,7 @@ PR from this design.
    generic-question/string-input format used by requested-action-500. Unsupported
    adapters or mismatches must fail clearly rather than silently discard unique
    request information. Do not guess requested versus effective settings.
-5. Write its response once to predictions.jsonl. Preserve the entire raw response,
+5. Write its response once to its temperature-folder/question-file JSONL. Preserve the entire raw response,
    numeric precision, distinct confidence channels, timing, availability fields
    and errors. Drop duplicate prompt/question copies, embedded debug logs and
    full baseline block results; the raw response plus pinned evaluator is the
@@ -84,14 +100,15 @@ and new four-choice results.
 
 ## Calculate insights later
 
-A separate offline analyzer reads definitions once and streams prediction lines.
+A separate offline analyzer reads definitions once and streams prediction lines
+from the requested temperature/question files, using the export manifest.
 Apply existing interpretation/enrichment/native rule behavior, including rounding,
 to the saved responses. Reuse the existing evaluator or replay through a recorded
 agent; assert that the real model loader cannot be called. Any exact legacy-rule
 comparison retains the original adapter/evaluator revision as provenance.
 
 Write summary metrics to a small summary.json and readable report. Case-level
-inspection can scan the JSONL file for the chosen ID and calculate its rule
+inspection can scan the relevant question/temperature JSONL file for the chosen ID and calculate its rule
 results on demand. Do not save the prompt and raw response again for each rule.
 For a requested per-case rule export, save only IDs and compact decisions.
 
@@ -111,9 +128,11 @@ reported during the existing run; that still needs the traceback and stage.
 
 ## Small implementation and validation sequence
 
-1. Implement the read-only exporter and its two-file-plus-status format.
+1. Implement the read-only exporter with shared definitions, temperature folders,
+   question JSONL files and a small export manifest.
 2. Test with a small synthetic V2 run: all definitions resolve, raw responses and
-   precision round-trip, accepted unclear and errors survive, no source byte
+   precision round-trip, every record reaches its correct question/temperature file,
+   all 70 completed partitions have 500 records, accepted unclear and errors survive, no source byte
    changes, and no model call occurs. Reject payload/hash/ID conflicts.
 3. Test interrupted input: missing records stay missing and the export reports
    partial source execution. Reject active-source use and avoid publishing a
