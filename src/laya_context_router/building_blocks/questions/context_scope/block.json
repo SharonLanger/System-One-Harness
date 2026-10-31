@@ -1,0 +1,9 @@
+{
+  "name": "context_scope",
+  "questions": {
+    "context_scope": {
+      "question_ref": "context_scope",
+      "rule_ref": "context_scope_default"
+    }
+  }
+}

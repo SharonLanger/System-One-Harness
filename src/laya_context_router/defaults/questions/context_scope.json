@@ -1,0 +1,11 @@
+{
+  "name": "context_scope",
+  "type": "choice",
+  "instructions": "Does answering this request require understanding the method itself, what it calls, how it is used, or both directions? Each relationship option includes the method itself. Use the user's request as primary evidence; any supplied action is context only. Detail alone does not imply broader relationships.",
+  "criteria": {
+    "method_only": "Understand the selected method's own implementation and behavior.",
+    "called_methods": "Understand this method and at least one method it calls.",
+    "calling_methods": "Understand this method and at least one of its callers.",
+    "both_directions": "Understand this method together with callers and called methods."
+  }
+}

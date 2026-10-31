@@ -1,0 +1,170 @@
+{
+  "description": "Semantic corpus; not executed or validated by fake SDK tests. Review provisional cases before scoring.",
+  "cases": [
+    {
+      "id": "S01",
+      "prompt": "Explain the arithmetic inside calculateTotal.",
+      "expected_scope": "method_only",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S02",
+      "prompt": "Explain every line inside this method; skip its dependencies.",
+      "expected_scope": "method_only",
+      "status": "settled",
+      "split": "held_out"
+    },
+    {
+      "id": "S03",
+      "prompt": "Write unit tests for this method’s own boundary conditions; mock helpers.",
+      "expected_scope": "method_only",
+      "status": "provisional",
+      "split": "development",
+      "note": "Candidate target requires human review before strict scoring."
+    },
+    {
+      "id": "S04",
+      "prompt": "Explain how calculateTotal uses calculateDiscount.",
+      "expected_scope": "called_methods",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S05",
+      "prompt": "Test this method together with the helper it invokes.",
+      "expected_scope": "called_methods",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S06",
+      "prompt": "Explain the normalize call made inside this method’s map callback.",
+      "expected_scope": "called_methods",
+      "status": "settled",
+      "split": "held_out"
+    },
+    {
+      "id": "S07",
+      "prompt": "Which methods call calculateTotal, and why?",
+      "expected_scope": "calling_methods",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S08",
+      "prompt": "Explain where this method is used during checkout.",
+      "expected_scope": "calling_methods",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S09",
+      "prompt": "Test how the controller invokes this method; mock downstream helpers.",
+      "expected_scope": "calling_methods",
+      "status": "provisional",
+      "split": "held_out",
+      "note": "Candidate target requires human review before strict scoring."
+    },
+    {
+      "id": "S10",
+      "prompt": "Trace who invokes this method and what it invokes.",
+      "expected_scope": "both_directions",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S11",
+      "prompt": "Test the caller through this method into its downstream service.",
+      "expected_scope": "both_directions",
+      "status": "settled",
+      "split": "held_out"
+    },
+    {
+      "id": "S12",
+      "prompt": "Fix this method while preserving its callers and helper interactions.",
+      "expected_scope": "both_directions",
+      "status": "provisional",
+      "split": "development",
+      "note": "Candidate target requires human review before strict scoring."
+    },
+    {
+      "id": "S13",
+      "prompt": "Explain the callers, not what this method calls.",
+      "expected_scope": "calling_methods",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S14",
+      "prompt": "Explain the called helpers, not the callers.",
+      "expected_scope": "called_methods",
+      "status": "settled",
+      "split": "held_out"
+    },
+    {
+      "id": "S15",
+      "prompt": "Explain this method in detail.",
+      "expected_scope": "method_only",
+      "status": "settled",
+      "split": "development"
+    },
+    {
+      "id": "S16",
+      "prompt": "Write very detailed tests.",
+      "expected_scope": null,
+      "status": "taxonomy_pending",
+      "split": "development"
+    },
+    {
+      "id": "S17",
+      "prompt": "Explain the full flow.",
+      "expected_scope": null,
+      "status": "taxonomy_pending",
+      "split": "development"
+    },
+    {
+      "id": "S18",
+      "prompt": "Explain it.",
+      "expected_scope": null,
+      "status": "prompt_insufficient",
+      "split": "development"
+    },
+    {
+      "id": "S19",
+      "prompt": "What is a TypeScript interface?",
+      "expected_scope": null,
+      "status": "out_of_scope",
+      "split": "development"
+    },
+    {
+      "id": "S20",
+      "prompt": "List direct callers.",
+      "expected_scope": "calling_methods",
+      "status": "settled",
+      "split": "held_out"
+    },
+    {
+      "id": "S21",
+      "prompt": "Where is calculateTotal called?",
+      "expected_scope": "calling_methods",
+      "status": "settled",
+      "split": "development",
+      "action_variants": [
+        "explain",
+        "generate_tests",
+        "modify_code",
+        "undecided",
+        null
+      ]
+    },
+    {
+      "id": "S22",
+      "prompt": "Background: release tomorrow. Explain where calculateTotal is called in src/billing.ts.",
+      "expected_scope": "calling_methods",
+      "status": "settled",
+      "split": "held_out",
+      "clean_prompt": "Explain where calculateTotal is called."
+    }
+  ]
+}
