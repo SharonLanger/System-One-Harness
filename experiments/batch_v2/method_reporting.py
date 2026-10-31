@@ -45,9 +45,9 @@ def rate(row,key):
 
 def table(rows):
     lines=['| Rule | Correct selection | Wrong selection | Missed selection | Correct refusal | Unsafe selection | Evaluated / planned |','| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
-    for r in rows:lines.append('| '+str((r.get('question_id','')+' / ' if 'rule_id' in r and 'question_id' in r else '')+r.get('rule_id',r.get('config_id','total')))+' | '+' | '.join(str(r[k]) for k in ['correct_selection','wrong_selection','missed_selection','correct_refusal','unsafe_selection'])+f" | {r['evaluated']}/{r['planned']} |")
+    for r in rows:lines.append('| '+str((r.get('question_id','')+' / ' if 'rule_id' in r and 'question_id' in r else '')+r.get('rule_id',r.get('config_id','total'))+((' / '+r['group_type']+'='+r['group_value']) if 'group_type' in r else ''))+' | '+' | '.join(str(r[k]) for k in ['correct_selection','wrong_selection','missed_selection','correct_refusal','unsafe_selection'])+f" | {r['evaluated']}/{r['planned']} |")
     lines+=['','| Rule | Selection precision | Selection yield | Refusal correctness | End to end | Completion |','| --- | ---: | ---: | ---: | ---: | ---: |']
-    for r in rows:lines.append('| '+str((r.get('question_id','')+' / ' if 'rule_id' in r and 'question_id' in r else '')+r.get('rule_id',r.get('config_id','total')))+' | '+' | '.join(rate(r,k) for k in ['selection_precision','correct_selection_yield','refusal_correctness','end_to_end_correctness','technical_completion'])+' |')
+    for r in rows:lines.append('| '+str((r.get('question_id','')+' / ' if 'rule_id' in r and 'question_id' in r else '')+r.get('rule_id',r.get('config_id','total'))+((' / '+r['group_type']+'='+r['group_value']) if 'group_type' in r else ''))+' | '+' | '.join(rate(r,k) for k in ['selection_precision','correct_selection_yield','refusal_correctness','end_to_end_correctness','technical_completion'])+' |')
     return '\n'.join(lines)+'\n'
 
 def summarize(root,split='development',allow_partial=False,finalists=None):
@@ -139,6 +139,37 @@ def summarize(root,split='development',allow_partial=False,finalists=None):
     pair('temperature-totals',temperature_totals,'\n'.join(f"## Temperature {r['temperature']}\n\n"+table([r]) for r in temperature_totals))
     pair('question-rule-totals',pooled,'\n'.join(summary)+'\n## Pooled across temperatures\n\n'+table(pooled))
     pair('raw-answers',raw_rows,'\n'.join('## Temperature '+str(c['temperature'])+'\n\n'+ '| Question | Method correct | Multiple correct | Evaluated / planned |\n| --- | ---: | ---: | ---: |\n'+ '\n'.join(f"| {r['question_id']} | {r['method_correct']} | {r['multiple_correct']} | {r['evaluated']}/{r['planned']} |" for r in raw_rows if r['config_id']==c['id']) for c in suite['configurations']))
+    # Diagnostic subgroup views are intentionally excluded from pooled totals.
+    grouped={}; differences=[]
+    def checkpoint(qid,rid,cid,case):
+        path=root/'batches'/f"{qid}__{rid}"/cid/'cases'/f"{case['id']}.json"
+        return load(path) if path.exists() else None
+    for vector in vectors:
+        for case in cases:
+            qid,rid,cid=(vector[k] for k in ('question_id','rule_id','config_id'))
+            saved=checkpoint(qid,rid,cid,case)
+            status=saved['status'] if saved else 'unattempted'
+            bucket=None
+            if status=='completed':
+                try: bucket=outcome(case['expected'],saved['block_result'])
+                except (KeyError,TypeError): status='error'
+            views=[('noise',case['noise_level']),('candidate_count',str(len(case['input']['source_outline']['callables'])))]+[('tag',t) for t in case['tags']]
+            for kind,value in views:
+                key=(qid,rid,cid,kind,value)
+                if key not in grouped:
+                    grouped[key]={k:0 for k in COUNTS};grouped[key].update(question_id=qid,rule_id=rid,config_id=cid,temperature=vector['temperature'],group_type=kind,group_value=value)
+                g=grouped[key];g['planned']+=1
+                if status=='completed':
+                    g['evaluated']+=1;g[bucket]+=1;g['selectable_evaluated' if case['expected']['selected_id'] else 'refusal_evaluated']+=1
+                else:g['error' if status=='configuration_error' else status]+=1
+            baseline=checkpoint(suite['baseline']['question_id'],suite['baseline']['rule_id'],cid,case)
+            if saved and baseline and status=='completed' and baseline['status']=='completed':
+                base_bucket=outcome(case['expected'],baseline['block_result'])
+                if bucket!=base_bucket:
+                    differences.append(dict(question_id=qid,rule_id=rid,config_id=cid,case_id=case['id'],baseline_outcome=base_bucket,outcome=bucket,request=case['input']['text'],reason=saved['block_result']['data'].get('reason')))
+    group_rows=[metrics(g) for g in grouped.values()]
+    pair('groups',group_rows,'\n'.join(f"## Temperature {cfg['temperature']}\n\nGroup counts overlap across tags and must not be summed.\n\n"+table([r for r in group_rows if r['config_id']==cfg['id']]) for cfg in suite['configurations']))
+    emit('baseline-differences.json',json.dumps(differences,indent=2)+'\n')
     totals={'logical_outcomes':aggregate(vectors),'unique_evidence':len(raw),'prediction_attempts':len(events),'temperature_totals':temperature_totals,'question_rule_totals':pooled,'complete':complete,'cases_hash':m['cases_hash'],'suite_hash':m['suite_hash'],'split':split}
     emit('totals.json',json.dumps(totals,indent=2)+'\n')
     emit('reasons.json',json.dumps([{'question_id':k[0],'rule_id':k[1],'config_id':k[2],'reason':k[3],'count':v} for k,v in sorted(reasons.items())],indent=2)+'\n')
