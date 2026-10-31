@@ -1,0 +1,5 @@
+{
+  "name": "multiple_relevant",
+  "type": "noul",
+  "instructions": "Does the request require explaining more than one candidate callable?"
+}

@@ -31,3 +31,8 @@ list of definitions and `rules_by_question` envelope with one entry. Outer keys 
 policies; inner policy names need not match. Missing/extra policies or duplicate
 JSON object keys fail explicitly. SDK failures/invalid raw responses raise; callers
 choose their error handling. No real Laya compatibility is claimed yet.
+
+`run(text, *, config, registry)` now adapts sibling `ticket_triage_v2` execution
+back to the original decisions dictionary. `run_legacy` preserves the original
+implementation for comparison and rollback. New callers can use V2 with
+`{"text": text}` to receive a `BlockResult` and explicit override/preparation options.

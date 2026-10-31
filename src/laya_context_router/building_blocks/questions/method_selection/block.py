@@ -8,7 +8,7 @@ from ....blocks import QuestionBlock
 BLOCK_DIR = Path(__file__).parent
 
 
-def run(text, source_outline, *, config, registry, max_candidates=64, max_input_chars=16000):
+def run_legacy(text, source_outline, *, config, registry, max_candidates=64, max_input_chars=16000):
     """Return named decisions plus a source map kept outside inference inputs.
 
     Input budget counts Unicode characters in text plus compact question JSON,
@@ -71,3 +71,19 @@ def run(text, source_outline, *, config, registry, max_candidates=64, max_input_
     if method['answer'] not in labels:
         return result('unknown_candidate', decisions)
     return result(None, decisions, labels[method['answer']])
+
+
+def run(text, source_outline, *, config, registry, max_candidates=64, max_input_chars=16000):
+    """Compatibility dictionary adapter; legacy outlines retain their old contract."""
+    from ..method_selection_v2.block import run as run_v2
+    # Older callers supplied partial outlines with opaque IDs. Keep that supported
+    # without weakening the new interface's full compiler-outline contract.
+    if (not isinstance(text, str) or not isinstance(source_outline, dict)
+            or 'schema_version' not in source_outline):
+        return run_legacy(text, source_outline, config=config, registry=registry,
+                          max_candidates=max_candidates, max_input_chars=max_input_chars)
+    result = run_v2({'text': text, 'source_outline': source_outline}, config=config,
+                    registry=registry, max_candidates=max_candidates, max_input_chars=max_input_chars)
+    return {'selected_id': result.data['selected_id'], 'reason': result.data['reason'],
+            'decisions': result.decisions, 'candidate_map': result.data['candidate_map'],
+            'label_map': result.data['label_map']}

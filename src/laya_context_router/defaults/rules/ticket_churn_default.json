@@ -1,0 +1,11 @@
+{
+  "name": "ticket_churn_default",
+  "question_type": "noul",
+  "conditions": [
+    {
+      "field": "distance_from_boundary",
+      "op": "gte",
+      "value": 0.1
+    }
+  ]
+}
