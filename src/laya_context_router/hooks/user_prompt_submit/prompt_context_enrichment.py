@@ -1,4 +1,4 @@
-"""Prepare context configuration and reuse the existing root-mode flow."""
+"""Shared root/config preparation and a disconnected sandbox-only hook adapter."""
 from pathlib import Path
 from ..contracts import Failure
 
@@ -84,7 +84,7 @@ def _map_flow_result(result, *, project_root, max_dependency_depth=2,
 
 
 def enrich_prompt_context(request,logger,*,flow=None,registry=None,formatter=None):
-    """Reuse existing flow with explicit opt-in root-based reference resolution."""
+    """Sandbox-only adapter; the default dispatcher uses first_method_context."""
     prepared=_prepare_feature_config(request)
     if isinstance(prepared,Failure):return prepared
     if flow is None:
