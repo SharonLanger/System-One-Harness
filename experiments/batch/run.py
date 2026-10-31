@@ -114,12 +114,18 @@ def real_local_loader(model, **kwargs):
     import laya_mlx
     path=Path(model).expanduser()
     if not path.is_dir():
-        from huggingface_hub import snapshot_download
-        path=Path(snapshot_download(repo_id=model,local_files_only=True))
-    if not (path/'config.json').is_file() or not any(path.rglob('*.safetensors')):
-        raise RuntimeError('local model cache needs config.json and safetensors weights; prepare it on your Mac first')
+        from huggingface_hub import try_to_load_from_cache
+        cached=try_to_load_from_cache(model,'rl_agent_config.json')
+        if not isinstance(cached,str):
+            raise RuntimeError('local LAYA cache is missing rl_agent_config.json; prepare the model on your Mac first')
+        # Keep the snapshot parent: resolving the symlink would select blobs/.
+        path=Path(cached).parent
+    required=('rl_agent_config.json','encoder/config.json','model.safetensors')
+    missing=[name for name in required if not (path/name).is_file()]
+    if missing:
+        raise RuntimeError('local LAYA model is missing required assets: '+', '.join(missing))
     # Pass the resolved local directory so the SDK need not resolve the remote ID.
-    return laya_mlx.load(str(path),**kwargs)
+    return laya_mlx.load(str(path),local_files_only=True,**kwargs)
 
 
 def execute_configuration(d,cfg,path,loader=None):

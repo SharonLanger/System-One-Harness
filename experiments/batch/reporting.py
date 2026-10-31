@@ -87,6 +87,7 @@ def summary(record):
     for layer in ('recommendation','final'):
         m=metrics(record,layer)
         lines += ['', f"{layer} outcome rates (denominator: {m['attempted']} attempted): " + ', '.join(f'{k} {pct(v)}' for k,v in m['rates_among_attempted'].items()), '']
+    lines += ['',f"Configuration errors: {int(bool(record.get('error')))}. These are separate from case errors.",'']
     lines += ['Accuracy uses definitive answers; coverage uses attempted cases. Unattempted cases are not abstentions.', '', '## Rule effects', '']
     for k,ids in effects(record).items(): lines.append(f"- {k}: {len(ids)} — {', '.join(ids) or 'none'}")
     lines += ['', '## Cases', '', '| ID | Expected | LAYA | Raw outcome | Final | Final outcome |', '| --- | --- | --- | --- | --- | --- |']
@@ -102,6 +103,7 @@ def summary(record):
 
 
 def save(record, path):
+    record['configuration_errors']=int(bool(record.get('error')))
     record['metrics']={k:metrics(record,k) for k in ('recommendation','final')}
     record['rule_effects']=effects(record)
     atomic(path,json.dumps(record,indent=2,ensure_ascii=False,allow_nan=False)+'\n')
@@ -110,16 +112,18 @@ def save(record, path):
 
 def comparison(records, path):
     lines=['# Configuration comparison', '', 'Best observed results on this dataset only. Complete configurations are ranked first, then fewer final mistakes, then fewer abstentions. Incomplete results are not eligible as best.', '',
-           '| Configuration | Mode | Status | Raw correct | Raw wrong | Final correct | Final wrong | Abstained | Errors | Unattempted | Accuracy | Coverage | Seconds |',
-           '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |']
+           '| Configuration | Mode | Status | Raw correct | Raw wrong | Final correct | Final wrong | Abstained | Case errors | Configuration errors | Unattempted | Accuracy | Coverage | Seconds |',
+           '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |']
     def rank(r):
         m=metrics(r,'final')
         return (r['status']!='completed',m['incorrect'],m['abstained'])
     for r in sorted(records,key=rank):
         m=metrics(r,'final'); raw=metrics(r,'recommendation')
-        vals=[r['configuration']['name'],r['mode'],r['status'],raw['correct'],raw['incorrect'],m['correct'],m['incorrect'],m['abstained'],m['error'],m['unattempted'],pct(m['accuracy']),pct(m['coverage']),round(r.get('duration_seconds',0),3)]
+        vals=[r['configuration']['name'],r['mode'],r['status'],raw['correct'],raw['incorrect'],m['correct'],m['incorrect'],m['abstained'],m['error'],int(bool(r.get('error'))),m['unattempted'],pct(m['accuracy']),pct(m['coverage']),round(r.get('duration_seconds',0),3)]
         lines.append('| '+' | '.join(map(cell,vals))+' |')
     for r in records:
+        if r.get('error'):
+            lines += ['',f"Configuration failure for {r['configuration']['name']}: {cell(json.dumps(r['error'],ensure_ascii=False))}",'']
         lines += ['',f"Rule effects for {r['configuration']['name']}: `{json.dumps(effects(r))}`",'']
     lines += ['', '## Cases with changed outcomes', '']
     ids=records[0]['definition']['cases'] if records else []
