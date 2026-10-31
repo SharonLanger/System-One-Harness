@@ -2,7 +2,7 @@
   "name": "laya-typescript-helper",
   "version": "0.1.0",
   "private": true,
-  "scripts": {"build": "tsc -p tsconfig.json", "test": "node --test test/*.test.cjs"},
+  "scripts": {"build": "tsc -p tsconfig.json && node scripts/link-build-deps.cjs", "test": "node --test test/*.test.cjs"},
   "dependencies": {"typescript": "5.9.3"},
   "devDependencies": {"@types/node": "24.10.1"}
 }

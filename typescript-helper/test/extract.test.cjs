@@ -1,6 +1,6 @@
 const {test}=require('node:test'); const assert=require('node:assert/strict');
 const fs=require('node:fs'),path=require('node:path'),os=require('node:os');
-const {outline,extractCallable}=require('../dist/index.js');
+const {outline,extractCallable}=require('../../build/typescript/index.js');
 for(const newline of ['\n','\r\n']) test('exact source slice '+JSON.stringify(newline),()=>{
   const dir=fs.mkdtempSync(path.join(os.tmpdir(),'laya-extract-')), file=path.join(dir,'a.ts');
   const code='export function f() {\n  return "😀"; /*inside*/\n}'.replaceAll('\n',newline);

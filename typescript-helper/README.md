@@ -20,7 +20,7 @@ From repository root:
 npm --prefix typescript-helper ci
 npm --prefix typescript-helper run build
 npm --prefix typescript-helper test
-printf '%s\n' '{"action":"outline","path":"/repo/src/main.ts"}' | node typescript-helper/dist/cli.js
+printf '%s\n' '{"action":"outline","path":"/repo/src/main.ts"}' | node build/typescript/cli.js
 python -m pytest -q
 ```
 
@@ -100,7 +100,7 @@ Response extends local context with `project:{repository_root,config_path,config
 
 ## Python bridge and logging
 
-Use `laya_context_router.building_blocks.typescript.outline`, `extract_callable`, `collect_local_context`, `collect_project_context`; `detect_references`, `resolve_reference` and `list_called_callables` expose the new envelopes. Supply `node`, built `helper` path and positive `timeout` at most 60 seconds when needed. `DEFAULT_HELPER` targets this checkout; packaged deployments must supply a built helper with pinned TypeScript dependency. The bridge validates JSON/schema and translates transport failures to `TypeScriptError`; it does not traverse ASTs or redefine filtering. Logs append to `logs/debug.jsonl` through `log_utils` extractor events (request/startup/timeout/stderr/schema details); failed outcome envelopes log `utility_failed`. No inference is required to test these utilities.
+Use `laya_context_router.building_blocks.typescript.outline`, `extract_callable`, `collect_local_context`, `collect_project_context`; `detect_references`, `resolve_reference` and `list_called_callables` expose the new envelopes. Supply `node`, built `helper` path and positive `timeout` at most 60 seconds when needed. `npm run build` creates the root `build/typescript` output and a link to this helper's local `node_modules`. `DEFAULT_HELPER` targets this checkout; packaged deployments must supply a built helper with pinned TypeScript dependency. The bridge validates JSON/schema and translates transport failures to `TypeScriptError`; it does not traverse ASTs or redefine filtering. Logs append to `logs/debug.jsonl` through `log_utils` extractor events (request/startup/timeout/stderr/schema details); failed outcome envelopes log `utility_failed`. No inference is required to test these utilities.
 
 
 ## Copyable response and boundary examples

@@ -2,7 +2,7 @@ const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs'), os = require('node:os'), path = require('node:path');
 const {createHash} = require('node:crypto');
-const {outline, extractCallable} = require('../dist/index.js');
+const {outline, extractCallable} = require('../../build/typescript/index.js');
 // Independently specified synthetic source units: no implementation generates this oracle.
 const members = [
   ['constructor', 'constructor(public value: number)', 'constructor(public value: number) { /* 😀 */ }'],

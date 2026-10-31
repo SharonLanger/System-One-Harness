@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path'),crypto=require('node:crypto');
-const {outline,collectProjectContext}=require('../dist/index.js');
+const {outline,collectProjectContext}=require('../../build/typescript/index.js');
 function project(files,run,config={compilerOptions:{module:'commonjs',moduleResolution:'node',baseUrl:'.',paths:{'@lib/*':['src/lib/*']}},include:['src/**/*.ts']}){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'laya-project-')),root=path.join(dir,'repo');fs.mkdirSync(root);for(const [name,text]of Object.entries(files)){const target=path.join(root,name);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,text);}if(config!==false)fs.writeFileSync(path.join(root,'tsconfig.json'),typeof config==='string'?config:JSON.stringify(config));try{run(root,dir);}finally{fs.rmSync(dir,{recursive:true});}}
 function collect(root,name='selected',options={}){const file=path.join(root,'src/main.ts');return collectProjectContext(file,outline(file).callables.find(c=>c.name===name).id,{repositoryRoot:root,...options});}
 test('actual tsconfig paths and reexports preserve route, symbols, foreign provenance and complete budgets',()=>{

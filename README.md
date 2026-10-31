@@ -17,7 +17,7 @@ Silicon Mac, while most automated tests use mocks.
 
 ## Set up from a fresh checkout
 
-Run these commands at the repository root. Use the Python environment that
+Run these commands at the repository root. Generated Python and TypeScript build files live in root `build/`. The installer creates `build/python` automatically; wheels and source archives can be written to `build/packages` using `python -m pip wheel --no-deps -w build/packages .` and `python setup.py sdist --dist-dir build/packages`. Use the Python environment that
 contains `laya_mlx` if you plan to run real experiments.
 
 ```bash
@@ -26,7 +26,7 @@ npm --prefix typescript-helper ci
 npm --prefix typescript-helper run build
 ```
 
-The npm build creates `typescript-helper/dist/cli.js`. File and method flows
+The npm build creates `build/typescript/cli.js` and links its local npm dependencies. File and method flows
 need this file: without it, they return `extractor_error`. Build once per fresh
 checkout and rebuild after changes to `typescript-helper/src/`; you do not need
 to build before every experiment. If you already have its npm dependencies,

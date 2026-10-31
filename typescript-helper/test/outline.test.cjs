@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {spawnSync} = require('node:child_process');
-const {outline} = require('../dist/index.js');
+const {outline} = require('../../build/typescript/index.js');
 function fixture(text) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'laya-ts-'));
   const file = path.join(dir, 'source file.ts');
@@ -52,7 +52,7 @@ test('unsupported callable forms remain visible diagnostics', () => {
 test('JSON CLI parses without executing source and validates requests', () => {
   const {file,dir} = fixture('require("node:fs").writeFileSync("marker", "bad"); function safe() {}');
   try {
-    const cli = path.resolve(__dirname, '../dist/cli.js');
+    const cli = path.resolve(__dirname, '../../build/typescript/cli.js');
     const run = input => spawnSync(process.execPath,[cli],{cwd:dir,input,encoding:'utf8'});
     const ok = run(JSON.stringify({action:'outline',path:file}));
     assert.equal(ok.status,0); assert.equal(ok.stderr,'');

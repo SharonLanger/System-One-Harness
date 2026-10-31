@@ -1,7 +1,7 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {readOutline,extractCallable}=require('../dist/index.js');
-const {getCallingMethodLocations}=require('../dist/incoming.js');
+const {readOutline,extractCallable}=require('../../build/typescript/index.js');
+const {getCallingMethodLocations}=require('../../build/typescript/incoming.js');
 function project(files){const root=fs.mkdtempSync(path.join(os.tmpdir(),'incoming-'));for(const [p,s]of Object.entries({'tsconfig.json':'{"include":["**/*.ts"],"exclude":["excluded.ts","outside.ts"]}',...files})){fs.mkdirSync(path.dirname(path.join(root,p)),{recursive:true});fs.writeFileSync(path.join(root,p),s);}return root;}
 function query(root,p='target.ts',name='work',extra={}){const id=readOutline(path.join(root,p)).outline.callables.find(c=>c.name===name).id;return getCallingMethodLocations(p,id,{projectRoot:root,tsconfigPath:'tsconfig.json',...extra});}
 test('I01 I02 I05 I06 I07 I09: configured discovery, callback, module and exact distinct sites',()=>{const root=project({'target.ts':'export function work() {}\n','caller.ts':'import {work as go} from "./target";\nexport function run() { go(); go(); [1].forEach(() => go()); }\ngo();\nconst value = go;\n'});try{const r=query(root);assert.equal(r.status,'partial',JSON.stringify(r));assert.ok(r.diagnostics.some(d=>d.code==='function_value_escape'));assert.deepEqual(r.data.scope.searched_files,['caller.ts','target.ts']);assert.equal(r.data.callers.length,2);const c=r.data.callers[0];assert.equal(c.name,'run');assert.equal(c.start_line,2);assert.equal(c.end_line,2);assert.equal(extractCallable(path.join(root,c.path),c.callable_id).code,'export function run() { go(); go(); [1].forEach(() => go()); }');assert.deepEqual(c.call_sites,[{path:'caller.ts',start_line:2,start_column:25,end_line:2,end_column:29},{path:'caller.ts',start_line:2,start_column:31,end_line:2,end_column:35},{path:'caller.ts',start_line:2,start_column:55,end_line:2,end_column:59}]);assert.equal(r.data.callers[1].kind,'module');assert.equal(r.data.callers[1].callable_id,null);}finally{fs.rmSync(root,{recursive:true,force:true});}});
@@ -25,8 +25,8 @@ test('hierarchy relationships own discovery rather than symbol-only scanning',()
   // Real compiler hierarchy, filtered at its boundary to one relationship. The
   // semantic AST still contains both calls and must not manufacture the removed one.
   const ts=require('typescript'),vm=require('node:vm'),Module=require('node:module');
-  const source=fs.readFileSync(path.join(__dirname,'../dist/incoming.js'),'utf8');
-  const localRequire=Module.createRequire(path.join(__dirname,'../dist/incoming.js'));
+  const source=fs.readFileSync(path.join(__dirname,'../../build/typescript/incoming.js'),'utf8');
+  const localRequire=Module.createRequire(path.join(__dirname,'../../build/typescript/incoming.js'));
   const compiler={...ts,createLanguageService(...args){const service=ts.createLanguageService(...args),incoming=service.provideCallHierarchyIncomingCalls.bind(service);service.provideCallHierarchyIncomingCalls=(...args)=>incoming(...args).filter(r=>r.from.name==='first');return service;}};
   const module={exports:{}};vm.runInNewContext(source,{exports:module.exports,module,require:n=>n==='typescript'?compiler:localRequire(n)});
   const id=readOutline(path.join(root,'target.ts')).outline.callables[0].id;

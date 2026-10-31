@@ -10,7 +10,7 @@ class TypeScriptError(RuntimeError):
     """Source helper startup, extraction, or protocol failure."""
 
 
-DEFAULT_HELPER = Path(__file__).resolve().parents[3] / "typescript-helper/dist/cli.js"
+DEFAULT_HELPER = Path(__file__).resolve().parents[3] / "build/typescript/cli.js"
 
 
 def _integer(value, minimum=0):

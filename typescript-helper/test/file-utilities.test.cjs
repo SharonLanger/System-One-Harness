@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const api = require('../dist/index.js');
+const api = require('../../build/typescript/index.js');
 
 function fixture(t) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'laya-files-'));

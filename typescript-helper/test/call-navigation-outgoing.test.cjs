@@ -1,7 +1,7 @@
 const {test}=require('node:test'), assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {outline}=require('../dist/index.js');
-const {getCalledMethodLocations,listCalledCallables}=require('../dist/calls.js');
+const {outline}=require('../../build/typescript/index.js');
+const {getCalledMethodLocations,listCalledCallables}=require('../../build/typescript/calls.js');
 function fixture(source,run,files={}) {
  const root=fs.mkdtempSync(path.join(os.tmpdir(),'laya-navigation-'));
  fs.writeFileSync(path.join(root,'tsconfig.json'),JSON.stringify({compilerOptions:{module:'commonjs',moduleResolution:'node',baseUrl:'.',paths:{'@dep':['dep']}},include:['*.ts']}));

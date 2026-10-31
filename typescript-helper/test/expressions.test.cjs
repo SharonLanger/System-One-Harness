@@ -1,6 +1,6 @@
 const {test}=require('node:test'), assert=require('node:assert/strict');
 const fs=require('node:fs'), os=require('node:os'), path=require('node:path');
-const {outline,extractCallable}=require('../dist/index.js');
+const {outline,extractCallable}=require('../../build/typescript/index.js');
 const entries=[
   ['arrow','arrow = (x: number) =>','(x: number) => x+1','export const arrow = (x: number) => x+1;'],
   ['block','block: (x: string) => string = (x) =>','(x) => { return x; }','let block: (x: string) => string = (x) => { return x; };'],
