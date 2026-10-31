@@ -18,7 +18,7 @@ Paths in this document are relative to experiments/batch_v2/.
 - experiments/<campaign-id>/calibration_roles.json: temperature/policy family map.
 - experiments/<campaign-id>/protocol.json: research controller settings and role hashes, once implemented.
 - experiments/<campaign-id>/rounds/001-<purpose>/suite.json: exact runnable suite for that round.
-- results/<experiment-id>/<timestamp>__<unique-id>/: runner-owned raw artifacts, checkpoints and reports.
+- results/<experiment-id>/YYYY-MM-DD_HH-MM-SS/: runner-owned raw artifacts, checkpoints and reports. Israel local time, matching the original batch runner; same-second collisions append `_001`, `_002`, etc. Sort names descending for latest first.
 
 Keep suite experiment_id equal to the campaign ID across rounds; distinct launches already get unique result folders. Store the round ID in research records, not as an unsupported suite field. Use the same cases.json path and bytes for every round.
 

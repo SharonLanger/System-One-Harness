@@ -1,18 +1,17 @@
 """Start the first requested-action experiment; no production changes or package installs."""
 import argparse
-from datetime import datetime, timezone
 import json
 from pathlib import Path
 import platform
 import subprocess
 import sys
-import uuid
 
 HERE = Path(__file__).resolve().parent
 BATCH = HERE.parents[1]
 sys.path.insert(0, str(BATCH))
 from schema import load, validate, vectors
 from research.protocol import validate_protocol
+from run_paths import allocate
 
 
 def main(argv=None):
@@ -44,8 +43,7 @@ def main(argv=None):
 
     # Probe only the established fruit example, so held-out campaign cases are not used
     # for setup decisions. Use a subprocess to release its cached models before the batch.
-    probe_id = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '__' + uuid.uuid4().hex[:8]
-    probe_path = BATCH / 'results/requested-action-500' / ('probe-' + probe_id + '.json')
+    probe_path = allocate(BATCH / 'results/requested-action-500/probes') / 'probe.json'
     temperatures = [c['temperature'] for c in suite['configurations']]
     probe_command = [sys.executable, '-B', '-m', 'research.probe', '--cases', str(BATCH / 'examples/generic-choice/cases.json'),
                      '--suite', str(BATCH / 'examples/generic-choice/suite.json'), '--temperatures', json.dumps(temperatures),
