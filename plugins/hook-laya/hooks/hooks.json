@@ -9,6 +9,17 @@
           }
         ]
       }
+    ],
+    "PostCompact": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"${LAYA_CONTEXT_ROUTER_CLI}\" hook --hook PostCompact --log-state",
+            "timeout": 15
+          }
+        ]
+      }
     ]
   }
 }

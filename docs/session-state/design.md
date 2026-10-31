@@ -70,7 +70,7 @@ For enrichment, use a `files` array so one event can describe one or several fil
 Example physical JSONL lines (illustrative flow name):
 
 ```jsonl
-{"timestamp":"2026-10-31T18:00:00.000Z","source":{"kind":"hook","name":"UserPromptSubmit"},"type":"prompt_submitted","payload":{}}
+{"timestamp":"2026-10-31T18:00:00.000Z","source":{"kind":"hook","name":"UserPromptSubmit"},"type":"UserPromptSubmit","payload":{}}
 {"timestamp":"2026-10-31T18:00:00.050Z","source":{"kind":"flow","name":"method-enrichment"},"type":"context_enriched","payload":{"files":[{"filePath":"/project/src/cart.ts","methodNames":["calculateTotal"]}]}}
 ```
 
@@ -175,3 +175,5 @@ Astra identified that blindly appending to an otherwise valid JSON record withou
 Implementation files: `typescript-helper/src/session-state.ts`, `typescript-helper/test/session-state.test.cjs`, and `docs/session-state/README.md`. The existing `logs/` ignore rule already covers runtime files.
 
 Astra approved the read-validate-append refinement and identified two validation gaps during code review. Regression tests demonstrated both failures before correction: invalid UTF-8 was replaced during decoding, and a sparse array with a numeric non-index property could serialize with data loss. The store now uses fatal UTF-8 decoding with file/line errors and rejects invalid array indices and array subclasses.
+
+Hook event naming: source.kind is hook; source.name and type preserve the exact hook name (PostCompact, UserPromptSubmit). Flow action types use snake_case, such as context_enriched. Existing historical records are never rewritten.

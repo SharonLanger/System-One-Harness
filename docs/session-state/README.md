@@ -11,7 +11,7 @@ const state = new SessionStateStore('/absolute/path/to/lcr/logs', sessionId);
 // Hook caller example. Hook integration is a later increment.
 await state.save({
   source: {kind: 'hook', name: 'UserPromptSubmit'},
-  type: 'prompt_submitted',
+  type: 'UserPromptSubmit',
   payload: {},
 });
 
@@ -44,3 +44,5 @@ npm --prefix typescript-helper test
 ```
 
 Tests use temporary files and injected filesystem failures, with no Claude, LAYA, or tokenizer calls. Existing `logs/` ignore rules cover generated session files.
+
+Hook event naming: source.kind is hook; source.name and type preserve the exact hook name (PostCompact, UserPromptSubmit). Flow action types use snake_case, such as context_enriched. Existing historical records are never rewritten.
