@@ -271,3 +271,124 @@ def test_input_validation_cannot_be_bypassed_by_custom_preparer(tmp_path,value):
     with pytest.raises(BlockInputError):
         block.run(value,config=RunConfig(model='fake'),registry=AgentRegistry(loader=lambda *_:pytest.fail('loaded')),
             prepare_input=lambda *_:pytest.fail('prepared'))
+
+
+@pytest.mark.parametrize('data',['{', '[]', '{}', '{"name":"bad","question_type":"null","conditions":[]}', '{"name":"bad","question_type":"choice","conditions":[{"field":"confidence","op":"unknown","value":0.5}]}'])
+def test_malformed_catalog_definitions_have_typed_error(tmp_path,data):
+    (tmp_path/'rules').mkdir();(tmp_path/'questions').mkdir()
+    (tmp_path/'rules'/'bad.json').write_text(data)
+    with pytest.raises(BlockConfigurationError): Catalog(tmp_path)
+
+
+@pytest.mark.parametrize('spec',[{'rule_ref':'accept'},{'rule_ref':'accept','question_ref':'x','definition':question()},{'definition':question()}])
+def test_block_declaration_requires_one_question_and_rule(tmp_path,spec):
+    with pytest.raises(BlockConfigurationError):
+        Block({'name':'bad','questions':{'q':spec}},catalog=catalog_at(tmp_path,[rule()]),
+            validate_input=lambda x:x,prepare_input=lambda x,q:PreparedInput('',q),reduce=lambda d,s:d,validate_output=lambda x:x)
+
+
+def test_missing_catalog_directory_has_typed_error(tmp_path):
+    with pytest.raises(BlockConfigurationError,match='directory unavailable'): Catalog(tmp_path)
+
+
+def test_shared_and_inline_questions_produce_identical_payloads(tmp_path):
+    catalog=catalog_at(tmp_path,[rule()],[{'name':'shared',**question()}])
+    assert catalog.question('shared')==question()
+
+
+def test_preparer_runs_once_with_copies_and_changed_text(tmp_path):
+    seen=[]
+    def prepare(value,questions):
+        seen.append(deepcopy(value));value['text']='prepared'
+        questions['local']['instructions']='prepared instruction'
+        return PreparedInput(value['text'],questions,{'internal':'not for model'})
+    block=make_block(tmp_path,preparer=prepare)
+    _,calls=execute(block)
+    assert len(seen)==1 and seen[0]['text']=='  original  '
+    assert calls[0][0]=='prepared' and calls[0][1]['local']['instructions']=='prepared instruction'
+    assert 'internal' not in str(calls)
+
+
+def test_invalid_reducer_output_raises_typed_failure_and_preserves_cause(tmp_path):
+    def validate(_): raise ValueError('output contract')
+    with pytest.raises(BlockExecutionError) as caught: execute(make_block(tmp_path,output=validate))
+    assert isinstance(caught.value.__cause__,ValueError)
+
+
+def test_two_and_conditions_fail_in_order(tmp_path):
+    block=make_block(tmp_path,rules=[rule(conditions=[{'field':'answer_confidence','op':'gte','value':.8},{'field':'probability_gap','op':'gte','value':.5}])])
+    result,_=execute(block,{**raw(),'answer_confidence':.7999})
+    assert result.decisions['local']['reason']=='below_threshold:answer_confidence'
+    result,_=execute(block,{**raw(),'probabilities':{'a':.6,'b':.3,'c':.1}})
+    assert result.decisions['local']['reason']=='below_threshold:probability_gap'
+    result,_=execute(block)
+    assert result.decisions['local']['decided']
+
+
+def test_missing_question_logs_reference_without_preparation(tmp_path,monkeypatch):
+    import laya_context_router.block_runtime.runtime as runtime
+    logs=[];monkeypatch.setattr(runtime,'log',lambda *args,**kwargs:logs.append(kwargs))
+    block=make_block(tmp_path)
+    block.prepare_input=lambda *_:pytest.fail('must fail before preparation')
+    with pytest.raises(BlockConfigurationError,match='question_not_found'):
+        execute(block,question_overrides={'local':'missing'})
+    event=next(fields for fields in logs if fields.get('code')=='question_not_found')
+    assert event=={'block':'tiny','stage':'configuration','code':'question_not_found','question':'local','question_ref':'missing'}
+
+
+@pytest.mark.parametrize('expected,actual',[(a,b) for a in ['choice','noul','score'] for b in ['choice','noul','score'] if a!=b])
+def test_all_wrong_pairings_log_and_stop_before_preparation_or_load(tmp_path,monkeypatch,expected,actual):
+    import laya_context_router.block_runtime.runtime as runtime
+    events=[];monkeypatch.setattr(runtime,'log',lambda *args,**kwargs:events.append(kwargs))
+    block=make_block(tmp_path,expected,rules=[rule(expected),rule(actual,name='wrong')])
+    block.prepare_input=lambda *_:pytest.fail('prepared')
+    registry=AgentRegistry(loader=lambda *a,**k:pytest.fail('loaded'))
+    with pytest.raises(BlockConfigurationError):
+        block.run({'text':'private'},config=RunConfig(model='fake'),registry=registry,rule_overrides={'local':'wrong'})
+    event=next(e for e in events if e.get('code')=='rule_type_mismatch')
+    assert event['question']=='local' and event['rule']=='wrong'
+    assert event['expected_type']==expected and event['actual_type']==actual
+    assert 'private' not in str(events)
+
+
+def test_all_shipped_policy_conditions_are_exact():
+    catalog=Catalog()
+    expected={
+      'ticket_department_default':('choice',[('answer_confidence',.9),('probability_gap',.5)]),
+      'ticket_churn_default':('noul',[('distance_from_boundary',.1)]),
+      'method_selection_default':('choice',[('answer_confidence',.5),('probability_gap',.15)]),
+      'multiple_methods_default':('noul',[('answer_confidence',.5)])}
+    for name,(kind,conditions) in expected.items():
+        loaded=catalog.rule(name)
+        assert loaded.question_type==kind
+        assert loaded.conditions==[{'field':field,'op':'gte','value':value} for field,value in conditions]
+
+
+def test_complete_debug_log_events_and_independent_metrics(tmp_path,monkeypatch):
+    import laya_context_router.log_utils as logging
+    logfile=tmp_path/'events.jsonl';monkeypatch.setattr(logging,'LOG_PATH',logfile)
+    block=make_block(tmp_path)
+    execute(block)
+    events=[json.loads(line) for line in logfile.read_text().splitlines()]
+    prepared=next(e for e in events if e['component']=='block_runtime' and e['event']=='prepared')
+    received=next(e for e in events if e['event']=='response_received')
+    enriched=next(e for e in events if e['component']=='enrichment' and e['event']=='completed')
+    configured=next(e for e in events if e['event']=='configured')
+    completed=next(e for e in events if e['component']=='block_runtime' and e['event']=='completed')
+    assert prepared['details']['questions']=={'local':question()}
+    assert received['details']['response']=={'answers':{'local':raw()}}
+    assert enriched['details']['enriched']['probability_gap']==.5
+    # Independently calculated -sum(p*ln(p))/ln(3), rounded to 4 decimals.
+    assert enriched['details']['enriched']['normalized_entropy']==.7298
+    assert configured['details']['rules']=={'local':{'name':'accept','conditions':[]}}
+    assert completed['details']['decisions']['local']=={'answer':'b','decided':True,'reason':None}
+    execute(make_block(tmp_path,'noul',rules=[rule('noul',conditions=[{'field':'distance_from_boundary','op':'gte','value':.3}])]),raw('noul'))
+    events=[json.loads(line) for line in logfile.read_text().splitlines()]
+    noul=next(e for e in reversed(events) if e['component']=='enrichment' and e['event']=='completed')
+    assert noul['details']['enriched']['distance_from_boundary']==.3
+
+
+def test_unexpected_prepared_validator_failure_is_typed_with_cause(tmp_path):
+    def unexpected(*_): raise RuntimeError('validator failed')
+    with pytest.raises(BlockExecutionError) as caught: execute(make_block(tmp_path,validate_prepared=unexpected))
+    assert isinstance(caught.value.__cause__,RuntimeError)

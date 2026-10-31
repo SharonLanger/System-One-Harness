@@ -30,7 +30,7 @@ class TypedRule(RulesConfig):
         try:
             identifier(data.get('name'))
             base = RulesConfig.from_dict(data)
-            if data.get('conditions_by_type'):
+            if 'conditions_by_type' in data:
                 raise ValueError('typed rules use only conditions')
             for condition in base.conditions:
                 if condition['field'] not in _FIELDS[data['question_type']]:
@@ -49,7 +49,11 @@ class Catalog:
         root = Path(directory) if directory is not None else files('laya_context_router').joinpath('defaults')
         self._rules, self._questions = {}, {}
         for folder, target in [('rules', self._rules), ('questions', self._questions)]:
-            for path in sorted(root.joinpath(folder).iterdir(), key=lambda p: p.name):
+            try:
+                paths = sorted(root.joinpath(folder).iterdir(), key=lambda p: p.name)
+            except OSError as exc:
+                raise BlockConfigurationError(f'catalog directory unavailable: {folder}') from exc
+            for path in paths:
                 if not path.name.endswith('.json'): continue
                 try:
                     data = load_json(path)
@@ -57,7 +61,7 @@ class Catalog:
                     name = identifier(value.name)
                     if name in target: raise ValueError(f'duplicate catalog name: {name}')
                     target[name] = value
-                except (ValueError, TypeError, KeyError) as exc:
+                except (ValueError, TypeError, KeyError, OSError) as exc:
                     raise BlockConfigurationError(f'invalid {folder} catalog file {path.name}: {exc}') from exc
 
     def rule(self, name):

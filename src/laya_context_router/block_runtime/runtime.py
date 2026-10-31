@@ -46,11 +46,18 @@ class Block:
             stage=stage, code=code, **fields)
 
     def _question(self, name, spec):
-        if isinstance(spec, str): body = self.catalog.question(spec)
-        elif isinstance(spec, dict) and set(spec) == {'question_ref'}: body = self.catalog.question(spec['question_ref'])
+        if isinstance(spec, str): body = self._shared_question(name, spec)
+        elif isinstance(spec, dict) and set(spec) == {'question_ref'}: body = self._shared_question(name, spec['question_ref'])
         elif isinstance(spec, dict): body = spec
         else: raise BlockConfigurationError('question override must be a body or reference')
         return Question.from_dict({**deepcopy(body), 'name': name}).to_predict_dict()
+
+    def _shared_question(self, name, reference):
+        try:
+            return self.catalog.question(reference)
+        except BlockConfigurationError:
+            self._error('configuration', 'question_not_found', question=name, question_ref=reference)
+            raise
 
     def _resolve(self, rule_overrides, question_overrides):
         definitions = self.declaration['questions']
@@ -117,6 +124,9 @@ class Block:
         except (ValueError, TypeError, KeyError) as exc:
             self._error('preparation', 'invalid_prepared_input')
             raise BlockInputError(str(exc)) from exc
+        except Exception as exc:
+            self._error('preparation', 'preparation_failed')
+            raise BlockExecutionError(f'block {self.name}: preparation validation failed') from exc
         log('DEBUG', 'block_runtime', 'prepared', block=self.name, questions=prepared.questions)
         # predict validates and copies SDK output. Deliberately preserve ResponseError,
         # loader errors and TimeoutError for the flow's existing error boundary.
