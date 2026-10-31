@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {outline,collectLocalContext,collectProjectContext}=require('../dist/index.js');
+const {outline,collectLocalContext,collectProjectContext}=require('../../build/typescript/index.js');
 
 function fixture(source,run){
   const root=fs.mkdtempSync(path.join(os.tmpdir(),'laya-reviewed-')),file=path.join(root,'main.ts');

@@ -1,4 +1,4 @@
 {
-  "compilerOptions": {"target": "ES2022", "module": "CommonJS", "strict": true, "esModuleInterop": true, "outDir": "dist", "rootDir": "src", "skipLibCheck": false},
+  "compilerOptions": {"target": "ES2022", "module": "CommonJS", "strict": true, "esModuleInterop": true, "outDir": "../build/typescript", "rootDir": "src", "skipLibCheck": false},
   "include": ["src/**/*.ts"]
 }

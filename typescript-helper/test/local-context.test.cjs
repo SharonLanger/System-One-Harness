@@ -1,6 +1,6 @@
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {readOutline,collectLocalContext}=require('../dist/index.js');
+const {readOutline,collectLocalContext}=require('../../build/typescript/index.js');
 function fixture(source,run){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'laya-local-')),file=path.join(dir,'a.ts');fs.writeFileSync(file,source);try{run(file);}finally{fs.rmSync(dir,{recursive:true});}}
 // Collector closure fixtures intentionally use private exhaustive identities.
 function collect(file,name,options){return collectLocalContext(file,readOutline(file).outline.callables.find(c=>c.name===name).id,options);}

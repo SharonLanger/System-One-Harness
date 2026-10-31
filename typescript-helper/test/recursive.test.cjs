@@ -1,6 +1,6 @@
 const {test}=require('node:test'), assert=require('node:assert/strict');
 const fs=require('node:fs'), os=require('node:os'), path=require('node:path');
-const {readOutline,extractCallable}=require('../dist/index.js');
+const {readOutline,extractCallable}=require('../../build/typescript/index.js');
 // Exhaustive discovery remains private to extraction/collectors; public contract lives in support-contract.test.cjs.
 const outline = file => readOutline(file).outline;
 function check(file,source,expected,diagnosticCount=0) {
