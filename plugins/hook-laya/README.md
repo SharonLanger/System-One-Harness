@@ -1,99 +1,128 @@
 # Hook Laya plugin
 
-This folder contains configuration only. Claude launches the installed Laya Context Router gateway directly; no plugin launcher script is needed.
+Claude Code calls the installed Laya gateway whenever you submit a prompt.
 
-## Set up manually
+## Where the two paths come from
 
-Each user chooses how to load the plugin. The repository does not copy files, install or activate plugins, edit settings, or provide an installer script. The following is Sharon's preferred setup; other supported plugin-loading methods work too.
+| Value | Who supplies it? | Purpose |
+| --- | --- | --- |
+| `LAYA_CONTEXT_ROUTER_PROJECT_DIR` | You set it once in Claude settings or your shell. | Absolute path to the Laya Context Router repository; its Python environment lives in `.venv`. |
+| `CLAUDE_PROJECT_DIR` | Claude Code supplies it automatically for each session. | The project whose code Laya should read. |
 
-There are four different paths:
+For example, start Claude in `/Users/sharon/work/project-A`. Claude supplies that
+folder as `CLAUDE_PROJECT_DIR`. The hook expands `--repository-root "${CLAUDE_PROJECT_DIR}"`
+to `--repository-root "/Users/sharon/work/project-A"`. Start another session in
+Project B and the same hook receives Project B's folder. You do not edit the hook
+between projects or put `CLAUDE_PROJECT_DIR` in your settings.
 
-- LCR repository: `/Users/example/dev/laya-context-router`.
-- Python interpreter with Laya/MLX: `/Users/example/dev/laya-context-router/.venv/bin/python`.
-- Optional copied plugin: `/Users/example/.claude/my-plugins/hook-laya`.
-- Target project: `/Users/example/work/project-A`, whose code the session discusses.
+`--repository-root` tells the enrichment flow where to resolve source files. It is
+the target project's root, not the Laya installation or plugin directory. The
+current real-mode flow requires this argument; removing it disables enrichment
+with an `invalid_project_root` error. Observation does not need it.
 
-For real inference, complete the main README's Python/Laya and TypeScript helper prerequisites. Observe-only mode needs only Python 3.11+ and this repository installed into the chosen environment, for example:
+## Prerequisites and setup
+
+1. Create a Python 3.11+ virtual environment named `.venv` inside the Laya Context
+   Router repository, and install this repository into it. For example:
+
+   ```bash
+   python3 -m venv "/Users/example/dev/laya-context-router/.venv"
+   "/Users/example/dev/laya-context-router/.venv/bin/python" -m pip install -e "/Users/example/dev/laya-context-router"
+   ```
+
+   Real inference additionally needs the [main README's](../../README.md) Laya/MLX,
+   model weights and TypeScript helper setup. Observation needs none of those.
+
+2. Copy this complete plugin folder, including `.claude-plugin`, to
+   `~/.claude/my-plugins/hook-laya`.
+
+3. Merge these entries into `env` in `~/.claude/settings.json`. Replace the example
+   paths with your own full absolute paths; do not use `~` in the JSON values:
+
+   ```json
+   {
+     "env": {
+       "LAYA_CONTEXT_ROUTER_PROJECT_DIR": "/Users/example/dev/laya-context-router",
+       "CLAUDE_CODE_PLUGIN_DIRS": "/Users/example/.claude/my-plugins/hook-laya"
+     }
+   }
+   ```
+
+   Preserve existing settings and plugin paths; separate plugin paths with `:` on
+   macOS/Linux. `CLAUDE_CODE_PLUGIN_DIRS` requires Claude Code v2.1.280 or later.
+   Alternatively, load the folder using `claude --plugin-dir /path/to/hook-laya`
+   and set only `LAYA_CONTEXT_ROUTER_PROJECT_DIR` in settings. Use one registration method, and remove
+   any duplicate old hook registration. Start a fresh Claude session.
+
+The repository path is a setup prerequisite. The hook uses
+`"${LAYA_CONTEXT_ROUTER_PROJECT_DIR}/.venv/bin/python"`, so keep the virtual
+environment at that location. Use the repository folder as the variable value,
+without `.venv/bin/python` or embedded quote characters.
+
+Instead of setting the variable in settings, you can export it in the terminal
+before starting Claude (or add this export to your shell profile):
 
 ```bash
-/Users/example/dev/laya-context-router/.venv/bin/python -m pip install -e /Users/example/dev/laya-context-router
+export LAYA_CONTEXT_ROUTER_PROJECT_DIR="/Users/example/dev/laya-context-router"
+claude
 ```
 
-This does not install Laya/MLX or model weights. The editable installation lets `python -m laya_context_router.hooks.gateway` find our repository independently of the hook's working directory. Do not run `gateway.py` directly by file path.
-
-If you want Sharon's layout, manually copy this complete folder, including `.claude-plugin`, to `~/.claude/my-plugins/hook-laya`. In the copy's `hooks/hooks.json`, replace `/absolute/path/to/laya-python` with your interpreter's absolute path. Keep its quotes for paths containing spaces. The command runs:
-
-```bash
-"/absolute/path/to/laya-python" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root "${CLAUDE_PROJECT_DIR}" --real
-```
-
-`--hook UserPromptSubmit` identifies the event and must match the stdin JSON. `--real` enables actual local Laya calls. Optionally append `--config "/absolute/path/to/run-config.json"` and existing gateway budget options.
-
-Manually merge this property into the existing `env` object in `~/.claude/settings.json`, preserving all other settings:
-
-```json
-{
-  "env": {
-    "CLAUDE_CODE_PLUGIN_DIRS": "/Users/example/.claude/my-plugins/hook-laya"
-  }
-}
-```
-
-If other plugin paths are present, preserve them and append this absolute path with `:` on macOS/Linux or `;` on Windows. Do not use a newline or add duplicates. This environment variable requires Claude Code v2.1.280 or later. Start a fresh Claude session after configuring it.
-
-Alternatively, configure the interpreter in your chosen plugin directory and load it with `claude --plugin-dir /absolute/path/to/plugin-folder`. The plugin does not require a particular copy destination. Do not register both methods or the old outer hook for the same event.
+Choose one place to maintain this value. Keep plugin registration configured as
+above. These instructions target macOS/Linux shell commands. Settings environment
+values apply to Claude's child processes; they do not export variables into your
+terminal.
 
 ## Observe-only first test
 
-For the initial plugin wiring check, replace `--real` in your manually configured
-copy's hook command with `--observe-only`:
+In the copied plugin's `hooks/hooks.json`, replace the `command` value with:
 
-```bash
-"/absolute/path/to/laya-python" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --observe-only
+```json
+"command": "\"${LAYA_CONTEXT_ROUTER_PROJECT_DIR}/.venv/bin/python\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --observe-only"
 ```
 
-Use the absolute interpreter where this repository is installed. Observation needs
-neither Laya/MLX, model weights nor the built TypeScript helper. `--repository-root`
-and `--config` are unnecessary in this mode; if supplied they are not loaded for
-feature execution. `--real` and `--observe-only` cannot be combined. The existing
-deadline option remains supported. This mode runs before every dispatcher and
-returns zero stdout bytes, exit 0; it injects no context.
+There is no repository-root argument for this test. Claude still supplies the
+project environment and hook JSON automatically. The gateway logs them without
+calling any dispatcher, model or source-reading feature, and sends zero stdout
+bytes to Claude (no enrichment and no no-op text).
 
-Use the manual copy/loading steps above, then start a fresh Claude session in Project
-A and submit a small prompt. Repeat in Project B. Check `observation_input_received`
-for bounded original stdin text and `hook_observed` for the parsed payload,
-`claude_project_dir`, `derived.project_dir`, `project_dir_status`, `process_cwd`,
-`payload_cwd`, `would_invoke_dispatcher`, `event_dispatcher` and
-`dispatcher_invoked: false`. Unsupported hook names have a null event destination.
-Use session IDs, invocation IDs and process IDs to correlate records.
+Start a fresh session in Project A and submit a prompt, then repeat in Project B.
+In an editable installation, inspect `<laya-context-router>/src/logs/debug.jsonl`:
 
-Find the actual log location using the same interpreter:
+- `observation_input_received`: original stdin text, bounded to 65,536 characters.
+- `hook_observed`: raw payload, `claude_project_dir`, `derived.project_dir`,
+  `payload_cwd`, `process_cwd`, intended dispatcher and `dispatcher_invoked: false`.
+- `gateway_finished`: `outcome: observed` and `stdout_bytes_written: 0`.
 
-```bash
-"/absolute/path/to/laya-python" -c 'from laya_context_router.log_utils import LOG_PATH; print(LOG_PATH)'
+Compare project paths and session IDs. Exit 0 alone does not prove successful
+logging; check stderr and the records. See the [test plan](../../docs/observe-only-plan.md).
+
+## Enable enrichment after the test
+
+Restore the command shipped in this repository:
+
+```json
+"command": "\"${LAYA_CONTEXT_ROUTER_PROJECT_DIR}/.venv/bin/python\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root \"${CLAUDE_PROJECT_DIR}\" --real"
 ```
 
-In an editable installation it is `<lcr-repository>/src/logs/debug.jsonl`, not
-necessarily the caller project's logs directory. The records contain the supplied
-prompt and all event fields. The terminal record should have `outcome: observed`
-and `stdout_bytes_written: 0`. Errors are reported on stderr and, when possible,
-in the log; exit 0 alone does not prove logging succeeded.
+`--hook` identifies the event; `--real` enables Laya. Claude provides the project
+path and the shell passes it to the gateway. Nothing needs a per-project edit.
+Optional model configuration can be supplied using `--config /path/to/config.json`.
 
-After this check, manually replace `--observe-only` with `--real` and restore the
-configured source-root argument when you want the existing enrichment flow. No
-plugin is automatically copied or activated by these instructions or by the code change.
-See [scope and test plan](../../docs/observe-only-plan.md).
+## Troubleshooting and limitations
 
-## Normal mode project identification
+- Command not found: check that `LAYA_CONTEXT_ROUTER_PROJECT_DIR` names the repository
+  folder and that `.venv/bin/python` exists and is executable inside it.
+- Module not found: install this repository into that exact interpreter (step 1).
+- No hook logs: verify plugin loading and restart Claude after configuration changes.
+- Missing project environment: observation records it; real enrichment cannot use
+  an empty source root. Do not assume that a manually launched terminal command
+  has Claude's environment.
+- Worktrees: Claude's project variable can remain at the original checkout while
+  the payload's `cwd` changes. This command reads the original project; it does not
+  automatically switch source roots to a worktree.
 
-Each Claude CLI launches a separate local Python process for each hook event. It supplies event JSON on stdin and `CLAUDE_PROJECT_DIR` in that process's environment. Sessions in projects A and B therefore call the same LCR code with different environment values.
+Installed-plugin A/B verification remains a manual test; subprocess tests do not
+prove what your Claude installation sends. See [A/B verification](../../docs/verification/plugin-project-context.md).
 
-The gateway reads `os.environ.get("CLAUDE_PROJECT_DIR")` during the invocation. The common dispatch enrichment method adds `envelope.derived.project_dir` (canonical absolute directory, or null if missing/invalid). Original JSON, `cwd`, session ID and transcript path are preserved. The `project_context_ingested` log records the selected raw environment value, canonical directory, status, source, cwd and session; gateway logging adds invocation ID and the logger records PID. See the main README for the repository log location.
-
-Missing/invalid project environment is metadata only and does not replace a valid explicit `--repository-root`. Source resolution continues to use that explicit argument. In this plugin command Claude's project environment supplies it; manual callers can configure another source root.
-
-Worktree limitation: `CLAUDE_PROJECT_DIR` identifies the originating project and may stay at the original checkout while JSON `cwd` moves to a worktree. This plugin does not automatically select that other checkout; default source reads can therefore use the original checkout. Keep project identity, event cwd and source root distinct.
-
-See [manual A/B verification](../../docs/verification/plugin-project-context.md). Automated tests do not prove that your installed Claude supplies the environment. No live verification is claimed yet.
-
-References: [hook paths/environment](https://code.claude.com/docs/en/hooks#reference-scripts-by-path), [plugin environment variable](https://code.claude.com/docs/en/env-vars), [user-settings support](https://code.claude.com/docs/en/plugins/mods/reference#settings-and-environment-variables).
+References: [Claude hook environment](https://code.claude.com/docs/en/hooks#reference-scripts-by-path),
+[environment settings](https://code.claude.com/docs/en/env-vars).
