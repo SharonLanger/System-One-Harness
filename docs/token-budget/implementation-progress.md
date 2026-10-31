@@ -66,3 +66,11 @@ Commit 6 published: `c44c62216b0d2c462217215c774b626e54b6160d`.
 Expected red: constructor signature lacks keyword-only `inspection_provider`. Test loader argument/agent identity preservation, capability reuse, retry after failure, registry ownership, and model/config isolation. Enforcement remains deferred. Command: `python -m pytest -q tests/test_token_budget_registry.py`; full Python regression follows shared-registry changes.
 
 Outcome: 4 expected missing-provider assertions failed. Full Python regression completed normally, exit 0: 1,296 passed, 3 existing skips in 259.23 s. Original loader/predict arguments and get_agent identity remain unchanged; capability failures are not cached. Evidence: `evidence/07-{red,green}.log`.
+
+Commit 7 published: `87af21166f9c9a29bebf0b9c9f5f2b94066ce099`.
+
+## Commit 7a — Astra D002 local identity recovery
+
+Expected red: otherwise-valid observed metadata with an actual bound local directory is rejected solely for model_id inequality; further new helper tests assert the absent observation helper. D002 authorizes this narrow insertion before fixture wiring. Command: `python -m pytest -q tests/test_token_budget_local_identity.py`. All original profile assertions remain.
+
+Outcome: expected red 7 failed / 13 passed; profile regression 34 passed; focused budget/predict/live-check 138 passed. The initial full run was incomplete (D004), preserved without claiming success. Diagnostic full Python suite: 1,316 passed, 3 existing skips, captured exit 0 in 246.63s. Local identity remains bound to the actual observed model directory, revision and all prior fingerprints; candidate/unknown models remain refused. Evidence: `evidence/07a-*`.

@@ -1,0 +1,34 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0 -- /workspace/scratch/e7b895a0f425/token-budget-baseline-venv/bin/python
+cachedir: .pytest_cache
+rootdir: /workspace/scratch/e7b895a0f425/token-budget-implementation
+configfile: pyproject.toml
+plugins: anyio-4.15.1
+collecting ... collected 24 items
+
+tests/test_hook_observe_only.py::test_full_input_and_metadata_without_dispatch_or_optional_prerequisites PASSED [  4%]
+tests/test_hook_observe_only.py::test_project_statuses[missing] PASSED   [  8%]
+tests/test_hook_observe_only.py::test_project_statuses[empty] PASSED     [ 12%]
+tests/test_hook_observe_only.py::test_project_statuses[relative] PASSED  [ 16%]
+tests/test_hook_observe_only.py::test_project_statuses[nonexistent] PASSED [ 20%]
+tests/test_hook_observe_only.py::test_project_statuses[file] PASSED      [ 25%]
+tests/test_hook_observe_only.py::test_project_statuses[symlink] PASSED   [ 29%]
+tests/test_hook_observe_only.py::test_alternating_projects_and_sessions_in_same_process PASSED [ 33%]
+tests/test_hook_observe_only.py::test_unsupported_event_has_no_event_route PASSED [ 37%]
+tests/test_hook_observe_only.py::test_rejected_input_keeps_bounded_original_and_error[{-invalid_json] PASSED [ 41%]
+tests/test_hook_observe_only.py::test_rejected_input_keeps_bounded_original_and_error[{"hook_event_name":"UserPromptSubmit","x":1,"x":2}-invalid_json] PASSED [ 45%]
+tests/test_hook_observe_only.py::test_rejected_input_keeps_bounded_original_and_error[[]-invalid_object] PASSED [ 50%]
+tests/test_hook_observe_only.py::test_rejected_input_keeps_bounded_original_and_error[{"hook_event_name":"Stop"}-event_mismatch] PASSED [ 54%]
+tests/test_hook_observe_only.py::test_rejected_input_keeps_bounded_original_and_error[{}-invalid_field] PASSED [ 58%]
+tests/test_hook_observe_only.py::test_rejected_input_keeps_bounded_original_and_error[raw5-input_budget_exceeded] PASSED [ 62%]
+tests/test_hook_observe_only.py::test_invalid_arguments_do_not_dispatch[extra0] PASSED [ 66%]
+tests/test_hook_observe_only.py::test_invalid_arguments_do_not_dispatch[extra1] PASSED [ 70%]
+tests/test_hook_observe_only.py::test_invalid_arguments_do_not_dispatch[extra2] PASSED [ 75%]
+tests/test_hook_observe_only.py::test_noisy_logger_cannot_contaminate_stdout PASSED [ 79%]
+tests/test_hook_observe_only.py::test_primary_log_failure_is_error_not_observation_success PASSED [ 83%]
+tests/test_hook_observe_only.py::test_raw_input_log_failure_cannot_be_hidden_by_successful_metadata_log PASSED [ 87%]
+tests/test_hook_observe_only.py::test_observation_logging_obeys_deadline PASSED [ 91%]
+tests/test_hook_observe_only.py::test_default_sink_records_complete_observation PASSED [ 95%]
+tests/test_hook_observe_only.py::test_default_sink_unwritable_path_is_visible_without_protocol_output PASSED [100%]
+
+============================== 24 passed in 1.43s ==============================

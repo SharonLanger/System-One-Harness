@@ -54,7 +54,16 @@ def verify_observation(model, observed):
         unavailable(model, 'No supported inspection profile for requested model')
     if profile.status == 'candidate':
         unavailable(model, 'Code-model profile is candidate only; intended runtime qualification is pending')
-    expected = {'model_id': model, 'revision': profile.revision,
+    if observed.get('model_id') != model:
+        binding = observed.get('local_identity')
+        if not (isinstance(binding, dict)
+                and binding.get('raw_model_id') == observed.get('model_id')
+                and binding.get('raw_model_dir') == observed.get('model_dir')
+                and isinstance(binding.get('resolved_model_id'), str)
+                and binding['resolved_model_id']
+                and binding['resolved_model_id'] == binding.get('resolved_model_dir')):
+            unavailable(model, 'Unverified loaded metadata: model_id')
+    expected = {'revision': profile.revision,
                 'runtime_version': profile.runtime_version, 'tokenizer_version': profile.tokenizer_version,
                 'source_hashes': dict(SOURCE_HASHES), 'tokenizer_sha256': profile.tokenizer_sha256,
                 'config_sha256': profile.config_sha256, 'checkpoint_config_sha256': profile.checkpoint_config_sha256,
@@ -64,6 +73,21 @@ def verify_observation(model, observed):
         if field not in observed or observed[field] != value:
             unavailable(model, f'Unverified loaded metadata: {field}')
     return profile
+
+
+def observe_identity(agent):
+    """Filesystem proof from actual loaded fields; never from requested settings."""
+    raw_id, raw_dir = str(agent.model_id), str(agent.model_dir)
+    binding = None
+    try:
+        id_path = Path(raw_id).expanduser().resolve(strict=True)
+        dir_path = Path(raw_dir).expanduser().resolve(strict=True)
+        if id_path.is_dir() and dir_path.is_dir() and id_path == dir_path:
+            binding = {'raw_model_id': raw_id, 'raw_model_dir': raw_dir,
+                       'resolved_model_id': str(id_path), 'resolved_model_dir': str(dir_path)}
+    except (OSError, RuntimeError, ValueError):
+        pass
+    return {'model_id': raw_id, 'model_dir': raw_dir, 'local_identity': binding}
 
 
 def _sha(path):
@@ -94,7 +118,7 @@ def _observe_agent(agent, config):
     stored_config = json.loads((folder/'rl_agent_config.json').read_text())
     if agent.cfg != stored_config:
         unavailable(config.model, 'Loaded checkpoint configuration differs from verified files')
-    return {'model_id': agent.model_id, 'revision': agent.revision,
+    return {**observe_identity(agent), 'revision': agent.revision,
             'runtime_version': importlib.metadata.version('laya-mlx'),
             'tokenizer_version': importlib.metadata.version('tokenizers'), 'source_hashes': source_hashes,
             **expected_tok.fingerprints, 'checkpoint_config_sha256': _sha(folder/'rl_agent_config.json'),
@@ -129,7 +153,7 @@ class VerifiedInspector:
             unavailable(p.model_id, 'Loaded tokenizer has active truncation/padding', request_id)
         report = inspect_request(self._tokenizer, state, questions, model=p.model_id, max_len=p.max_len,
                                  head_max_len=p.head_max_len, request_id=request_id)
-        report['model'].update(resolved_revision=self._observed['revision'], runtime='laya-mlx',
+        report['model'].update(observed_id=self._observed['model_id'], resolved_revision=self._observed['revision'], runtime='laya-mlx',
                                runtime_version=self._observed['runtime_version'], runtime_revision=p.runtime_revision,
                                adapter=p.adapter_version, qualification=p.status)
         return report
