@@ -11,8 +11,8 @@ import export_v2_results as e
 
 
 def fixture(root,n=3,nq=2,nc=2):
-    cases={'dataset_version':'2','cases':[{'id':f'case-{i:03}','input':f'Explain input {i}','expected':'unclear','source_family_id':f'family-{i}','split':'development'} for i in range(n)]}
-    suite={'experiment_id':'demo','adapter':'generic-question','questions':[{'id':f'q-{i}','definition':{'name':'action','type':'choice','instructions':'Choose','criteria':{'explain':'Explain','unclear':'Cannot decide'}}} for i in range(nq)],'rules':[{'id':'r0','definition':{'name':'free','conditions':[]}}], 'configurations':[{'id':f't-{i}','temperature':None if i==0 else float(i),'lang':'en','model':'fake'} for i in range(nc)],'labels':['explain','unclear'],'baseline':{'question_id':'q-0','rule_id':'r0','config_id':'t-0'}}
+    cases={'schema_version':1,'dataset_id':'demo','dataset_version':'2','cases':[{'id':f'case-{i:03}','input':f'Explain input {i}','expected':'unclear','label_status':'settled','noise_level':'regular','tags':[],'source_family_id':f'family-{i}','split':'development'} for i in range(n)]}
+    suite={'schema_version':1,'dataset_id':'demo','dataset_version':'2','question_type':'choice','experiment_id':'demo','adapter':'generic-question','questions':[{'id':f'q-{i}','variant_kind':'baseline' if i==0 else 'wording','definition':{'name':'action','type':'choice','instructions':'Choose','criteria':{'explain':'Explain','unclear':'Cannot decide'}}} for i in range(nq)],'rules':[{'id':'r0','definition':{'name':'free','conditions':[]}}], 'configurations':[{'id':f't-{i}','temperature':None if i==0 else float(i),'lang':'en','model':'fake'} for i in range(nc)],'labels':['explain','unclear'],'baseline':{'question_id':'q-0','rule_id':'r0','config_id':'t-0'}}
     m={'schema_version':1,'suite':suite,'cases':cases,'suite_hash':e.legacy_hash(suite),'cases_hash':e.legacy_hash(cases),'rule_mode':'replay','mode':'fixture','status':'completed','source_revision':{'revision':'fixture'}}
     root.mkdir(); (root/'inferences').mkdir(); e.write(root/'manifest.json',m)
     for q in suite['questions']:
@@ -34,12 +34,29 @@ class ExportTests(unittest.TestCase):
         before=e.source_snapshot(self.source,None);dest=self.run_export(); info=e.read(dest/'export.json')
         self.assertEqual((info['found'],info['planned'],len(info['partitions'])),(12,12,4))
         self.assertEqual(before,e.source_snapshot(self.source,None))
+        self.assertEqual(info['found'],info['success']+info['error'])
+        self.assertEqual(info['planned'],info['found']+info['missing'])
         self.assertEqual(info['export_bytes'],sum(p.stat().st_size for p in dest.rglob('*') if p.is_file()))
         part=info['partitions'][0];record=json.loads((dest/part['path']).read_text().splitlines()[0],parse_float=e.Decimal)
         self.assertEqual(record['raw_response']['answers']['action']['probabilities']['explain'],e.Decimal('0.123456789012345678901'))
         self.assertEqual(record['raw_response']['logs'],'SDK field retained');self.assertNotIn('logs',record['source_metadata'])
         self.assertTrue(record['source_metadata']['new_sdk_metadata']['keep'])
         self.assertNotEqual(info['config_folders']['t-0'],info['config_folders']['t-1'])
+    def test_long_response_and_empty_export_directory_collision(self):
+        path=next((self.source/'inferences').glob('*.json'));raw=e.read(path)
+        raw['raw_response']['long']='x'*200000;e.write(path,raw)
+        first=self.run_export();second=self.run_export()
+        self.assertNotEqual(first,second)
+        self.assertTrue(any('x'*200000 in p.read_text() for p in second.rglob('*.jsonl')))
+    def test_excluded_whole_pair(self):
+        m=e.read(self.source/'manifest.json',False)
+        m['suite']['exclusions']=[{'question_id':'q-1','rule_id':'r0','config_id':'t-1','reason':'excluded'}]
+        m['suite_hash']=e.legacy_hash(m['suite']);e.write(self.source/'manifest.json',m)
+        for case in m['cases']['cases']:
+            iid=e.legacy_hash(['q-1',None,'t-1',case['id']])[:32]
+            (self.source/'inferences'/f'{iid}.json').unlink()
+        info=e.read(self.run_export()/'export.json')
+        self.assertEqual((info['found'],info['planned'],len(info['partitions'])),(9,9,3))
     def test_errors_partial_and_stale_status(self):
         paths=list((self.source/'inferences').glob('*.json'));paths[0].unlink();raw=e.read(paths[1]);raw.update(status='error',error={'type':'Oops','message':'failed'},payload=None,raw_response=None);e.write(paths[1],raw)
         m=e.read(self.source/'manifest.json');m['status']='running';e.write(self.source/'manifest.json',m)
