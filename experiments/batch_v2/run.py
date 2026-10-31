@@ -30,7 +30,7 @@ def main(argv=None):
         print(json.dumps({'vectors':len(vs),'cases':n,'logical_outcomes':len(vs)*n,'inference_calls':calls,'mode':mode,'rule_mode':rule_mode},indent=2))
         if a.dry_run or not a.validate_only:
             from collections import Counter
-            print(json.dumps({'noise_levels':dict(Counter(c['noise_level'] for c in cases['cases'])),'tags':dict(Counter(t for c in cases['cases'] for t in c['tags'])),'expected':dict(Counter(c['expected'] or 'unscored' for c in cases['cases'])),'exclusions':suite.get('exclusions',[]),'replay_reference_rule':suite['baseline']['rule_id'] if rule_mode=='replay' else None},indent=2))
+            print(json.dumps({'noise_levels':dict(Counter(c['noise_level'] for c in cases['cases'])),'tags':dict(Counter(t for c in cases['cases'] for t in c['tags'])),'expected':dict(Counter(json.dumps(c['expected'],sort_keys=True) if isinstance(c['expected'],dict) else c['expected'] or 'unscored' for c in cases['cases'])),'exclusions':suite.get('exclusions',[]),'replay_reference_rule':suite['baseline']['rule_id'] if rule_mode=='replay' else None},indent=2))
         if a.validate_only or a.dry_run: return 0
         if not n: raise ValueError('Empty cases support validation/dry-run only')
         if a.mode is None: raise ValueError('Select --mode live or --mode fixture explicitly')
@@ -39,3 +39,4 @@ def main(argv=None):
     except (ValueError,OSError,ImportError) as exc:
         print(str(exc),file=sys.stderr); return 2
 if __name__=='__main__': raise SystemExit(main())
+

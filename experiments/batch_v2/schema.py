@@ -59,6 +59,9 @@ def _entries(entries, where):
 
 
 def validate(cases, suite):
+    if suite.get("adapter") == "method-selection":
+        from method_adapter import validate as validate_method
+        return validate_method(cases, suite)
     _object(cases, ('schema_version', 'dataset_id', 'dataset_version', 'cases'), where='cases')
     _object(suite, ('schema_version', 'experiment_id', 'dataset_id', 'dataset_version', 'adapter', 'question_type', 'labels', 'questions', 'rules', 'configurations', 'baseline'), ('exclusions',), 'suite')
     for obj in (cases, suite):
@@ -193,3 +196,4 @@ def validate_runtime(cases, suite):
         _check(all(q['definition']['name'] == expected_name for q in suite['questions']), 'block question name mismatch')
         for case in cases['cases']:
             module.validate_input(case['input'])
+

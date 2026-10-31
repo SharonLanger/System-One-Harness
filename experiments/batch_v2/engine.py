@@ -47,7 +47,7 @@ def adapter_fingerprint():
     return hash_value({p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(HERE.glob('*.py'))})
 
 def model_fingerprint(suite,mode):
-    if mode=='fixture': return {'fixture':hash_value(load(HERE/'examples/generic-choice/responses.json'))}
+    if mode=='fixture': return {'fixture':hash_value(load(Path(suite['fixture_responses']) if suite.get('fixture_responses') else HERE/'examples/generic-choice/responses.json'))}
     values={}
     for cfg in suite['configurations']:
         path=resolve_model(cfg['model'])
@@ -80,6 +80,9 @@ def execute(input_data,question,rule,suite,config,registry):
     from laya_context_router.answers.rules import RulesConfig
     from laya_context_router.block_runtime.catalog import Catalog, TypedRule
     from laya_context_router.questions.models import Question
+    if suite["adapter"] == "method-selection":
+        from method_adapter import execute as execute_method
+        return execute_method(input_data, question, rule, suite, config, registry)
     name=question['definition']['name']
     class ExperimentCatalog(Catalog):
         def rule(self,reference):
@@ -116,7 +119,7 @@ class RecordedAgent:
     def predict(self,*args,**kwargs): return deepcopy(self.raw)
 
 def row_base(manifest,q,r,c,case,iid):
-    return {**deepcopy(case),'case_id':case['id'],'experiment_id':manifest['suite']['experiment_id'],'run_id':manifest['run_id'],'question_id':q['id'],'rule_id':r['id'],'config_id':c['id'],'inference_id':iid,'inference_shared':manifest['rule_mode']=='replay','dataset_version':manifest['cases']['dataset_version'],'input_hash':hash_value(case['input']),'evaluation_kind':'rule-replay' if manifest['rule_mode']=='replay' and r['id']!=manifest['suite']['baseline']['rule_id'] else 'direct','question_hash':hash_value(q),'rule_hash':hash_value(r),'config_hash':hash_value(c),'_labels':manifest['suite']['labels']}
+    return {**deepcopy(case),'case_id':case['id'],'experiment_id':manifest['suite']['experiment_id'],'run_id':manifest['run_id'],'question_id':q['id'],'rule_id':r['id'],'config_id':c['id'],'inference_id':iid,'inference_shared':manifest['rule_mode']=='replay','dataset_version':manifest['cases']['dataset_version'],'input_hash':hash_value(case['input']),'evaluation_kind':'rule-replay' if manifest['rule_mode']=='replay' and r['id']!=manifest['suite']['baseline']['rule_id'] else 'direct','question_hash':hash_value(q),'rule_hash':hash_value(r),'config_hash':hash_value(c),'_labels':manifest['suite'].get('labels', [])}
 
 def worker(root,config_id):
     with worker_errors(Path(root)/f'worker-{config_id}.jsonl') as diagnostics:
@@ -131,7 +134,7 @@ def _worker(root,config_id,diagnostics):
     config=RunConfig.from_dict({k:v for k,v in cfg.items() if k!='id'})
     diagnostics.context={'config_id':config_id}
     baseline=next(r for r in suite['rules'] if r['id']==suite['baseline']['rule_id'])
-    fixture=load(HERE/'examples/generic-choice/responses.json') if m['mode']=='fixture' else None
+    fixture=load(Path(suite['fixture_responses']) if suite.get('fixture_responses') else HERE/'examples/generic-choice/responses.json') if m['mode']=='fixture' else None
     def loader(model,**kwargs):
         import laya_mlx
         return laya_mlx.load(str(resolve_model(model)),local_files_only=True,**kwargs)
@@ -152,7 +155,10 @@ def _worker(root,config_id,diagnostics):
                 diagnostics.context={'config_id':config_id,'question_id':q['id'],'rule_id':rule['id'],'case_id':case['id'],'inference_id':iid}
                 start_rule=time.monotonic(); row=row_base(m,q,rule,cfg,case,iid)
                 try:
-                    if not ip.exists():
+                    method_mode = suite["adapter"] == "method-selection"
+                    from method_evidence import read as read_evidence, write as write_evidence
+                    saved_evidence = read_evidence(root, iid) if method_mode else None
+                    if (saved_evidence is None) if method_mode else (not ip.exists()):
                         if fixture is not None:
                             key='|'.join([q['id'],config_id,case['id']]); raw=fixture['responses'][key]
                             boundary=Boundary(RecordedAgent(raw))
@@ -163,6 +169,9 @@ def _worker(root,config_id,diagnostics):
                         cap=m['limits'].get('max_calls')
                         if cap is not None and count>=cap: return
                         save(attempts,{'count':count+1})
+                        if suite['adapter']=='method-selection':
+                            with (root/'attempt-events.jsonl').open('a') as ledger:
+                                ledger.write(json.dumps({'inference_id':iid,'question_id':q['id'],'config_id':config_id,'case_id':case['id']})+'\n');ledger.flush();os.fsync(ledger.fileno())
                         save(root/'active.json',{'config_id':config_id,'question_id':q['id'],'rule_id':rule['id'],'case_id':case['id'],'inference_id':iid,'started_utc':now()})
                         actual=baseline if m['rule_mode']=='replay' else rule
                         result=None; error=None
@@ -172,9 +181,13 @@ def _worker(root,config_id,diagnostics):
                         # Preserve malformed non-JSON SDK values without hiding a technical error.
                         try: json.dumps(record,allow_nan=False)
                         except (ValueError,TypeError): record['raw_response']={'unserializable_repr':repr(boundary.raw)}
-                        save(ip,record)
+                        if method_mode:
+                            write_evidence(root,q["id"],cfg["id"],iid,record)
+                        else: save(ip,record)
                         (root/'active.json').unlink(missing_ok=True)
-                    record=load(ip)
+                    record=read_evidence(root,iid) if method_mode else load(ip)
+                    if suite['adapter']=='method-selection' and (record.get('raw_response') or {}).get('usage',{}).get('truncated'):
+                        raise ValueError('truncated model response')
                     if record['error']: raise RuntimeError(record['error']['type']+': '+record['error']['message'])
                     if m['rule_mode']=='direct' or rule['id']==baseline['id']:
                         output=record['baseline_result']; rule_seconds=record['baseline_rule_seconds']
@@ -192,7 +205,7 @@ def _worker(root,config_id,diagnostics):
 
 def create(cases,suite,mode,rule_mode,limits):
     validate(cases,suite)
-    supported={('generic-question','choice'),('generic-question','noul'),('requested-action','choice'),('context-scope','choice')}
+    supported={('generic-question','choice'),('generic-question','noul'),('requested-action','choice'),('context-scope','choice'),('method-selection','choice')}
     if rule_mode=='replay' and (suite['adapter'],suite['question_type']) not in supported: raise ValueError('Replay parity not verified for adapter/type')
     parent=HERE/'results'/suite['experiment_id']; parent.mkdir(parents=True,exist_ok=True)
     root=allocate(parent); rid=root.name
@@ -257,6 +270,9 @@ def run(root):
     finally:
         if m['status']!='interrupted': m['status']='completed'
         m['unique_inference_seconds']=sum((load(p).get('inference_seconds') or 0) for p in (root/'inferences').glob('*.json'))
+        if m['suite']['adapter']=='method-selection':
+            from method_evidence import all_records
+            m['unique_inference_seconds']=sum(r.get('inference_seconds') or 0 for r in all_records(root))
         m['ended_utc']=now(); m['wall_seconds']=m.get('wall_seconds',0)+time.monotonic()-start
         m['inference_attempts']=load(root/'attempts.json')['count'] if (root/'attempts.json').exists() else 0
         rows=collect(root)
@@ -264,3 +280,4 @@ def run(root):
         if any(r['status']!='completed' for r in rows): m['status']='partial'
         save(root/'manifest.json',m)
     return 1 if failure else 0
+
