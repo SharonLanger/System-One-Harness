@@ -1,10 +1,11 @@
 {
   "name": "requested_action",
   "type": "choice",
-  "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits.",
+  "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
   "criteria": {
-    "explain": "Understand production or test code without changing it.",
-    "generate_tests": "Create additional tests using existing code as reference.",
-    "modify_code": "Fix, refactor, or implement production or test code."
+    "explain": "Explain production or test code; no edits.",
+    "generate_tests": "Add new tests / additional coverage.",
+    "modify_code": "Fix, refactor or implement code, including existing-test repair.",
+    "unclear": "Cannot select one supported action: missing intent, competing actions, or none fits. Non-actionable."
   }
 }

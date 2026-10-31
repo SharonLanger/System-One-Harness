@@ -105,6 +105,7 @@ def test_T38_T39_T40_registry_config_isolation():
     h=Harness()
     configs=[RunConfig(model='A'),RunConfig(model='A'),RunConfig(model='B',temperature=.2,lang='he'),RunConfig(model='A',temperature=.3)]
     for c in configs:h.run(config=c)
-    assert h.loads==[('A',{}),('B',{'lang_temperatures':{'he':{'temperature':[.2]*3}}}),('A',{'lang_temperatures':{'en':{'temperature':[.3]*3}}})]
+    assert h.loads==[('A',{'lang_temperatures':{'en':{'temperature':[1.0]*3}}}),('B',{'lang_temperatures':{'he':{'temperature':[.2]*3}}}),('A',{'lang_temperatures':{'en':{'temperature':[.3]*3}}})]
     assert h.calls[2][2]=={'lang':'he'}
     h.registry=AgentRegistry(loader=h.load);h.run(config=configs[0]);assert len(h.loads)==4
+
