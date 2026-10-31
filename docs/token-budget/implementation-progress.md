@@ -94,3 +94,11 @@ Expected red: absent inspection/zero-forward guard and private state snapshot (1
 The boundary validates before loading, snapshots state/questions, resolves actual agent/capability, measures every question, refuses typed errors before prediction, and otherwise sends the inspected snapshot unchanged through normal SDK prediction/response validation. Provider errors are rebound to the current request ID. Unexpected inspection details are not copied into the public report. Budget logging is a separate best-effort catch; TimeoutError propagates. The default provider retains pinned SDK validation and checks immutable tokenizer/method semantics; README/boundary/sandbox point to migration guidance. Full Python gate pending.
 
 Full Python enforcement gate passed: 1,353 passed, 3 existing skips in 271.82s, captured exit 0 (`09-green.exit`). Includes all unchanged sandbox, hook, response-validation and independent tokenizer/SDK parity tests plus D006 mutation checks. No inference-on-rejection bypass was needed.
+
+Commit 9 published: `4d86b18157d542b02b9b19438dbd5563bba275a5`.
+
+## Commit 10 — block propagation and minimal diagnostic consumer
+
+Expected red: minimal diagnostic consumer module absent (1 failed, 4 already-green propagation assertions). Both legacy QuestionBlock and V2 Block.run already propagate the exact boundary error object/report without downstream interpretation/enrichment/reduction or prediction. Dynamic V2 prepared instructions are measured, not the template. A minimal example exposes the report while preserving fitting results and adds no retry/trimming/recovery policy. The existing sandbox still returns generic model_error with one actionable shared boundary report and never enters its optional fallback on rejection. Added explicit stale-ID validator correlation regression requested in parent review; ordinary malformed-input identity remains covered by increment 9. Command: `python -m pytest -q tests/test_token_budget_blocks.py`.
+
+Green propagation/legacy/block-runtime/flow regression: 150 passed in 20.26s, captured exit 0. No production block or flow behavior changed in this increment.

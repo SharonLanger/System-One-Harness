@@ -1,0 +1,18 @@
+..F..                                                                    [100%]
+=================================== FAILURES ===================================
+___________ test_minimal_consumer_receives_full_report_without_retry ___________
+
+instrumentation = (<laya_context_router.laya.registry.AgentRegistry object at 0x7f5f8f4a5d90>, [], [])
+
+    def test_minimal_consumer_receives_full_report_without_retry(instrumentation):
+>       assert importlib.util.find_spec('examples.budget_diagnostics') is not None, 'missing minimal diagnostic consumer'
+E       AssertionError: missing minimal diagnostic consumer
+E       assert None is not None
+E        +  where None = <function find_spec at 0x7f5f90469440>('examples.budget_diagnostics')
+E        +    where <function find_spec at 0x7f5f90469440> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+tests/test_token_budget_blocks.py:55: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_token_budget_blocks.py::test_minimal_consumer_receives_full_report_without_retry
+1 failed, 4 passed in 1.19s
