@@ -11,6 +11,8 @@ BASE={'type':'choice','instructions':'Choose the relevant function.','criteria':
 class MockBackend:
     def __init__(self):
         self.truncation=None; self.padding=None; self.normalizer='mock'; self.vocabulary=[]
+    def encode(self, text, **kwargs):
+        return SimpleNamespace(ids=[])
     def to_str(self):
         return json.dumps(vars(self),sort_keys=True)
     def add_tokens(self,values):
@@ -21,7 +23,7 @@ class MockTokenizer:
     """Scripted IDs take precedence; lexical fallback supplies convenient test lengths."""
     def __init__(self,kind='typed',overrides=None):
         self.backend=MockBackend();self.calls=[];self.overrides=overrides or {}
-        self.fingerprints={'tokenizer_sha256':'mock-vocabulary','config_sha256':'mock-'+kind,'tokenizer_version':'mock'}
+        self.metadata={'source':'mock','configuration':kind}
         for i,name in enumerate(('cls','sep','pad','mask')):
             setattr(self,name+'_token','<'+name+'>');setattr(self,name+'_token_id',i)
     def encode(self,text):

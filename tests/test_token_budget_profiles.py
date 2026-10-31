@@ -17,11 +17,8 @@ def api():
 def observation():
     # Controlled metadata only: matching these fields does not qualify a real runtime.
     m=api();p=m.TYPED
-    return {'model_id':p.model_id,'revision':p.revision,
-            'runtime_version':p.runtime_version,'tokenizer_version':p.tokenizer_version,
-            'source_hashes':dict(m.SOURCE_HASHES),'tokenizer_sha256':p.tokenizer_sha256,
-            'config_sha256':p.config_sha256,'checkpoint_config_sha256':p.checkpoint_config_sha256,
-            'max_len':1024,'head_max_len':256,'hooks_present':False,'backend_matches_files':True}
+    return {'model_id':p.model_id,'revision':'observed-revision',
+            'max_len':1024,'head_max_len':256,'hooks_present':False,'tokenizer_available':True}
 
 
 
@@ -35,9 +32,8 @@ def test_verified_identity_is_immutable_and_model_specific():
 
 
 @pytest.mark.parametrize('field,value',[
- ('model_id','other'),('revision','main'),('runtime_version','0.6.1'),('source_hashes',{}),
- ('tokenizer_sha256','bad'),('config_sha256','bad'),('checkpoint_config_sha256','bad'),
- ('max_len',8192),('head_max_len',512),('hooks_present',True),('backend_matches_files',False),
+ ('model_id','other'),('max_len',8192),('head_max_len',512),
+ ('hooks_present',True),('tokenizer_available',False),
 ])
 def test_mismatch_refuses_unknown_counts(field,value):
     m=api();obs=observation();obs[field]=value
@@ -73,3 +69,26 @@ def test_verified_adapter_uses_shared_sdk_lock_and_detects_changes(monkeypatch):
     with pytest.raises(InspectionUnavailable):adapter.inspect('hello',{'q':BASE},request_id='s')
     agent.cfg['max_len']=1024;agent.hooks.append(object())
     with pytest.raises(InspectionUnavailable):adapter.inspect('hello',{'q':BASE},request_id='s')
+
+
+def test_loaded_tokenizer_uses_reviewed_limits_without_asset_files(tmp_path,monkeypatch):
+    import sys,types
+    m=api();tok=tokenizer();common=mock_runtime()
+    class Agent:
+        def _check_question(self,*args):pass
+    Agent.__module__='laya_mlx.agent'
+    agent=Agent();agent.model_id=m.TYPED.model_id;agent.model_dir=tmp_path;agent.cfg={'max_len':1024,'head_max_len':256};agent.tok=tok;agent.hooks=[]
+    package=types.ModuleType('laya_mlx');package.__path__=[]
+    module=types.ModuleType('laya_mlx.agent');module.Agent=Agent
+    monkeypatch.setitem(sys.modules,'laya_mlx',package)
+    monkeypatch.setitem(sys.modules,'laya_mlx.agent',module)
+    monkeypatch.setitem(sys.modules,'laya_mlx.common',common)
+    monkeypatch.setitem(sys.modules,'laya_mlx.hooks',SimpleNamespace(compose_hooks=lambda x:x))
+    from pathlib import Path
+    monkeypatch.setattr(Path,'read_bytes',lambda *a:pytest.fail('asset file read'))
+    from token_budget_support import BASE
+    report=m.verified_provider(agent,RunConfig()).inspect('hello',{'q':BASE})
+    assert report['tokenizer']=={'source':'loaded_agent_tokenizer','runtime':'laya-mlx'}
+    assert report['limits']['provenance']=='reviewed_model_limits'
+    assert report['model']['qualification']=='reviewed_limits_live_unverified'
+    assert report['model']['resolved_revision'] is None

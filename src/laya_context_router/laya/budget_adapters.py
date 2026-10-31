@@ -4,39 +4,9 @@ Encoding/rendering mirrors mizorewww/laya-mlx at 2159c6c (Apache-2.0).
 This implementation adds unrestricted component accounting instead of truncation.
 The caller's public question validation remains authoritative.
 """
+from .model_limits import OPTION_TEXT_LIMIT
 from copy import deepcopy
-import hashlib
 import json
-from pathlib import Path
-import threading
-
-
-class ExactTokenizer:
-    """Tokenizer-only inspection, loaded explicitly without weights or SDK imports."""
-    def __init__(self, vocabulary, configuration):
-        from tokenizers import Tokenizer
-        vocabulary, configuration = Path(vocabulary), Path(configuration)
-        data, config_bytes = vocabulary.read_bytes(), configuration.read_bytes()
-        self.fingerprints = {'tokenizer_sha256': hashlib.sha256(data).hexdigest(),
-                             'config_sha256': hashlib.sha256(config_bytes).hexdigest()}
-        self.backend = Tokenizer.from_str(data.decode('utf-8'))
-        self.backend.no_padding()
-        self.backend.no_truncation()
-        self.lock = threading.RLock()
-        config = json.loads(config_bytes)
-        for name in ('cls_token', 'sep_token', 'pad_token', 'mask_token'):
-            value = config.get(name)
-            if isinstance(value, dict):
-                value = value.get('content')
-            token_id = self.backend.token_to_id(value) if isinstance(value, str) else None
-            if token_id is None:
-                raise ValueError(f'missing {name}')
-            setattr(self, name, value)
-            setattr(self, name + '_id', token_id)
-
-    def encode(self, text):
-        with self.lock:
-            return self.backend.encode(text, add_special_tokens=False).ids
 
 
 def serialize_state(state):
@@ -119,7 +89,7 @@ def inspect_head(tok, question, *, head_max_len, question_id=None):
     """Keep stage-local loss separate from final content retention."""
     parts = encode_question(tok, question)
     raw = parts['option_ids']
-    initial = [[tok.mask_token_id] + ids[:48] for ids in raw]
+    initial = [[tok.mask_token_id] + ids[:OPTION_TEXT_LIMIT] for ids in raw]
     allowance = head_max_len - sum(map(len, initial))
     span_cap = max(4, (head_max_len - 16) // max(1, len(initial))) if allowance < 16 else None
     spans = [span[:span_cap] if span_cap is not None else span[:] for span in initial]
@@ -133,8 +103,8 @@ def inspect_head(tok, question, *, head_max_len, question_id=None):
                         'after_initial_cap_text_tokens': len(capped)-1,
                         'shared_head_span_limit': span_cap,
                         'after_shared_head_text_tokens': len(span)-1})
-        if len(original) > 48:
-            violations.append(violation('option_text', question_id, len(original), 48, len(capped)-1,
+        if len(original) > OPTION_TEXT_LIMIT:
+            violations.append(violation('option_text', question_id, len(original), OPTION_TEXT_LIMIT, len(capped)-1,
                                         stage='initial_option_cap', unit='option_text_tokens', option_key=key, option_index=index))
         if len(span) < len(capped):
             violations.append(violation('shared_head_option', question_id, len(capped), span_cap, len(span),
@@ -153,9 +123,9 @@ def inspect_request(tok, state, questions, *, model, max_len, head_max_len, requ
     from .budget import make_report
     report = make_report(model, request_id=request_id)
     report.update(inspection_status='complete', questions=[],
-                  tokenizer=deepcopy(getattr(tok, 'fingerprints', None)),
+                  tokenizer=deepcopy(getattr(tok, 'metadata', None)),
                   limits={'sequence_tokens': max_len, 'head_allocation_tokens': head_max_len,
-                          'initial_option_text_tokens': 48, 'provenance': 'pinned_runtime_profile'})
+                          'initial_option_text_tokens': OPTION_TEXT_LIMIT, 'provenance': 'reviewed_model_limits'})
     state_ids = encode_state(tok, state)
     for name, question in questions.items():
         head = inspect_head(tok, question, head_max_len=head_max_len, question_id=name)

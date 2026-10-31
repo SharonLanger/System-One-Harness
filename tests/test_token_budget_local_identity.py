@@ -18,9 +18,8 @@ def test_bound_local_model_identity_is_accepted(tmp_path):
 
 
 @pytest.mark.parametrize('field,value',[
- ('revision','main'),('revision',None),('runtime_version','other'),('tokenizer_version','other'),
- ('source_hashes',{}),('tokenizer_sha256','bad'),('config_sha256','bad'),('checkpoint_config_sha256','bad'),
- ('max_len',8192),('head_max_len',512),('hooks_present',True),('backend_matches_files',False),('local_identity',None),
+ ('max_len',8192),('head_max_len',512),('hooks_present',True),
+ ('tokenizer_available',False),('local_identity',None),
 ])
 def test_local_path_keeps_all_refusals(tmp_path,field,value):
     obs=local_observation(tmp_path);obs[field]=value
