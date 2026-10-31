@@ -1,0 +1,25 @@
+{
+  "seed": 20261031,
+  "main_call_cap": 1600,
+  "smoke_call_cap": 8,
+  "rule_ids": [
+    "r0-current",
+    "r1-ungated",
+    "r2-answer-060",
+    "r3-answer-080",
+    "r4-gap-010",
+    "r5-gap-030",
+    "r6-entropy-050",
+    "r7-entropy-075",
+    "r8-combined-loose",
+    "r9-combined-strict"
+  ],
+  "temperatures": [
+    0.5,
+    0.8,
+    1.0,
+    1.1
+  ],
+  "review_status": "self-reviewed; independent review outstanding",
+  "cases_sha256": "17041da2fc17d674ee56121d54ab9bccb84520beef138cd36eafcc469547cf91"
+}
