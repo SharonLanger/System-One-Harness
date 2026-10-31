@@ -17,6 +17,11 @@ same response later. This export reduces duplication and makes sharing and
 analysis easier; it does not accelerate the already running model or stop V2
 from writing its current files.
 
+**Disk-space limitation:** this is a copy/export operation. The original V2 files
+remain, so conversion initially needs additional disk space. It does not reclaim
+space automatically or prevent future V2 runs from producing their current
+duplicate files. Direct compact saving during future runs is a separate follow-up.
+
 ## Shared definitions, then a folder per temperature
 
 Write a new dated folder under `experiments/exports/<campaign-id>/`, using the
@@ -56,6 +61,54 @@ original inference ID. IDs are scoped to the source run/catalog, whose hash is
 recorded. Never merge different questions, choice orders, temperatures, dataset
 versions, fixture/live modes or repetitions just because their case IDs match.
 
+## Prediction record contract
+
+Use this version-1 envelope for each saved inference. The example shows a failed
+call; IDs are illustrative and must be copied/resolved from the source, never
+generated from this example.
+
+```json
+{"inference_id":"source-inference-id","case_id":"case-042","question_id":"q7-contrast-examples","config_id":"t-100","status":"error","raw_response":null,"error":{"message":"source error text"},"timing":{},"availability":{},"source_metadata":{}}
+```
+
+- Required fields are exactly the envelope fields shown above. Status is
+  `success` or `error`, derived from source inference outcome, not rule acceptance.
+  A valid `unclear` prediction is a success.
+- `raw_response` contains the complete source raw response, including all original
+  score/confidence channels and unknown SDK fields, without rounding or
+  normalization. Preserve a returned raw response even when interpretation failed.
+  Null means the source has no response; never invent a probability distribution.
+- `error` is null when absent; otherwise retain the source error structure/text.
+  `timing` and `availability` preserve recorded fields under their source names.
+  Empty objects mean unavailable metadata, not zero duration or known availability.
+- `source_metadata` retains additional inference metadata not represented above
+  and not explicitly excluded below. Do not silently drop unfamiliar fields.
+  Record source-to-export field mappings in the implementation documentation.
+- The removal allowlist is: duplicated request/input/question/config definitions
+  already verified against the shared catalog; debug-log fields outside the raw
+  response; and derived baseline block/rule results reproducible by the pinned
+  evaluator. Do not remove SDK raw-response fields merely because their names
+  resemble logs. Unsupported or ambiguous source shapes fail validation.
+- Do not add prediction records for missing calls. Preserve original inference
+  identity, which also distinguishes repetitions; the catalog/run scopes all IDs.
+  The raw-response value occurs only once in the envelope.
+
+## Independent export and collection status
+
+In `export.json`, use separate fields:
+- `export_status: "complete"` means conversion and verification succeeded.
+- `collection_status: "complete" | "partial"` means all planned inference
+  records are present or some are missing; it does not mean all calls succeeded.
+- `source_execution_status` preserves the source manifest status separately,
+  including unknown/stale status. A failed report builder does not erase complete
+  prediction collection.
+
+Store `planned`, `found`, `success`, `error` and `missing` counts globally and per
+partition. Require `found = success + error` and `planned = found + missing` after
+unique-ID/grid validation. A successful export may therefore say:
+"Export complete; collection partial; 20,000 of 35,000 records found."
+Only validated published exports receive `export_status: "complete"`.
+
 ## Standalone flow
 
 Proposed entry point: `experiments/tools/export_v2_results.py`, with ordinary
@@ -93,7 +146,21 @@ PR from this design.
    and no apparently complete export. Rerunning the converter may start fresh;
    a converter-resume system is unnecessary for this first version.
 
+Before publication, re-read every exported line and verify it against the source
+inference: identity, reconstructed request, raw-response values and precision,
+errors, timing, availability and retained metadata. Verify unique IDs, partition
+membership, counts and file checksums with bounded memory. Use lossless numeric
+handling where needed; comparing already-rounded floating-point values is not a
+precision check.
+
+Report total source-folder bytes, source-inference bytes and final export bytes
+separately, plus each partition's byte size. Five hundred records is a grouping
+rule, not a file-size guarantee. The small and full-scale fixtures must exercise
+long responses as well as normal responses.
+
 The source folder remains available. Do not delete its files automatically.
+Cleanup is a later explicit user decision after successful verification; the
+exporter must have no automatic deletion step.
 The converter makes zero model calls and imports no SDK/model loader. Export is
 an offline copy, not a way to resume model inference or combine old three-choice
 and new four-choice results.
@@ -132,13 +199,13 @@ reported during the existing run; that still needs the traceback and stage.
    question JSONL files and a small export manifest.
 2. Test with a small synthetic V2 run: all definitions resolve, raw responses and
    precision round-trip, every record reaches its correct question/temperature file,
-   all 70 completed partitions have 500 records, accepted unclear and errors survive, no source byte
+   valid unclear predictions and errors survive, no source byte
    changes, and no model call occurs. Reject payload/hash/ID conflicts.
 3. Test interrupted input: missing records stay missing and the export reports
    partial source execution. Reject active-source use and avoid publishing a
    complete destination after converter failure or disk-full.
 4. Stream a synthetic 35,000-record export to measure bytes, elapsed time and peak
-   memory. Synthetic test outputs are temporary and are not merged into Git.
+   memory. Verify all 70 completed partitions have 500 records. Synthetic test outputs are temporary and are not merged into Git.
 5. Use the converter on this experiment after it stops, then add the small offline
    analyzer and verify metric/native-rule parity on the synthetic reference.
 
@@ -154,3 +221,17 @@ or storage conversion is needed while it runs. If prediction collection finishes
 but the old report builder fails, the saved inference files may still be usable
 by this offline exporter. Preserve the traceback and source folder; report
 failure must not be confused with loss of every saved model response.
+
+## Handoff to Sol
+
+Sol implements this plan in a separate implementation PR using small testable
+commits: record/catalog mapping and fixtures; streaming writer and verification;
+then the PyCharm entry point and full-scale checks. This design PR authorizes no
+live model run, source cleanup or changes to the running V2 experiment.
+The offline analyzer follows exporter validation as described above.
+
+If source formats, evaluator reuse or safe source-state detection cannot satisfy
+this contract, stop the affected implementation and ask Astra to review the
+deviation and update the plan before proceeding. Do not silently broaden scope.
+Report tests, measured sizes/memory and remaining limitations when handing back
+the implementation PR; do not merge it without authorization.
