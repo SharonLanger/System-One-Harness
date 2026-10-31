@@ -148,7 +148,7 @@ def run(prompt, *, project_root, config, registry, logger, max_context_chars=_CA
         if not isinstance(prompt, str):
             return finish(Failure('invalid_prompt', 'input'))
         if not prompt.strip():
-            return finish(Noop('empty_prompt'))
+            return finish(Noop('ineligible_request'))
         stage = 'resolution'
         references = detect_configured_references(prompt, {
             'include_patterns': [r'\.ts$'], 'exclude_patterns': []})

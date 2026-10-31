@@ -115,7 +115,8 @@ def test_P04_config_is_explicitly_rooted_without_mutation(h, monkeypatch, tmp_pa
 
 @pytest.mark.parametrize('prompt', ['', ' \n ', 'Explain algorithms', 'Explain `source.js`'])
 def test_P05_blank_no_reference_and_unsupported_extension(h, prompt):
-    assert isinstance(h.run(prompt), Noop)
+    expected = 'ineligible_request' if not prompt.strip() else 'no_file'
+    assert h.run(prompt) == Noop(expected)
     assert not h.calls and not h.prepared()
 
 
