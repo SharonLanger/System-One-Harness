@@ -45,9 +45,9 @@ def rate(row,key):
 
 def table(rows):
     lines=['| Rule | Correct selection | Wrong selection | Missed selection | Correct refusal | Unsafe selection | Evaluated / planned |','| --- | ---: | ---: | ---: | ---: | ---: | ---: |']
-    for r in rows:lines.append('| '+str(r.get('rule_id',r.get('config_id','total')))+' | '+' | '.join(str(r[k]) for k in ['correct_selection','wrong_selection','missed_selection','correct_refusal','unsafe_selection'])+f" | {r['evaluated']}/{r['planned']} |")
+    for r in rows:lines.append('| '+str((r.get('question_id','')+' / ' if 'rule_id' in r and 'question_id' in r else '')+r.get('rule_id',r.get('config_id','total')))+' | '+' | '.join(str(r[k]) for k in ['correct_selection','wrong_selection','missed_selection','correct_refusal','unsafe_selection'])+f" | {r['evaluated']}/{r['planned']} |")
     lines+=['','| Rule | Selection precision | Selection yield | Refusal correctness | End to end | Completion |','| --- | ---: | ---: | ---: | ---: | ---: |']
-    for r in rows:lines.append('| '+str(r.get('rule_id',r.get('config_id','total')))+' | '+' | '.join(rate(r,k) for k in ['selection_precision','correct_selection_yield','refusal_correctness','end_to_end_correctness','technical_completion'])+' |')
+    for r in rows:lines.append('| '+str((r.get('question_id','')+' / ' if 'rule_id' in r and 'question_id' in r else '')+r.get('rule_id',r.get('config_id','total')))+' | '+' | '.join(rate(r,k) for k in ['selection_precision','correct_selection_yield','refusal_correctness','end_to_end_correctness','technical_completion'])+' |')
     return '\n'.join(lines)+'\n'
 
 def summarize(root,split='development',allow_partial=False,finalists=None):
@@ -138,7 +138,7 @@ def summarize(root,split='development',allow_partial=False,finalists=None):
         row=aggregate([r for r in vectors if r['question_id']==q['id'] and r['rule_id']==rule['id']]);row.update(question_id=q['id'],rule_id=rule['id']);pooled.append(row)
     pair('temperature-totals',temperature_totals,'\n'.join(f"## Temperature {r['temperature']}\n\n"+table([r]) for r in temperature_totals))
     pair('question-rule-totals',pooled,'\n'.join(summary)+'\n## Pooled across temperatures\n\n'+table(pooled))
-    pair('raw-answers',raw_rows,'\n'.join('## Temperature '+str(c['temperature'])+'\n\n'+ '\n'.join(f"- {r['question_id']}: method {r['method_correct']}/{r['evaluated']}; multiple {r['multiple_correct']}/{r['evaluated']}" for r in raw_rows if r['config_id']==c['id']) for c in suite['configurations']))
+    pair('raw-answers',raw_rows,'\n'.join('## Temperature '+str(c['temperature'])+'\n\n'+ '| Question | Method correct | Multiple correct | Evaluated / planned |\n| --- | ---: | ---: | ---: |\n'+ '\n'.join(f"| {r['question_id']} | {r['method_correct']} | {r['multiple_correct']} | {r['evaluated']}/{r['planned']} |" for r in raw_rows if r['config_id']==c['id']) for c in suite['configurations']))
     totals={'logical_outcomes':aggregate(vectors),'unique_evidence':len(raw),'prediction_attempts':len(events),'temperature_totals':temperature_totals,'question_rule_totals':pooled,'complete':complete,'cases_hash':m['cases_hash'],'suite_hash':m['suite_hash'],'split':split}
     emit('totals.json',json.dumps(totals,indent=2)+'\n')
     emit('reasons.json',json.dumps([{'question_id':k[0],'rule_id':k[1],'config_id':k[2],'reason':k[3],'count':v} for k,v in sorted(reasons.items())],indent=2)+'\n')
