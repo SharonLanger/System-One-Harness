@@ -173,4 +173,82 @@ class OrchestrationChecks(unittest.TestCase):
                 with self.assertRaises(OSError):reporting.atomic(p,'replacement')
             self.assertEqual(p.read_text(),'previous')
 
+class OfflineLoaderChecks(unittest.TestCase):
+    def assets(self,root):
+        for name in ('rl_agent_config.json','encoder/config.json','model.safetensors'):
+            p=root/name;p.parent.mkdir(parents=True,exist_ok=True);p.write_text('{}')
+
+    def modules(self,cached,load):
+        from types import SimpleNamespace
+        from unittest.mock import Mock
+        lookup=Mock(return_value=cached)
+        modules={'huggingface_hub':SimpleNamespace(try_to_load_from_cache=lookup),
+                 'laya_mlx':SimpleNamespace(load=load)}
+        return modules,lookup
+
+    def test_partial_snapshot_with_symlink_reaches_sdk_offline(self):
+        from unittest.mock import Mock
+        import os
+        with tempfile.TemporaryDirectory(dir=OUTPUT) as tmp:
+            root=Path(tmp)/'snapshots'/'revision';root.mkdir(parents=True);self.assets(root)
+            blob=Path(tmp)/'blobs'/'config';blob.parent.mkdir();blob.write_text('{}')
+            (root/'rl_agent_config.json').unlink();(root/'rl_agent_config.json').symlink_to(blob)
+            load=Mock(return_value='agent');modules,lookup=self.modules(str(root/'rl_agent_config.json'),load)
+            with patch.dict(sys.modules,modules),patch.dict(os.environ,{},clear=False):
+                self.assertEqual(run.real_local_loader('org/model',lang_temperatures={'en':{'temperature':[.2]*3}}),'agent')
+                self.assertEqual(os.environ['HF_HUB_OFFLINE'],'1')
+                self.assertEqual(os.environ['TRANSFORMERS_OFFLINE'],'1')
+            lookup.assert_called_once_with('org/model','rl_agent_config.json')
+            load.assert_called_once_with(str(root),local_files_only=True,lang_temperatures={'en':{'temperature':[.2]*3}})
+            self.assertFalse((root/'LICENSE').exists())
+
+    def test_missing_anchor_or_core_assets_never_invokes_sdk(self):
+        from unittest.mock import Mock
+        import os
+        for cached in (None,object()):
+            load=Mock();modules,lookup=self.modules(cached,load)
+            with patch.dict(sys.modules,modules),patch.dict(os.environ):
+                with self.assertRaisesRegex(RuntimeError,'rl_agent_config'):run.real_local_loader('org/model')
+            load.assert_not_called()
+        with tempfile.TemporaryDirectory(dir=OUTPUT) as tmp:
+            root=Path(tmp);self.assets(root)
+            for name in ('rl_agent_config.json','encoder/config.json','model.safetensors'):
+                p=root/name;p.unlink()
+                load=Mock();modules,lookup=self.modules(None,load)
+                with patch.dict(sys.modules,modules),patch.dict(os.environ):
+                    with self.assertRaisesRegex(RuntimeError,'required assets'):run.real_local_loader(str(root))
+                load.assert_not_called();lookup.assert_not_called();p.write_text('{}')
+            p=root/'model.safetensors';p.unlink();p.symlink_to(root/'missing-blob')
+            load=Mock();modules,lookup=self.modules(None,load)
+            with patch.dict(sys.modules,modules),patch.dict(os.environ):
+                with self.assertRaisesRegex(RuntimeError,'model.safetensors'):run.real_local_loader(str(root))
+            load.assert_not_called()
+
+    def test_local_path_bypasses_hub_lookup(self):
+        from unittest.mock import Mock
+        import os
+        with tempfile.TemporaryDirectory(dir=OUTPUT) as tmp:
+            root=Path(tmp);self.assets(root);load=Mock(return_value='agent');modules,lookup=self.modules(None,load)
+            with patch.dict(sys.modules,modules),patch.dict(os.environ):run.real_local_loader(str(root))
+            lookup.assert_not_called();load.assert_called_once_with(str(root),local_files_only=True)
+
+    def test_sdk_missing_tokenizer_is_a_configuration_failure(self):
+        from unittest.mock import Mock
+        import os
+        d=run.validate(run.load_json(HERE/'apple-choice'/'experiment.json'))
+        with tempfile.TemporaryDirectory(dir=OUTPUT) as tmp:
+            root=Path(tmp);self.assets(root)
+            modules,lookup=self.modules(str(root/'rl_agent_config.json'),Mock(side_effect=FileNotFoundError('tokenizer/tokenizer.json')))
+            p=root/'report.json'
+            with patch.dict(sys.modules,modules),patch.dict(os.environ):
+                r=run.execute_configuration(d,d['configurations'][0],p)
+            self.assertEqual(r['status'],'failed');self.assertEqual(r['configuration_errors'],1)
+            self.assertEqual(r['metrics']['final']['attempted'],0)
+            self.assertEqual(r['metrics']['final']['unattempted'],10)
+            self.assertEqual(r['metrics']['final']['error'],0)
+            reporting.comparison([r],root/'comparison.md')
+            md=(root/'comparison.md').read_text()
+            self.assertIn('Configuration errors',md);self.assertIn('Case errors',md)
+            self.assertIn('FileNotFoundError',md);self.assertIn('tokenizer/tokenizer.json',md)
+
 if __name__=='__main__':unittest.main()
