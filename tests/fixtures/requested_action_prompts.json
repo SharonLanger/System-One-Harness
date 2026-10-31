@@ -1,0 +1,211 @@
+{
+  "live_evaluated": false,
+  "held_out_policy": "Keep held_out cases out of wording/threshold tuning. No live evaluation performed. Unsettled cases require Sharon review.",
+  "cases": [
+    {
+      "id": "E01",
+      "prompt": "Explain calculateTotal.",
+      "status": "settled",
+      "expected": "explain",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E02",
+      "prompt": "Explain what this spec tests.",
+      "status": "settled",
+      "expected": "explain",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E03",
+      "prompt": "Why does this return null? Do not change anything.",
+      "status": "settled",
+      "expected": "explain",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E04",
+      "prompt": "Explain how you would fix this; don't implement it.",
+      "status": "settled",
+      "expected": "explain",
+      "score_accuracy": true,
+      "split": "held_out",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E05",
+      "prompt": "Write tests for calculateTotal.",
+      "status": "settled",
+      "expected": "generate_tests",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E06",
+      "prompt": "Add missing edge-case tests to invoice.spec.ts.",
+      "status": "settled",
+      "expected": "generate_tests",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E07",
+      "prompt": "Generate tests without changing the service.",
+      "status": "settled",
+      "expected": "generate_tests",
+      "score_accuracy": true,
+      "split": "held_out",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E08",
+      "prompt": "Explain the method and then add unit tests.",
+      "status": "settled",
+      "expected": "generate_tests",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E09",
+      "prompt": "Fix calculateTotal returning a negative result.",
+      "status": "settled",
+      "expected": "modify_code",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E10",
+      "prompt": "Repair the incorrect assertion in this test.",
+      "status": "settled",
+      "expected": "modify_code",
+      "score_accuracy": true,
+      "split": "held_out",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E11",
+      "prompt": "Refactor this method without changing behavior.",
+      "status": "settled",
+      "expected": "modify_code",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E12",
+      "prompt": "Implement an invoice total function.",
+      "status": "settled",
+      "expected": "modify_code",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E13",
+      "prompt": "Fix the service and add regression tests.",
+      "status": "settled",
+      "expected": "modify_code",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E14",
+      "prompt": "Do not add tests; fix the existing test.",
+      "status": "settled",
+      "expected": "modify_code",
+      "score_accuracy": true,
+      "split": "held_out",
+      "notes": "Intended target; synthetic response tests cannot validate semantics."
+    },
+    {
+      "id": "E15",
+      "prompt": "Explain calculateTotal in /project/src/invoice.ts.",
+      "status": "settled",
+      "expected": "explain",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Variant of E01 with a full path; relative path should retain action.",
+      "variants": [
+        {
+          "prompt": "Explain calculateTotal in src/invoice.ts.",
+          "expected": "explain",
+          "status": "settled"
+        }
+      ]
+    },
+    {
+      "id": "E16",
+      "prompt": "Background: invoices are shown in the dashboard. Explain calculateTotal.",
+      "status": "settled",
+      "expected": "explain",
+      "score_accuracy": true,
+      "split": "held_out",
+      "notes": "Modest noise variant of E01; complete-input processing unverified."
+    },
+    {
+      "id": "E17",
+      "prompt": "Review this.",
+      "status": "provisional",
+      "expected": null,
+      "score_accuracy": false,
+      "split": "development",
+      "notes": "Ambiguous target and output."
+    },
+    {
+      "id": "E18",
+      "prompt": "Fix failing tests.",
+      "status": "settled",
+      "expected": "modify_code",
+      "score_accuracy": true,
+      "split": "development",
+      "notes": "Does not identify whether production or test code is the edit target."
+    },
+    {
+      "id": "E19",
+      "prompt": "Write a test plan only.",
+      "status": "taxonomy_pending",
+      "expected": null,
+      "score_accuracy": false,
+      "split": "development",
+      "notes": "Planning versus generation unresolved."
+    },
+    {
+      "id": "E20",
+      "prompt": "Add coverage and repair an existing test.",
+      "status": "taxonomy_pending",
+      "expected": null,
+      "score_accuracy": false,
+      "split": "held_out",
+      "notes": "Proposed preference modify_code, pending review."
+    },
+    {
+      "id": "E21",
+      "prompt": "Update README.",
+      "status": "taxonomy_pending",
+      "expected": null,
+      "score_accuracy": false,
+      "split": "development",
+      "notes": "Outside code taxonomy; false acceptance possible."
+    },
+    {
+      "id": "E22",
+      "prompt": "Do that again.",
+      "status": "taxonomy_pending",
+      "expected": null,
+      "score_accuracy": false,
+      "split": "held_out",
+      "notes": "Missing conversational context; false acceptance possible."
+    }
+  ]
+}

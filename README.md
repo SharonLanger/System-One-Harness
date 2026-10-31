@@ -92,6 +92,7 @@ npm --prefix typescript-helper test
 python -m pytest -q
 ```
 
+- [Requested-action block](src/laya_context_router/building_blocks/questions/requested_action/README.md): prompt-only action classification, overrides and evaluation limits.
 - [TypeScript utility contracts](typescript-helper/README.md): detection, path resolution,
   signature-only outlines, exact extraction, called-callable navigation and context collection.
 - [Supporting utility implementation evidence](docs/supporting-utilities-results.md): test-first changes and validation.

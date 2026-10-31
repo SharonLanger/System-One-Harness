@@ -1,0 +1,47 @@
+{
+  "synthetic": true,
+  "responses": {
+    "explain": {
+      "answers": {
+        "requested_action": {
+          "type": "choice",
+          "choice": "explain",
+          "probabilities": {
+            "explain": 0.8,
+            "generate_tests": 0.15,
+            "modify_code": 0.05
+          },
+          "answer_confidence": 0.8
+        }
+      }
+    },
+    "generate_tests": {
+      "answers": {
+        "requested_action": {
+          "type": "choice",
+          "choice": "generate_tests",
+          "probabilities": {
+            "generate_tests": 0.8,
+            "explain": 0.15,
+            "modify_code": 0.05
+          },
+          "answer_confidence": 0.8
+        }
+      }
+    },
+    "modify_code": {
+      "answers": {
+        "requested_action": {
+          "type": "choice",
+          "choice": "modify_code",
+          "probabilities": {
+            "modify_code": 0.8,
+            "explain": 0.15,
+            "generate_tests": 0.05
+          },
+          "answer_confidence": 0.8
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "requested_action",
+  "questions": {
+    "requested_action": {
+      "question_ref": "requested_action",
+      "rule_ref": "requested_action_default"
+    }
+  }
+}

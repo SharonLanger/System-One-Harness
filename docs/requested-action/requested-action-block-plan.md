@@ -1,3 +1,10 @@
+# Implementation authorization update
+
+Sharon authorized implementation on 2026-10-31 in the same PR #19 and chose to
+retain this plan. Those instructions supersede the separate-PR/removal directions
+below. The original plan is retained as the implementation specification. See
+[verification evidence](verification.md) for execution results and Astra decisions.
+
 # Requested-action building block — implementation and test plan
 
 Status: PLAN ONLY. No implementation, test execution, commit, or PR publication
