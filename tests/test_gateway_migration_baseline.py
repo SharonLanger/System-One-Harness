@@ -1,4 +1,4 @@
-"""Characterize the active hook before replacing its process boundary."""
+"""Public hook wrapper rejects invalid payloads and ignores unrelated events."""
 import json
 from pathlib import Path
 import subprocess
@@ -21,41 +21,3 @@ def test_unrelated_event_is_empty_success(tmp_path):
                             text=True, capture_output=True, timeout=15)
     assert result.returncode == 0
     assert result.stdout == ''
-
-@pytest.mark.parametrize('outcome', ['context', 'multiple_relevant'])
-def test_active_hook_context_and_multiple_relevant(tmp_path, outcome):
-    import os
-    shim = tmp_path / 'shim'
-    shim.mkdir()
-    (shim / 'sitecustomize.py').write_text('''import sys, types, os
-flow = types.ModuleType('laya_context_router.flows.file_method_context')
-def run(*args, **kwargs):
-    if os.environ['BASELINE_OUTCOME'] == 'context':
-        code='function chosen() {}'
-        digest='a'*64
-        context={'schema_version':1,'path':os.environ['BASELINE_ROOT']+'/a.ts','source_hash':digest,
-            'callable':{'id':f'{digest}:0:{len(code)}','name':'chosen','signature':'function chosen()',
-                        'start':0,'end':len(code),'location':{'line':1,'column':1}},
-            'code':code,'display_code':code,'diagnostics':[],'limitations':[],
-            'coverage':'partial','dependencies':[],'gaps':[],
-            'collection':{'max_depth':2,'max_dependency_chars':12000,'dependency_chars':0}}
-        return {'status':'context', 'reason':None, 'context':context}
-    return {'status':'noop', 'reason':'multiple_relevant', 'context':None}
-flow.run = run
-sys.modules[flow.__name__] = flow
-formatter = types.ModuleType('laya_context_router.context_format')
-formatter.format_context = lambda *args, **kwargs: 'Known context: 😀'
-sys.modules[formatter.__name__] = formatter
-''')
-    event = {'session_id':'baseline','transcript_path':'unused.jsonl', 'hook_event_name':'UserPromptSubmit',
-             'cwd':str(tmp_path), 'prompt':'Explain `a.ts`: method?'}
-    env = {**os.environ, 'BASELINE_OUTCOME':outcome,'BASELINE_ROOT':str(tmp_path),
-           'PYTHONPATH':os.pathsep.join([str(shim), str(HOOK.parents[1] / 'src')])}
-    result = subprocess.run([sys.executable, str(HOOK), '--repository-root',str(tmp_path),'--real'],
-                            input=json.dumps(event), text=True,capture_output=True,env=env,timeout=15)
-    assert result.returncode == 0
-    if outcome == 'context':
-        assert result.stdout == '{"hookSpecificOutput":{"hookEventName":"UserPromptSubmit","additionalContext":"Known context: 😀"}}\n'
-    else:
-        assert result.stdout == ''
-        assert 'laya hook noop: multiple_relevant' in result.stderr

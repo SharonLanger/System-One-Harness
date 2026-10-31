@@ -2,9 +2,10 @@
 from copy import deepcopy
 from dataclasses import replace
 import builtins
+import json
 import pytest
 
-from conftest import FIXTURES, METHOD, PROMPT, SELECTED
+from .conftest import FIXTURES, METHOD, PROMPT, SELECTED
 from laya_context_router.block_runtime import BlockResult
 from laya_context_router.building_blocks import typescript as ts
 from laya_context_router.building_blocks.questions.requested_action import block as action
@@ -254,13 +255,19 @@ def test_R10_block_error_stops_or_propagates_deadline(h, stage, error):
 
 
 def test_N02_N03_direct_only_deduplicated_targets_no_bodies(h):
-    (h.root / 'target.ts').write_text('export function direct() { return deeper(); }\nfunction deeper() { return "TRANSITIVE_BODY"; }')
+    marker = h.root / 'must-not-exist'
+    target = h.root / 'target.ts'
+    target.write_text('require("fs").writeFileSync(' + json.dumps(str(marker)) + ', "bad");\n'
+                      'export function direct() { return deeper(); }\nfunction deeper() { return "TRANSITIVE_BODY"; }')
     h.path.write_text('import {direct} from "../../target";\nexport function chosen() { direct(); direct(); }\nfunction incoming() { chosen(); }')
+    before = (h.path.read_bytes(), target.read_bytes())
     h.choose('chosen')
     result = h.run()
     assert isinstance(result, Context)
-    assert result.text.count('target.ts | export function direct() | Lines: 1–1') == 1
-    assert all(x not in result.text for x in ['deeper', 'incoming', 'TRANSITIVE_BODY'])
+    assert result.text.count('target.ts | export function direct() | Lines: 2–2') == 1
+    assert all(x not in result.text for x in ['deeper', 'incoming', 'TRANSITIVE_BODY', 'writeFileSync'])
+    assert not marker.exists()
+    assert (h.path.read_bytes(), target.read_bytes()) == before
 
 
 def test_N04_no_project_callees_keeps_method(h):

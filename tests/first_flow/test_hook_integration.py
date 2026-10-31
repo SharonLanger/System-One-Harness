@@ -7,7 +7,7 @@ import subprocess
 import sys
 import pytest
 
-from conftest import PROMPT
+from .conftest import PROMPT
 from laya_context_router.flows import first_method_context as flow
 from laya_context_router.hooks.contracts import Context, Failure, Noop
 from laya_context_router.hooks.dispatcher import dispatch_hook
@@ -39,6 +39,8 @@ def fixed_action(data, **kwargs):
     if spec.get('noise'):
         print('PYTHON_BOUNDARY_NOISE')
         os.write(1, b'FD_BOUNDARY_NOISE\n')
+        sys.__stdout__.write('ORIGINAL_STDOUT_NOISE\n')
+        sys.__stdout__.flush()
     if spec.get('failure') == 'action':
         raise RuntimeError('planned block failure')
     if spec.get('timeout') == 'action':
@@ -187,6 +189,7 @@ def test_H04_gateway_isolates_python_and_native_stdout_noise(h, tmp_path, golden
     assert result.returncode == 0
     assert json.loads(result.stdout)['hookSpecificOutput']['additionalContext'] == golden
     assert b'PYTHON_BOUNDARY_NOISE' in result.stderr and b'FD_BOUNDARY_NOISE' in result.stderr
+    assert b'ORIGINAL_STDOUT_NOISE' in result.stderr
     assert b'BOUNDARY_NOISE' not in result.stdout
 
 

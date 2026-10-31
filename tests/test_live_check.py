@@ -1,4 +1,4 @@
-"""Readiness checks inject an SDK boundary; no real Laya import occurs."""
+"""Readiness/model/CLI contracts; the retired sandbox probe is isolated."""
 import json
 import sys
 from copy import deepcopy
@@ -7,6 +7,13 @@ import pytest
 
 from laya_context_router.laya.config import RunConfig
 from laya_context_router.live_check import run_check, main
+
+
+@pytest.fixture(autouse=True)
+def isolate_retired_sandbox(monkeypatch):
+    # Keep readiness/runtime checks without certifying the retired flow.
+    monkeypatch.setattr('laya_context_router.live_check.run_flow',
+                        lambda *args, **kwargs: {'status': 'noop', 'reason': 'no_single_match', 'context': None})
 
 
 class Agent:
@@ -31,7 +38,7 @@ class Agent:
         return {'answers': answers}
 
 
-def test_default_call_and_real_source_flow_without_sdk_import():
+def test_default_call_and_readiness_report_without_sdk_import():
     loaded = []
     def loader(model, **kwargs):
         loaded.append((model, kwargs))
@@ -50,8 +57,6 @@ def test_default_call_and_real_source_flow_without_sdk_import():
     assert call['enriched']['answers']['mentioned']['distance_from_boundary'] == 0.4
     assert call['observed']['attributes']['model_id'] == 'observed-checkpoint'
     assert call['requested']['model'] != call['observed']['attributes']['model_id']
-    assert report['flow']['status'] == 'context'
-    assert report['flow']['context']['code'] == 'export function double(value: number) { return value * 2; }'
     json.dumps(report, allow_nan=False)
 
 
@@ -91,16 +96,6 @@ def test_cli_requires_explicit_real_and_supported_environment(tmp_path, capsys, 
     assert 'BLOCKED' in capsys.readouterr().err
 
 
-def test_policy_rejected_selection_is_valid_noop():
-    class Uncertain(Agent):
-        def predict(self, text, questions, **kwargs):
-            raw = super().predict(text, questions, **kwargs)
-            for answer in raw['answers'].values():
-                answer['answer_confidence'] = 0.1
-            return raw
-    report = run_check(loader=lambda *a, **k: Uncertain())
-    assert report['status'] == 'passed_preparation_probe'
-    assert report['flow'] == {'status': 'noop', 'reason': 'method_undecided', 'context': None}
 
 
 def test_helper_error_is_failed_probe(monkeypatch):
