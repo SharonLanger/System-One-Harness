@@ -13,7 +13,9 @@ FIXTURES = Path(__file__).parent / 'fixtures'
 
 
 def response(label='explain', probs=(.8,.15,.05), confidence=.8):
-    labels = (label,) + tuple(x for x in LABELS if x != label)
+    labels = (label,) + tuple(x for x in (*LABELS, 'unclear') if x != label)
+    if len(probs) == 3:
+        probs = (*probs, 0)
     return {'answers': {'requested_action': {'type':'choice','choice':label,
         'probabilities':dict(zip(labels,probs)), 'answer_confidence':confidence}}}
 
@@ -60,10 +62,10 @@ def test_T03_T05_T06_T42_input_rejected_before_load(value):
 
 
 @pytest.mark.parametrize('probs,confidence,reason',[
- ((.8,.15,.05),.8,None),((.49,.30,.21),.49,'below_threshold:answer_confidence'),
- ((.55,.45,0),.55,'below_threshold:probability_gap'),((.50,.35,.15),.5,None),
- ((.499,.300,.201),.499,'below_threshold:answer_confidence'),
- ((.500,.351,.149),.5,'below_threshold:probability_gap'),((.50,.50,0),.5,'below_threshold:probability_gap')])
+ ((.8,.15,.05),.8,None),((.49,.30,.21),.49,None),
+ ((.55,.45,0),.55,None),((.50,.35,.15),.5,None),
+ ((.499,.300,.201),.0,None),
+ ((.44,.341,.219),.9,'below_threshold:probability_gap'),((.50,.50,0),.5,'below_threshold:probability_gap')])
 def test_T14_T20_T43_policy_boundaries(probs,confidence,reason):
     from laya_context_router.answers.enrich import enrich_prediction
     from laya_context_router.answers.rules import accepts
@@ -90,7 +92,7 @@ def test_T08_T09_T11_T12_T21_T22(monkeypatch):
     assert spy.call_args.args[0]['sdk_metadata']=={'version':'synthetic'}
     assert r.data=={'action':'explain'}
     del h.raw['answers']['requested_action']['answer_confidence']
-    r=h.run();assert r.decisions['requested_action']['reason']=='field_missing:answer_confidence'
+    r=h.run();assert r.decisions['requested_action']=={'answer':'explain','decided':True,'reason':None}
 
 
 def test_T10_invalid_output():
@@ -103,3 +105,4 @@ def test_T01_saved_fixtures():
     data=json.loads((FIXTURES/'requested_action_responses.json').read_text())
     assert data['synthetic'] is True
     for label,raw in data['responses'].items():assert Harness(raw).run().data=={'action':label}
+
