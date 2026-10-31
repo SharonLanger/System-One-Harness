@@ -286,3 +286,27 @@ def test_D12_method_output_validator_rejects_invalid_domain_result(change):
     if change == 'selected_with_reason': value['reason'] = 'method_undecided'
     with pytest.raises(ValueError, match='invalid method selection result'):
         validate_output(value)
+
+
+@pytest.mark.parametrize('limit', [True, False, 0, -1, 1.2, '1000', None])
+def test_D15_invalid_input_character_limits_fail_before_prediction(limit):
+    calls = []
+    with pytest.raises(ValueError):
+        method({'text': 'x', 'source_outline': source()}, config=RunConfig(),
+               registry=registry({}, calls), max_input_chars=limit)
+    assert calls == []
+
+
+@pytest.mark.parametrize('limit,expected_status,expected_calls', [(2, 'completed', 1), (1, 'skipped', 0)])
+def test_D15_exact_candidate_limit_and_one_beyond(limit, expected_status, expected_calls):
+    data = source()
+    calls = []
+    result = method({'text': 'x', 'source_outline': data}, config=RunConfig(),
+                    registry=registry(raw_for(questions_for(data), 'sum@1:1'), calls), max_candidates=limit)
+    assert result.status == expected_status
+    assert len(calls) == expected_calls
+    if expected_status == 'completed':
+        assert result.data['selected_id'] == data['callables'][0]['id']
+    else:
+        assert result.reason == 'candidate_budget_exceeded'
+        assert result.decisions == {} and result.data['selected_id'] is None

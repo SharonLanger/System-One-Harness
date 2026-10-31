@@ -411,3 +411,39 @@ def test_block_declaration_loader_rejects_duplicate_local_json_keys(tmp_path):
     with pytest.raises(BlockConfigurationError,match='duplicate JSON key: local'):
         Block(declaration,catalog=catalog_at(tmp_path,[rule('noul')]),validate_input=lambda x:x,
             prepare_input=lambda *_:pytest.fail('prepared'),reduce=lambda *_:pytest.fail('reduced'),validate_output=lambda x:x)
+
+
+def test_missing_default_rule_fails_before_preparation_or_loading(tmp_path):
+    prepared=[];loaded=[]
+    with pytest.raises(BlockConfigurationError,match='rule_not_found'):
+        Block({'name':'missing','questions':{'local':{'definition':question(),'rule_ref':'missing'}}},
+            catalog=catalog_at(tmp_path,[rule()]),validate_input=lambda x:x,
+            prepare_input=lambda *args:prepared.append(args),reduce=lambda d,s:d,validate_output=lambda x:x)
+    assert prepared==[] and loaded==[]
+
+
+def test_extra_prepared_question_is_rejected_before_loading(tmp_path):
+    def prepare(value,questions):
+        return PreparedInput(value['text'],{**questions,'extra':question()})
+    block=make_block(tmp_path,preparer=prepare)
+    with pytest.raises(BlockInputError,match='question names'):
+        block.run({'text':'x'},config=RunConfig(model='fake'),
+            registry=AgentRegistry(loader=lambda *a,**k:pytest.fail('loaded')))
+
+
+def test_changed_rule_and_question_reuse_agent_with_current_payload(tmp_path):
+    block=make_block(tmp_path,rules=[rule(),rule(name='strict',conditions=[{'field':'answer_confidence','op':'gte','value':.9}])])
+    loads=[];payloads=[]
+    class Agent:
+        def predict(self,text,questions,**kwargs):
+            payloads.append(deepcopy(questions));return {'answers':{'local':raw()}}
+    def loader(model,**kwargs):
+        loads.append((model,kwargs));return Agent()
+    registry=AgentRegistry(loader=loader);config=RunConfig(model='same')
+    original=block.run({'text':'x'},config=config,registry=registry)
+    changed=block.run({'text':'x'},config=config,registry=registry,
+        rule_overrides={'local':'strict'},question_overrides={'local':{**question(),'instructions':'Changed'}})
+    assert loads==[('same',{})] and len(payloads)==2
+    assert payloads[0]['local']['instructions']=='Pick.' and payloads[1]['local']['instructions']=='Changed'
+    assert original.decisions['local']['decided'] and not changed.decisions['local']['decided']
+    assert all(set(payload['local'])=={'type','instructions','criteria'} for payload in payloads)
