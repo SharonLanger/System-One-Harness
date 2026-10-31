@@ -6,7 +6,7 @@ Claude Code calls the installed Laya gateway whenever you submit a prompt.
 
 | Value | Who supplies it? | Purpose |
 | --- | --- | --- |
-| `LAYA_PYTHON` | You set it once in Claude settings. | Python interpreter where Laya Context Router is installed. |
+| `LAYA_CONTEXT_ROUTER_PROJECT_DIR` | You set it once in Claude settings or your shell. | Absolute path to the Laya Context Router repository; its Python environment lives in `.venv`. |
 | `CLAUDE_PROJECT_DIR` | Claude Code supplies it automatically for each session. | The project whose code Laya should read. |
 
 For example, start Claude in `/Users/sharon/work/project-A`. Claude supplies that
@@ -22,10 +22,11 @@ with an `invalid_project_root` error. Observation does not need it.
 
 ## Prerequisites and setup
 
-1. Use Python 3.11+ with this repository installed. For an existing virtual
-   environment, run the following with your actual installation paths:
+1. Create a Python 3.11+ virtual environment named `.venv` inside the Laya Context
+   Router repository, and install this repository into it. For example:
 
    ```bash
+   python3 -m venv "/Users/example/dev/laya-context-router/.venv"
    "/Users/example/dev/laya-context-router/.venv/bin/python" -m pip install -e "/Users/example/dev/laya-context-router"
    ```
 
@@ -41,7 +42,7 @@ with an `invalid_project_root` error. Observation does not need it.
    ```json
    {
      "env": {
-       "LAYA_PYTHON": "/Users/example/dev/laya-context-router/.venv/bin/python",
+       "LAYA_CONTEXT_ROUTER_PROJECT_DIR": "/Users/example/dev/laya-context-router",
        "CLAUDE_CODE_PLUGIN_DIRS": "/Users/example/.claude/my-plugins/hook-laya"
      }
    }
@@ -50,19 +51,33 @@ with an `invalid_project_root` error. Observation does not need it.
    Preserve existing settings and plugin paths; separate plugin paths with `:` on
    macOS/Linux. `CLAUDE_CODE_PLUGIN_DIRS` requires Claude Code v2.1.280 or later.
    Alternatively, load the folder using `claude --plugin-dir /path/to/hook-laya`
-   and set only `LAYA_PYTHON` in settings. Use one registration method, and remove
+   and set only `LAYA_CONTEXT_ROUTER_PROJECT_DIR` in settings. Use one registration method, and remove
    any duplicate old hook registration. Start a fresh Claude session.
 
-The interpreter path now lives in settings, not in `hooks/hooks.json`. These
-instructions target macOS/Linux shell commands. Settings environment values apply
-to Claude's child processes; they do not export variables into your terminal.
+The repository path is a setup prerequisite. The hook uses
+`"${LAYA_CONTEXT_ROUTER_PROJECT_DIR}/.venv/bin/python"`, so keep the virtual
+environment at that location. Use the repository folder as the variable value,
+without `.venv/bin/python` or embedded quote characters.
+
+Instead of setting the variable in settings, you can export it in the terminal
+before starting Claude (or add this export to your shell profile):
+
+```bash
+export LAYA_CONTEXT_ROUTER_PROJECT_DIR="/Users/example/dev/laya-context-router"
+claude
+```
+
+Choose one place to maintain this value. Keep plugin registration configured as
+above. These instructions target macOS/Linux shell commands. Settings environment
+values apply to Claude's child processes; they do not export variables into your
+terminal.
 
 ## Observe-only first test
 
 In the copied plugin's `hooks/hooks.json`, replace the `command` value with:
 
 ```json
-"command": "\"${LAYA_PYTHON}\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --observe-only"
+"command": "\"${LAYA_CONTEXT_ROUTER_PROJECT_DIR}/.venv/bin/python\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --observe-only"
 ```
 
 There is no repository-root argument for this test. Claude still supplies the
@@ -86,7 +101,7 @@ logging; check stderr and the records. See the [test plan](../../docs/observe-on
 Restore the command shipped in this repository:
 
 ```json
-"command": "\"${LAYA_PYTHON}\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root \"${CLAUDE_PROJECT_DIR}\" --real"
+"command": "\"${LAYA_CONTEXT_ROUTER_PROJECT_DIR}/.venv/bin/python\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root \"${CLAUDE_PROJECT_DIR}\" --real"
 ```
 
 `--hook` identifies the event; `--real` enables Laya. Claude provides the project
@@ -95,8 +110,8 @@ Optional model configuration can be supplied using `--config /path/to/config.jso
 
 ## Troubleshooting and limitations
 
-- Command not found: check that `LAYA_PYTHON` names an existing executable. It must
-  be the interpreter path only, without extra arguments or embedded quote characters.
+- Command not found: check that `LAYA_CONTEXT_ROUTER_PROJECT_DIR` names the repository
+  folder and that `.venv/bin/python` exists and is executable inside it.
 - Module not found: install this repository into that exact interpreter (step 1).
 - No hook logs: verify plugin loading and restart Claude after configuration changes.
 - Missing project environment: observation records it; real enrichment cannot use
