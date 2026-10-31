@@ -16,6 +16,10 @@ def _default_handler(request,logger):
     return enrich_prompt_context(request,logger)
 
 def dispatch_user_prompt_submit(envelope,args,logger,*,handler=None,clock=monotonic):
+    result=None
+    logger('INFO','event_dispatcher_started',hook_event_name=envelope.hook_name,
+           session_id=envelope.common.get('session_id'),common=envelope.common,
+           derived=envelope.derived,fields=sorted(envelope.raw_payload))
     try:
         if envelope.hook_name!='UserPromptSubmit':
             raise ValidationError('event_mismatch','user_prompt_submit','hook_event_name')
@@ -41,4 +45,12 @@ def dispatch_user_prompt_submit(envelope,args,logger,*,handler=None,clock=monoto
                    code=result.code if isinstance(result,Failure) else ('feature_exception' if result is None else None),
                    duration_seconds=max(0,clock()-started))
     except ValidationError as exc:
-        return Failure(exc.code,exc.stage,exc.field,str(exc))
+        logger('ERROR','event_input_rejected',code=exc.code,stage=exc.stage,field=exc.field)
+        result=Failure(exc.code,exc.stage,exc.field,str(exc))
+        return result
+    finally:
+        logger('ERROR' if result is None or isinstance(result,Failure) else 'INFO',
+               'event_dispatcher_finished',result_type=type(result).__name__,
+               outcome='context' if isinstance(result,Context) else ('noop' if isinstance(result,Noop) else 'error'),
+               reason=result.reason if isinstance(result,Noop) else None,
+               code=result.code if isinstance(result,Failure) else ('dispatcher_exception' if result is None else None))

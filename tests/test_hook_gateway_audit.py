@@ -52,13 +52,13 @@ calls=[]
 def log(*a,**k):calls.append(1);return original(*a,**k)
 logs.log=log
 main(['--hook','X'],dispatcher=lambda *a:RESULT)
-assert len(calls)==3
+assert len(calls)==7
 # Existing callers retain best-effort behavior even on the same failure.
 original('INFO','legacy','event')
 '''.replace('__LOG_DEST__',repr(str(parent/'debug.jsonl'))).replace('RESULT',"Context('known')" if kind=='context' else "Noop('no_match')")
     r=subprocess.run([sys.executable,'-c',script],input='{"hook_event_name":"X"}',text=True,capture_output=True,
         timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
-    assert r.returncode==0 and r.stderr.count('laya logging failed')==3
+    assert r.returncode==0 and r.stderr.count('laya logging failed')==7
     assert r.stdout==('{"hookSpecificOutput":{"hookEventName":"X","additionalContext":"known"}}\n' if kind=='context' else '')
 
 @pytest.mark.parametrize('strict',[False,True])
@@ -76,3 +76,60 @@ def test_empty_prompt_actual_gateway_never_loads_sdk(tmp_path):
         timeout=5,env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
     assert r.returncode==0 and r.stdout=='' and 'ineligible_request' in r.stderr
     assert 'laya_mlx' not in r.stderr
+
+@pytest.mark.parametrize('raw,expected_code', [
+    ('{ broken', 'invalid_json'),
+    ('x' * 65550, 'input_budget_exceeded'),
+])
+def test_entry_and_bounded_input_are_logged_before_rejection(raw,expected_code,monkeypatch,capsys):
+    import laya_context_router.hooks.gateway as gateway
+    records=[]
+    class Input(io.StringIO):
+        def read(self,n):
+            assert records[0][0]=='gateway_started'
+            return super().read(n)
+    monkeypatch.setattr(sys,'stdin',Input(raw))
+    monkeypatch.setattr(gateway,'isolate_stdout',nullcontext)
+    gateway.main(['--hook','UserPromptSubmit'],
+        logger=lambda level,event,**d:records.append((event,d)))
+    assert capsys.readouterr().out==''
+    capture=next(d for e,d in records if e=='gateway_input_received')
+    assert capture['raw_input']==raw[:65536]
+    assert capture['raw_input_truncated']==(len(raw)>65536)
+    assert records[-1][1]['code']==expected_code
+    assert len({d['invocation_id'] for e,d in records})==1
+
+@pytest.mark.parametrize('observe',[False,True])
+def test_gateway_logs_real_dispatch_chain_or_observation_bypass(observe,tmp_path,monkeypatch,capsys):
+    import laya_context_router.hooks.gateway as gateway
+    from laya_context_router.hooks.contracts import Noop
+    from laya_context_router.hooks.user_prompt_submit import dispatcher
+    records=[]
+    payload={'hook_event_name':'UserPromptSubmit','session_id':'audit-session',
+             'cwd':str(tmp_path),'transcript_path':'unused','prompt':'hello',
+             'future':{'nested':[True,1]}}
+    raw=' \n'+json.dumps(payload)+'\n'
+    monkeypatch.setattr(sys,'stdin',io.StringIO(raw))
+    monkeypatch.setattr(gateway,'isolate_stdout',nullcontext)
+    monkeypatch.setenv('CLAUDE_PROJECT_DIR',str(tmp_path))
+    def handler(*args):
+        assert not observe
+        return Noop('no_match')
+    monkeypatch.setattr(dispatcher,'_default_handler',handler)
+    gateway.main(['--hook','UserPromptSubmit']+(['--observe-only'] if observe else []),
+        logger=lambda level,event,**d:records.append((event,d)))
+    assert capsys.readouterr().out==''
+    names=[e for e,d in records]
+    assert names[:3]==['gateway_started','gateway_input_received','observation_input_received' if observe else 'gateway_received']
+    assert next(d for e,d in records if e=='gateway_input_received')['raw_input']==raw
+    assert next(d for e,d in records if e=='gateway_received')['raw_payload']==payload
+    chain=['gateway_dispatch_started','hook_dispatcher_started','hook_dispatcher_routed',
+           'event_dispatcher_started','feature_started','feature_finished',
+           'event_dispatcher_finished','hook_dispatcher_finished','gateway_dispatch_finished']
+    if observe:
+        assert not set(chain).intersection(names)
+    else:
+        assert [e for e in names if e in chain]==chain
+    assert len({d['invocation_id'] for e,d in records})==1
+    assert records[-1][0]=='gateway_finished'
+    assert records[-1][1]['stdout_bytes_written']==0

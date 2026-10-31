@@ -66,7 +66,7 @@ def test_default_gateway_alternating_projects_and_missing_env(tmp_path,monkeypat
     assert all(r.envelope.common['cwd']=='/unrelated/subfolder' for r in seen)
     monkeypatch.setattr(gateway,'os',SimpleNamespace(environ={}))
     assert gateway._default_dispatch({'hook_event_name':'Unknown'},SimpleNamespace(hook='Unknown'),'i',
-        lambda *a,**k:pytest.fail('unknown event must not enrich'))==Noop('unsupported_event')
+        lambda level,event,**k:pytest.fail('unknown event must not enrich') if event=='project_context_ingested' else None)==Noop('unsupported_event')
 
 
 def test_relationships_and_metadata_survive(tmp_path,monkeypatch):
