@@ -133,3 +133,5 @@ Context returns one `hookSpecificOutput` JSON object. Normal no-op returns zero 
 See [manual plugin setup](plugins/hook-laya/README.md) for Sharon's preferred copy-to-`.claude/my-plugins` and `env.CLAUDE_CODE_PLUGIN_DIRS` recipe, plus alternative loading. No installer script, automatic copying, settings edits or activation is provided.
 
 For each hook, the gateway reads Claude's process environment `CLAUDE_PROJECT_DIR` and adds a nullable `derived.project_dir` to the internal envelope. Original event cwd and explicit feature source root remain separate. See [project-context verification](docs/verification/plugin-project-context.md) for the user-run two-session test and worktree limitations.
+
+Strict input-budget inspection runs at the shared prediction boundary before request inference. See [token-budget migration](docs/token-budget-migration.md) for typed failures, explicit custom-provider wiring, runtime qualification and the sandbox flow’s generic error mapping.

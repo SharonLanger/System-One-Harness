@@ -138,19 +138,51 @@ class _AgentTokenizer:
         return self.common.encode_text(self.tok, text, add_special_tokens=False)['input_ids']
 
 
+_METHODS = ('predict', 'predict_batch', '_encode_state', '_to_internal', '_check_question')
+_SPECIAL_FIELDS = ('cls_token', 'sep_token', 'pad_token', 'mask_token',
+                   'cls_token_id', 'sep_token_id', 'pad_token_id', 'mask_token_id')
+
+
+def _callable_identity(value):
+    return id(getattr(value, '__self__', None)), getattr(value, '__func__', value)
+
+
 class VerifiedInspector:
     def __init__(self, agent, config, profile, observed, common, hooks):
         self.agent, self.config, self.profile, self.hooks = agent, config, profile, hooks
         self._cfg = deepcopy(agent.cfg)
         self._tokenizer = _AgentTokenizer(agent, common, observed)
         self._observed = deepcopy(observed)
+        self._methods = {name: _callable_identity(getattr(agent, name, None)) for name in _METHODS}
+        with common._TOKENIZE_LOCK:
+            self._backend = json.loads(agent.tok.backend.to_str())
+            self._special = {name: getattr(agent.tok, name) for name in _SPECIAL_FIELDS}
+
+    def _check_integrity(self, request_id=None):
+        model = self.profile.model_id
+        if any(name in self.agent.__dict__ or _callable_identity(getattr(self.agent, name, None)) != identity
+               for name, identity in self._methods.items()):
+            unavailable(model, 'Managed SDK prediction/encoding methods changed', request_id)
+        if self.agent.cfg != self._cfg or self.agent.tok is not self._tokenizer.tok or self.hooks.compose_hooks(self.agent.hooks):
+            unavailable(model, 'Managed configuration/tokenizer changed or SDK hooks are active', request_id)
+        with self._tokenizer.common._TOKENIZE_LOCK:
+            tok = self.agent.tok
+            if (tok.backend.truncation is not None or tok.backend.padding is not None
+                    or json.loads(tok.backend.to_str()) != self._backend
+                    or any(getattr(tok, name) != value for name, value in self._special.items())):
+                unavailable(model, 'Managed tokenizer semantics changed', request_id)
+
+    def validate_request(self, state, questions):
+        """Preserve the pinned SDK's input errors outside inspection failure wrapping."""
+        self._check_integrity()
+        if state is None:
+            raise TypeError('state must not be None; pass a string, dict, or list')
+        for name, definition in questions.items():
+            self.agent._check_question(name, definition)
 
     def inspect(self, state, questions, *, request_id=None):
         p = self.profile
-        if self.agent.cfg != self._cfg or self.agent.tok is not self._tokenizer.tok or self.hooks.compose_hooks(self.agent.hooks):
-            unavailable(p.model_id, 'Managed configuration/tokenizer changed or SDK hooks are active', request_id)
-        if self.agent.tok.backend.truncation is not None or self.agent.tok.backend.padding is not None:
-            unavailable(p.model_id, 'Loaded tokenizer has active truncation/padding', request_id)
+        self._check_integrity(request_id)
         report = inspect_request(self._tokenizer, state, questions, model=p.model_id, max_len=p.max_len,
                                  head_max_len=p.head_max_len, request_id=request_id)
         report['model'].update(observed_id=self._observed['model_id'], resolved_revision=self._observed['revision'], runtime='laya-mlx',

@@ -84,3 +84,13 @@ Expected red: observation wrappers lack get_inspector and readiness run_check la
 Targeted regressions: 40 passed. Batch-v2: 16 passed plus 24 subtests. Isolated batch checks: 17 passed, exit 0 (D005). D003 records assertion-preserving edit staging. Full Python gate pending.
 
 Full Python gate completed: 1,319 passed, 3 existing skips in 260.19s; captured exit 0 (`08-green.exit`). All existing offline example and hook scenarios passed.
+
+Commit 8 published: `c7797592f431a42d7845cd64ecc5583416882037`.
+
+## Commit 9 — shared enforcement and authoritative diagnostics
+
+Expected red: absent inspection/zero-forward guard and private state snapshot (15 failed, 3 existing-compatible passes). New tests exercise all-question loss rejection, same report in the sole boundary ERROR, unknown/unexpected capability failures, strict JSON, request correlation, loader/input exceptions, deadlines, broken log writes and mutable caller/SDK inputs. Focused initial green: 41 passed. D006 adds cached-runtime integrity before SDK validation; expected red 13 failed/1 passed, then profile/enforcement/predict/registry checks 69 passed. Two additional special-token fields complete coverage of all eight checked fields. No existing assertions changed.
+
+The boundary validates before loading, snapshots state/questions, resolves actual agent/capability, measures every question, refuses typed errors before prediction, and otherwise sends the inspected snapshot unchanged through normal SDK prediction/response validation. Provider errors are rebound to the current request ID. Unexpected inspection details are not copied into the public report. Budget logging is a separate best-effort catch; TimeoutError propagates. The default provider retains pinned SDK validation and checks immutable tokenizer/method semantics; README/boundary/sandbox point to migration guidance. Full Python gate pending.
+
+Full Python enforcement gate passed: 1,353 passed, 3 existing skips in 271.82s, captured exit 0 (`09-green.exit`). Includes all unchanged sandbox, hook, response-validation and independent tokenizer/SDK parity tests plus D006 mutation checks. No inference-on-rejection bypass was needed.

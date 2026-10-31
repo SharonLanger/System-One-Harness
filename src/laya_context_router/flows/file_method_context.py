@@ -103,6 +103,8 @@ def run(prompt, *, cwd, repository_root, config, registry,
         log("ERROR", "flow", "selection_timeout", error=exc)
         return _noop('deadline_exceeded')
     except Exception as exc:
+        # Budget details are in the shared LAYA ERROR report; see
+        # docs/token-budget-migration.md before changing this sandbox mapping.
         log("ERROR", "flow", "selection_failed", error=exc)
         return _noop('model_error')
     log("DEBUG", "flow", "method_selected", selection=selection)
