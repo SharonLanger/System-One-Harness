@@ -13,7 +13,7 @@ There are four different paths:
 - Optional copied plugin: `/Users/example/.claude/my-plugins/hook-laya`.
 - Target project: `/Users/example/work/project-A`, whose code the session discusses.
 
-Complete the main README's Python/Laya and TypeScript helper prerequisites. Install this repository into your chosen Python environment, for example:
+For real inference, complete the main README's Python/Laya and TypeScript helper prerequisites. Observe-only mode needs only Python 3.11+ and this repository installed into the chosen environment, for example:
 
 ```bash
 /Users/example/dev/laya-context-router/.venv/bin/python -m pip install -e /Users/example/dev/laya-context-router
@@ -43,7 +43,48 @@ If other plugin paths are present, preserve them and append this absolute path w
 
 Alternatively, configure the interpreter in your chosen plugin directory and load it with `claude --plugin-dir /absolute/path/to/plugin-folder`. The plugin does not require a particular copy destination. Do not register both methods or the old outer hook for the same event.
 
-## What runs and how the project is identified
+## Observe-only first test
+
+For the initial plugin wiring check, replace `--real` in your manually configured
+copy's hook command with `--observe-only`:
+
+```bash
+"/absolute/path/to/laya-python" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --observe-only
+```
+
+Use the absolute interpreter where this repository is installed. Observation needs
+neither Laya/MLX, model weights nor the built TypeScript helper. `--repository-root`
+and `--config` are unnecessary in this mode; if supplied they are not loaded for
+feature execution. `--real` and `--observe-only` cannot be combined. The existing
+deadline option remains supported. This mode runs before every dispatcher and
+returns zero stdout bytes, exit 0; it injects no context.
+
+Use the manual copy/loading steps above, then start a fresh Claude session in Project
+A and submit a small prompt. Repeat in Project B. Check `observation_input_received`
+for bounded original stdin text and `hook_observed` for the parsed payload,
+`claude_project_dir`, `derived.project_dir`, `project_dir_status`, `process_cwd`,
+`payload_cwd`, `would_invoke_dispatcher`, `event_dispatcher` and
+`dispatcher_invoked: false`. Unsupported hook names have a null event destination.
+Use session IDs, invocation IDs and process IDs to correlate records.
+
+Find the actual log location using the same interpreter:
+
+```bash
+"/absolute/path/to/laya-python" -c 'from laya_context_router.log_utils import LOG_PATH; print(LOG_PATH)'
+```
+
+In an editable installation it is `<lcr-repository>/src/logs/debug.jsonl`, not
+necessarily the caller project's logs directory. The records contain the supplied
+prompt and all event fields. The terminal record should have `outcome: observed`
+and `stdout_bytes_written: 0`. Errors are reported on stderr and, when possible,
+in the log; exit 0 alone does not prove logging succeeded.
+
+After this check, manually replace `--observe-only` with `--real` and restore the
+configured source-root argument when you want the existing enrichment flow. No
+plugin is automatically copied or activated by these instructions or by the code change.
+See [scope and test plan](../../docs/observe-only-plan.md).
+
+## Normal mode project identification
 
 Each Claude CLI launches a separate local Python process for each hook event. It supplies event JSON on stdin and `CLAUDE_PROJECT_DIR` in that process's environment. Sessions in projects A and B therefore call the same LCR code with different environment values.
 

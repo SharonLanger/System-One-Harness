@@ -26,7 +26,10 @@ def parse_args(argv):
     p.add_argument('--hook', required=True)
     p.add_argument('--repository-root')
     p.add_argument('--config')
-    p.add_argument('--real', action='store_true')
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument('--real', action='store_true')
+    mode.add_argument('--observe-only', action='store_true',
+                      help='record hook input and project metadata without invoking dispatchers')
     p.add_argument('--deadline', type=float, default=10.0)
     p.add_argument('--max-context-chars', type=int, default=8000)
     p.add_argument('--max-dependency-depth', type=int, default=2)
@@ -115,7 +118,7 @@ def main(argv=None, *, dispatcher=None, logger=None):
     def log(level,event,**details):
         nonlocal validated_session
         if not timer_started or expired or logging_disabled:
-            return
+            return False
         if event=='common_input_validated':
             validated_session=details.get('session_id')
         metadata={'invocation_id':invocation_id,'hook_event_name':args.hook,
@@ -123,10 +126,12 @@ def main(argv=None, *, dispatcher=None, logger=None):
         try:
             with isolate_stdout():
                 log_impl(level,event,**metadata)
+            return True
         except TimeoutError:
             raise
         except Exception as exc:
             print(f'laya logging failed: {type(exc).__name__}',file=sys.stderr)
+            return False
 
     def safe_log(level,event,**details):
         nonlocal logging_disabled
@@ -158,16 +163,43 @@ def main(argv=None, *, dispatcher=None, logger=None):
                 signal.setitimer(signal.ITIMER_REAL,remaining)
                 timer_started=True
                 text=sys.stdin.read(MAX_INPUT_CHARS+1)
+                observed_input = False
+                if args.observe_only:
+                    observed_input = log('INFO','observation_input_received',
+                        raw_input=text[:MAX_INPUT_CHARS],
+                        raw_input_truncated=len(text)>MAX_INPUT_CHARS,
+                        input_chars_read=len(text),input_limit_chars=MAX_INPUT_CHARS)
                 payload=parse_payload(text,args.hook)
                 log('INFO','gateway_received',input_chars=len(text),fields=sorted(payload))
-                result=validate_result((dispatcher or _default_dispatch)(payload,args,invocation_id,log))
+                if args.observe_only:
+                    from .project_context import resolve_project_directory
+                    project_value=os.environ.get('CLAUDE_PROJECT_DIR')
+                    project_dir,status=resolve_project_directory(project_value)
+                    session=payload.get('session_id')
+                    validated_session=session if isinstance(session,str) else None
+                    recorded=log('INFO','hook_observed',raw_payload=payload,
+                        session_id=session if isinstance(session,str) else None,
+                        claude_project_dir=project_value,
+                        derived={'project_dir':project_dir},project_dir_status=status,
+                        project_dir_source='CLAUDE_PROJECT_DIR',
+                        process_cwd=os.getcwd(),payload_cwd=payload.get('cwd'),
+                        repository_root_argument=args.repository_root,
+                        would_invoke_dispatcher='laya_context_router.hooks.dispatcher.dispatch_hook',
+                        event_dispatcher=('laya_context_router.hooks.user_prompt_submit.dispatcher.'
+                            'dispatch_user_prompt_submit' if args.hook=='UserPromptSubmit' else None),
+                        supported_event=args.hook=='UserPromptSubmit',dispatcher_invoked=False)
+                    if not observed_input or not recorded:
+                        raise ValidationError('observation_log_failed','observation')
+                    result=Noop('observe_only',feature_id='hook_observation')
+                else:
+                    result=validate_result((dispatcher or _default_dispatch)(payload,args,invocation_id,log))
                 if expired:
                     raise TimeoutError('hook deadline exceeded')
                 output=serialize_response(result,args.hook)
                 if isinstance(result,Failure):
                     log('ERROR','gateway_error',code=result.code,stage=result.stage,field=result.field)
                     print(f'laya hook error: {result.stage}: {result.code} {result.message}',file=sys.stderr)
-                elif isinstance(result,Noop):
+                elif isinstance(result,Noop) and not args.observe_only:
                     log('INFO','gateway_noop',reason=result.reason)
                     print(f'laya hook noop: {result.reason}',file=sys.stderr)
                 if output:
@@ -192,7 +224,8 @@ def main(argv=None, *, dispatcher=None, logger=None):
             partial='; stdout_bytes_written=unknown' if written is None else ''
             print(f'laya hook error: {result.code}: {result.message}{partial} [{invocation_id}]',file=sys.stderr)
         safe_log('INFO','gateway_finished',outcome='error' if isinstance(result,Failure) else
-            ('context' if isinstance(result,Context) else 'noop'),
+            ('context' if isinstance(result,Context) else
+             ('observed' if args is not None and args.observe_only else 'noop')),
             reason=result.reason if isinstance(result,Noop) else None,
             code=result.code if isinstance(result,Failure) else None,
             response_present=isinstance(result,Context) and bool(written),
