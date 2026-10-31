@@ -1,5 +1,27 @@
 # Experiments
 
+## Next V2 experiment — replace a question and its rule
+
+```bash
+python experiments/block_v2_ticket_overrides.py
+```
+
+IDE Play works without arguments. This uses the same V2 ticket block, but replaces
+`department` with an explicit login-support question and new choices. Its rule is
+`demo_choice_clear_winner`: answer_confidence >= 0.5 AND probability_gap >= 0.1.
+Churn keeps its shared question and permissive demo rule. The report shows shared
+question BEFORE override, effective question, exact SDK payload, loaded rules,
+actual runtime enrichment and decisions. An undecided answer is a valid result.
+
+Edit `inputs/block_v2_ticket_overrides.json` to change text, question_overrides or
+model config; edit `fixtures/v2_ticket_rules/rules/demo_choice_clear_winner.json`
+for thresholds. Run with `--input`, `--model`, or `--temperature` as needed.
+Results go to `results/block_v2_ticket_overrides/<date_time>/` with summary.md,
+details.json and trace.jsonl. One real request, no Node build, no mock fallback.
+The first working V2 experiment is unchanged. The `_summary.py` file is an imported
+report helper, not a runnable experiment.
+
+
 ## First V2 ticket block — obvious questions and permissive rule overrides
 
 Run with IDE Play (no arguments) or:
