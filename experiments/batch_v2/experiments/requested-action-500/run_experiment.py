@@ -43,7 +43,7 @@ def main(argv=None):
 
     # Probe only the established fruit example, so held-out campaign cases are not used
     # for setup decisions. Use a subprocess to release its cached models before the batch.
-    probe_path = allocate(BATCH / 'results/requested-action-500/probes') / 'probe.json'
+    probe_path = allocate(BATCH / 'results' / suite['experiment_id'] / 'probes') / 'probe.json'
     temperatures = [c['temperature'] for c in suite['configurations']]
     probe_command = [sys.executable, '-B', '-m', 'research.probe', '--cases', str(BATCH / 'examples/generic-choice/cases.json'),
                      '--suite', str(BATCH / 'examples/generic-choice/suite.json'), '--temperatures', json.dumps(temperatures),

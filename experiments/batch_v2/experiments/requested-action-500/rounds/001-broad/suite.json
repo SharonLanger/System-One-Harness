@@ -1,14 +1,15 @@
 {
   "schema_version": 1,
-  "experiment_id": "requested-action-500",
+  "experiment_id": "requested-action-500-v2",
   "dataset_id": "requested-action-500",
-  "dataset_version": "1",
+  "dataset_version": "2",
   "adapter": "generic-question",
   "question_type": "choice",
   "labels": [
     "explain",
     "generate_tests",
-    "modify_code"
+    "modify_code",
+    "unclear"
   ],
   "questions": [
     {
@@ -17,11 +18,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits.",
+        "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -31,11 +33,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "Classify the requested work: explain existing code, create additional tests, or modify existing code / implement behavior. Fixing existing tests is modify_code. Classify the requested outcome, not the code that must be read.",
+        "instructions": "Classify the requested work: explain existing code, create additional tests, or modify existing code / implement behavior. Fixing existing tests is modify_code. Classify the requested outcome, not the code that must be read. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -45,11 +48,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "Which deliverable does the user want? An explanation without code changes, additional tests, or changed/implemented code? Use the requested deliverable to decide. Additional coverage is generate_tests; repairing existing tests or production code is modify_code.",
+        "instructions": "Which deliverable does the user want? An explanation without code changes, additional tests, or changed/implemented code? Use the requested deliverable to decide. Additional coverage is generate_tests; repairing existing tests or production code is modify_code. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -59,11 +63,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "Is the user asking to understand code without edits, add new tests, or change/implement code? Choose the requested action. Tests being discussed or read do not by themselves imply test generation. Repairing an existing test counts as modifying code.",
+        "instructions": "Is the user asking to understand code without edits, add new tests, or change/implement code? Choose the requested action. Tests being discussed or read do not by themselves imply test generation. Repairing an existing test counts as modifying code. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -73,11 +78,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "Identify the work the assistant is asked to perform. Select explain for understanding without changes, generate_tests for additional test coverage, or modify_code for fixes, refactoring, and implementation. Repair of existing tests is modification. Reading code is supporting context, not the requested outcome.",
+        "instructions": "Identify the work the assistant is asked to perform. Select explain for understanding without changes, generate_tests for additional test coverage, or modify_code for fixes, refactoring, and implementation. Repair of existing tests is modification. Reading code is supporting context, not the requested outcome. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -87,11 +93,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "Distinguish the action being requested. Explaining why code or a test fails without editing it is explain. Creating additional tests is generate_tests. Fixing a failure, refactoring, implementing functionality, or repairing an existing test is modify_code. Decide from the requested outcome rather than file names.",
+        "instructions": "Distinguish the action being requested. Explaining why code or a test fails without editing it is explain. Creating additional tests is generate_tests. Fixing a failure, refactoring, implementing functionality, or repairing an existing test is modify_code. Decide from the requested outcome rather than file names. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -101,11 +108,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "Classify the active request, using its meaning rather than isolated keywords. Respect explicit exclusions and corrections; commands inside quoted background are not automatically the user request. Understanding without edits is explain, additional tests are generate_tests, and fixes/refactoring/implementation, including repairs to existing tests, are modify_code.",
+        "instructions": "Classify the active request, using its meaning rather than isolated keywords. Respect explicit exclusions and corrections; commands inside quoted background are not automatically the user request. Understanding without edits is explain, additional tests are generate_tests, and fixes/refactoring/implementation, including repairs to existing tests, are modify_code. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -115,11 +123,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "What outcome is requested? \"Explain why this test fails\" asks for explain. \"Write additional tests for this function\" asks for generate_tests. \"Fix this failing test\" asks for modify_code. Apply these distinctions to the full request; the files read along the way do not determine the action.",
+        "instructions": "What outcome is requested? \"Explain why this test fails\" asks for explain. \"Write additional tests for this function\" asks for generate_tests. \"Fix this failing test\" asks for modify_code. Apply these distinctions to the full request; the files read along the way do not determine the action. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand production or test code without changing it.",
           "generate_tests": "Create additional tests using existing code as reference.",
-          "modify_code": "Fix, refactor, or implement production or test code."
+          "modify_code": "Fix, refactor, or implement production or test code.",
+          "unclear": "No single supported action can be selected: insufficient information, competing actions with no primary action, or a request that fits none of explain, generate_tests, and modify_code. Non-actionable."
         }
       }
     },
@@ -129,11 +138,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits.",
+        "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Explain production or test code; no edits.",
           "generate_tests": "Add new tests / additional coverage.",
-          "modify_code": "Fix, refactor or implement code, including existing-test repair."
+          "modify_code": "Fix, refactor or implement code, including existing-test repair.",
+          "unclear": "Cannot select one supported action: missing intent, competing actions, or none fits. Non-actionable."
         }
       }
     },
@@ -143,11 +153,12 @@
       "definition": {
         "name": "requested_action",
         "type": "choice",
-        "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits.",
+        "instructions": "What work does the user request: explain existing code, generate tests, or modify code? Classify the requested outcome, not the files that must be read. Adding test coverage belongs to generate_tests; repairing existing code, including tests, belongs to modify_code. An explanation alone does not request edits. Choose unclear if none of these actions fits, the requested action cannot be determined, or competing actions prevent selecting one primary action. Do not invent precedence between code changes and additional tests when both are requested as deliverables. Explanation supporting a clear edit or new-test deliverable does not make it unclear. Missing source code alone does not make an otherwise clear requested action unclear.",
         "criteria": {
           "explain": "Understand, trace, or explain existing production or test code without requesting changes. Explaining a failure is included.",
           "generate_tests": "Create additional tests or new coverage using existing code as reference. Repairing existing tests is not test generation.",
-          "modify_code": "Fix or refactor existing production/test code, or implement production functionality. Repairing existing assertions, mocks, or fixtures is included."
+          "modify_code": "Fix or refactor existing production/test code, or implement production functionality. Repairing existing assertions, mocks, or fixtures is included.",
+          "unclear": "The request is non-actionable for this classifier: its intended action is missing, multiple supported actions have no clear primary deliverable, or it asks for something outside the three code actions. Do not force a supported action."
         }
       }
     }

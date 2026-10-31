@@ -1,3 +1,5 @@
+> Historical version-1 record. For the current four-choice definition and validation, see [unclear-v2.md](unclear-v2.md). The original review/verification below is preserved, not rerun evidence.
+
 # Preparation checks
 
 Prepared against main commit `f60e8b7b59ac2cc8e4ec647c39175e0292491de2`. All authored changes are under `experiments/batch_v2/`; no production file or existing runner implementation changed.

@@ -11,6 +11,20 @@ from research.protocol import digest, validate_protocol
 from research.records import load, read_run
 
 
+def flow_decisions(rows, labels):
+    """Separate accepted unclear from rejected answers and actionable predictions."""
+    valid = [r for r in rows if r['status'] == 'completed' and r['label_status'] == 'settled'
+             and r['raw_label'] in labels and type(r.get('native_accepted')) is bool]
+    actionable = [r for r in valid if r['native_accepted'] and r['raw_label'] != 'unclear']
+    wrong = sum(r['raw_label'] != r['expected'] for r in actionable)
+    return {'planned': len(rows), 'evaluated': len(valid), 'missing': len(rows) - len(valid),
+            'actionable': len(actionable), 'wrong_actionable': wrong,
+            'actionable_coverage': len(actionable) / len(valid) if valid else None,
+            'actionable_error': wrong / len(actionable) if actionable else None,
+            'accepted_unclear': sum(r['native_accepted'] and r['raw_label'] == 'unclear' for r in valid),
+            'rule_rejected': sum(not r['native_accepted'] for r in valid)}
+
+
 def group_summaries(rows, labels):
     groups = {'all_development': rows}
     for name in sorted({r['noise_level'] for r in rows}):
@@ -26,6 +40,8 @@ def group_summaries(rows, labels):
         summary['settled_planned'] = settled
         summary['screen_complete'] = (summary['complete'] and summary['classification']['n'] == settled
                                       and summary['probability']['n'] == settled and summary['runner_native']['n'] == settled)
+        if 'unclear' in labels:
+            summary['flow_decisions'] = flow_decisions(value, labels)
         output[key] = summary
     return output
 
@@ -76,7 +92,8 @@ def write_screening_report(run_root, roles, protocol):
              'Development cases only. No held-out predictions loaded. This is a screening report, not a selected winner.', '',
              'BA = balanced accuracy; MCC = correlation across the class confusion table. Higher is better. NLL and Brier: lower is better. '
              'Coverage = fraction of settled cases accepted. Accepted error = fraction of accepted settled answers that are wrong. '
-             'Unsettled rejection is a separate behavioral goal. N/A means unavailable; no accepted cases is not zero error.', '',
+             'An accepted unclear prediction is a scored answer but is non-actionable; rule rejection is recorded separately. '
+             'Unsettled rejection applies only to datasets with unscored labels. N/A means unavailable; no accepted cases is not zero error.', '',
              '| Question / setting | Status | Scored / planned settled | Probability n | BA | MCC | NLL | Brier |', '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |']
     for key, groups in output['questions'].items():
         item = groups['all_development']; c = item['classification']; p = item['probability']
@@ -94,6 +111,19 @@ def write_screening_report(run_root, roles, protocol):
                      + ' | '.join(fmt(g[k]) for k in ('coverage', 'accepted_error', 'correct_accepted_yield')) + ' | '
                      + ' | '.join(str(g[k]) for k in ('AC', 'AW', 'RC', 'RW')) + ' | '
                      + str(u['desired_abstention_met']) + ' / ' + str(u['n']) + ' |')
+    if 'unclear' in labels:
+        lines += ['', '## Actionable output versus unclear and rejection', '',
+                  'Only accepted explain/generate_tests/modify_code answers are actionable. Accepted unclear and rule rejection both '
+                  'mean no enrichment in the proposed flow. These counts describe the experiment; production routing is unchanged. '
+                  'Coverage uses evaluated cases; missing cases keep the result PARTIAL. Zero actionable answers means N/A error, not zero error.', '',
+                  '| Question / setting / rule | Status | Evaluated / planned | Actionable | Actionable coverage | Wrong actionable | Actionable error | Accepted unclear | Rule rejected |',
+                  '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |']
+        for key, groups in output['rules'].items():
+            item = groups['all_development']; f = item['flow_decisions']
+            lines.append('| ' + key.replace('|', ' / ') + ' | ' + ('complete' if item['screen_complete'] else 'PARTIAL')
+                         + f" | {f['evaluated']} / {f['planned']} | {f['actionable']} | " + fmt(f['actionable_coverage'])
+                         + f" | {f['wrong_actionable']} | " + fmt(f['actionable_error'])
+                         + f" | {f['accepted_unclear']} | {f['rule_rejected']} |")
     lines += ['', 'Class, noise, tag, confusion, technical-error and probability-denominator details are in screening.json. '
               'Tags overlap. NLL may be unavailable because of zero true-class probability; inspect its status in JSON. '
               'Use family-paired comparisons before discarding alternatives. Temperature fitting uses only the separate temperature role; '
