@@ -80,7 +80,7 @@ def validate_response(raw, questions):
     return raw
 
 
-def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None):
+def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None):
     """Return copied raw JSON, reusing agents only in the provided registry."""
     from .config import RunConfig
     from .registry import AgentRegistry
@@ -88,9 +88,9 @@ def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, co
     if config is None:
         config = RunConfig(model=model)
     if registry is None:
-        registry = AgentRegistry(loader=loader, real=real)
-    elif loader is not None or real:
-        raise ValueError('registry owns loader and mode')
+        registry = AgentRegistry(loader=loader, real=real, inspection_provider=inspection_provider)
+    elif loader is not None or real or inspection_provider is not None:
+        raise ValueError('registry owns loader, mode and inspection provider')
     log("DEBUG", "laya", "prediction_started", text=text, questions=questions,
         model=config.model, temperature=config.temperature, lang=config.lang)
     try:
