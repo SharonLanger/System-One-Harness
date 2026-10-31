@@ -21,7 +21,26 @@ Public LAYA blocks are fixed/mocked; deterministic source utilities and selected
 
 ## Validation
 
-Results will be recorded after the final focused checks complete.
+Executed from the repository root:
+
+| Command | Result |
+| --- | --- |
+| `npm run build --prefix typescript-helper` | Passed |
+| `node --test typescript-helper/test/session-state*.test.cjs` | 26 passed |
+| `python -m pytest tests/first_flow tests/test_session_transaction.py tests/test_post_compact.py -q` | Initial run: 170 passed, one existing timeout expectation failed; resolved below |
+| `python -m pytest tests/first_flow/test_session_policy.py -q` | 28 passed |
+| `python -m pytest tests/first_flow/test_session_flow.py -q` | 15 passed |
+| `python -m pytest tests/test_session_transaction.py -q` | 16 passed |
+| `python -m pytest tests/first_flow/test_hook_integration.py::test_session_duplicate_gateway_returns_zero_bytes_without_state_change -q` | 1 passed |
+| `python -m pytest tests/test_post_compact.py tests/test_session_transaction.py tests/first_flow/test_session_flow.py::test_finalizer_timeout_propagates -q` | Final targeted run: 27 passed |
+| `git diff --check` | Passed |
+
+These runs overlap; counts are not additive. The original combined run preceded collection of the newly added flow tests and additional concurrency/timeout cases, which passed in the focused commands above. No full repository suite or live model experiment was run.
+
+## Focused Astra resolution
+
+The existing PostCompact adapter test expected subprocess.TimeoutExpired when Node timed out. The design requires TimeoutError to reach the gateway's deadline handler. Astra approved normalizing that subprocess exception in the shared adapter and updating the existing test to expect TimeoutError with TimeoutExpired preserved as its cause. The test still verifies a later successful write, proving child cleanup and lock release. No PostCompact event format or dispatcher change was required. The final relevant regression run passed.
+
 
 ## Accepted limits
 

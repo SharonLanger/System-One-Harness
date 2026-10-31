@@ -101,8 +101,9 @@ def test_plugin_registration():
 
 def test_child_timeout_is_reaped_and_next_write_succeeds(tmp_path):
     helper=tmp_path/'slow.js';helper.write_text('setTimeout(() => {}, 30000);')
-    with pytest.raises(subprocess.TimeoutExpired):
+    with pytest.raises(TimeoutError) as expired:
         save_event('id',EVENT,deadline=monotonic()+0.15,logs_root=tmp_path,helper=helper)
+    assert isinstance(expired.value.__cause__, subprocess.TimeoutExpired)
     save_event('id',EVENT,deadline=monotonic()+10,logs_root=tmp_path)
 
 
@@ -123,3 +124,4 @@ raise SystemExit(main(['--hook','PostCompact','--log-state'], logger=lambda *a,*
     assert result.returncode==0 and result.stdout==''
     record=json.loads((tmp_path/'session-state/abc123.jsonl').read_text())
     assert record['type']=='PostCompact' and record['payload']=={}
+
