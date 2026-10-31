@@ -1,6 +1,6 @@
 # Implementation plan before the first real campaign
 
-Status: planning only. This documentation PR does not implement the research helpers.
+Status: Track A tooling implemented for review; live Mac and browser acceptance remain pending. See [implementation evidence](track-a-verification.md) and [research interfaces](../research/README.md).
 Scope: experiments/batch_v2/ only.
 
 Read [README](README.md), [workflow](workflow.md), [scoring](scoring.md) and [records and handoffs](records-and-handoffs.md) before implementing.
@@ -124,14 +124,14 @@ Run relevant existing RV2 checks after integration. Report fixture/mechanical ev
 
 ## Track A completion checklist
 
-- [ ] Pure metrics and DOCTOR pass golden checks.
-- [ ] Reader captures labels/probabilities with honest availability metadata.
-- [ ] Tuning paths cannot consume held-out evidence.
-- [ ] Broad/refined temperature proposals and threshold sweeps terminate and preserve provenance.
-- [ ] Generated suites validate with the actual runner.
-- [ ] Reports distinguish supported metrics, unavailable values and technical failures.
-- [ ] Campaign/round records and evidence exports let a different agent reproduce decisions.
-- [ ] Applicable RV2 regression checks pass; changed files remain under experiments/batch_v2/.
+- [x] Pure metrics and DOCTOR pass golden checks.
+- [x] Reader captures labels/probabilities with honest availability metadata.
+- [x] Tuning paths cannot consume held-out evidence.
+- [x] Broad/refined temperature proposals and threshold sweeps terminate and preserve provenance.
+- [x] Generated suites validate with the actual runner.
+- [x] Reports distinguish supported metrics, unavailable values and technical failures.
+- [x] Campaign/round records and evidence exports let a different agent reproduce decisions.
+- [x] Applicable RV2 regression checks pass; changed files remain under experiments/batch_v2/.
 - [ ] Local HTML report behavior is checked, including the outstanding browser acceptance from PR #21.
 - [ ] Capability probe selects a verified Mac route before the first full live campaign; pending live work is explicitly recorded.
 - [ ] Implementation PR is reviewed and merged under Sharon's instruction.

@@ -91,3 +91,5 @@ python -B -m unittest discover -s experiments/batch_v2/checks -v
 Technical failures return nonzero; model mistakes alone do not. Explicit call-budget completion can leave a partial run with unattempted rows; inspect manifest status. Offline commands do not prove live model accuracy. The generic fixture execution command uses the bundled response map; for a different experiment, use live mode with the installed model. Additional fixture datasets require a matching injected response fixture, never an implicit fake response.
 
 Browser acceptance on the Mac: open report.html, confirm 8 overview rows, select a vector, then noisy and misleading groups; each should show its one matching row. The report should scroll horizontally on a narrow screen. An optional automated browser check is included at checks/browser-check.cjs for an environment with Playwright and its Chromium installed.
+
+- [Research tooling](research/README.md): role-filtered analysis, metrics, temperature proposals, frozen policies and evidence export. [Verification](docs/track-a-verification.md) distinguishes fixture results from pending live/browser checks.

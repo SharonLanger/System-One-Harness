@@ -4,7 +4,7 @@ Define a classification use case, test alternative questions/choices/rules throu
 
 This folder is the shared entry point for the experiment designer, input author/reviewer, implementation agent, operator and results analyst. A production building block is not required to run the research.
 
-Status: the runner is merged; the additional analysis helpers are planned. This handbook contains instructions and blank record templates. It contains no real experiment cases or measured results.
+Status: the runner is merged and Track A analysis helpers are implemented for review. [Verification](track-a-verification.md) records synthetic evidence and pending Mac/browser checks. No real experiment cases or live results exist.
 
 ## Read in this order
 
