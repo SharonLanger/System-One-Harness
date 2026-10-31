@@ -392,3 +392,22 @@ def test_unexpected_prepared_validator_failure_is_typed_with_cause(tmp_path):
     def unexpected(*_): raise RuntimeError('validator failed')
     with pytest.raises(BlockExecutionError) as caught: execute(make_block(tmp_path,validate_prepared=unexpected))
     assert isinstance(caught.value.__cause__,RuntimeError)
+
+
+def test_noul_distance_rule_rejects_without_changing_yes_semantics(tmp_path):
+    block=make_block(tmp_path,'noul',rules=[rule('noul',conditions=[{'field':'distance_from_boundary','op':'gte','value':.3001}])])
+    result,_=execute(block,raw('noul'))
+    assert result.status=='completed'
+    assert result.decisions['local']=={'answer':'undecided','decided':False,'reason':'below_threshold:distance_from_boundary'}
+    # The same raw noul value remains yes when the threshold accepts equality.
+    block.catalog._rules['accept'].conditions[0]['value']=.3
+    accepted,_=execute(block,raw('noul'))
+    assert accepted.decisions['local']=={'answer':'yes','decided':True,'reason':None}
+
+
+def test_block_declaration_loader_rejects_duplicate_local_json_keys(tmp_path):
+    declaration=tmp_path/'block.json'
+    declaration.write_text('{"name":"duplicate","questions":{"local":{"definition":{"type":"noul","instructions":"x"},"rule_ref":"accept"},"local":{"definition":{"type":"noul","instructions":"y"},"rule_ref":"accept"}}}')
+    with pytest.raises(BlockConfigurationError,match='duplicate JSON key: local'):
+        Block(declaration,catalog=catalog_at(tmp_path,[rule('noul')]),validate_input=lambda x:x,
+            prepare_input=lambda *_:pytest.fail('prepared'),reduce=lambda *_:pytest.fail('reduced'),validate_output=lambda x:x)
