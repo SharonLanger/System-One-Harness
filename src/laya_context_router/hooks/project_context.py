@@ -3,7 +3,8 @@ from dataclasses import replace
 from pathlib import Path
 
 
-def enrich_project_context(envelope, project_dir, logger):
+def resolve_project_directory(project_dir):
+    """Return canonical directory and status without reading project source."""
     directory = None
     status = 'missing' if project_dir is None else 'invalid'
     if isinstance(project_dir, str) and project_dir.strip():
@@ -18,6 +19,11 @@ def enrich_project_context(envelope, project_dir, logger):
             raise
         except (OSError, ValueError, RuntimeError):
             pass
+    return directory, status
+
+
+def enrich_project_context(envelope, project_dir, logger):
+    directory, status = resolve_project_directory(project_dir)
     enriched = replace(envelope, derived={**envelope.derived, 'project_dir': directory})
     logger('INFO', 'project_context_ingested',
            session_id=envelope.common['session_id'],
