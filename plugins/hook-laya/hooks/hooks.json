@@ -5,7 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"/absolute/path/to/laya-python\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root \"${CLAUDE_PROJECT_DIR}\" --real"
+            "command": "\"${LAYA_PYTHON}\" -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root \"${CLAUDE_PROJECT_DIR}\" --real"
           }
         ]
       }
