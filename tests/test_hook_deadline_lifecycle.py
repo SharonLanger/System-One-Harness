@@ -17,12 +17,15 @@ def test_deadline_covers_final_and_error_logging(tmp_path,stage):
 from laya_context_router.hooks.gateway import main
 from laya_context_router.hooks.contracts import Context
 calls=[]
+processing_started=False
 def logger(level,event,**details):
     calls.append(event)
     if MODE=='final' and event=='gateway_finished':time.sleep(30)
-    if MODE=='processing' and event!='gateway_received':raise AssertionError('post-expiration callback')
+    if MODE=='processing' and processing_started:raise AssertionError('post-expiration callback')
     with open(LOG,'a') as f:f.write(json.dumps({'event':event,**details})+'\\n')
 def dispatch(*a):
+    global processing_started
+    processing_started=True
     if MODE=='processing':time.sleep(30)
     return Context('known')
 main(['--hook','X','--deadline','.15'],dispatcher=dispatch,logger=logger)
@@ -36,7 +39,7 @@ main(['--hook','X','--deadline','.15'],dispatcher=dispatch,logger=logger)
     assert 'post-expiration callback' not in r.stderr
     records=[json.loads(x) for x in path.read_text().splitlines()]
     assert not any(x['event']=='gateway_finished' for x in records)
-    if stage=='processing':assert [x['event'] for x in records]==['gateway_received']
+    if stage=='processing':assert [x['event'] for x in records]==['gateway_started','gateway_input_received','gateway_received','gateway_dispatch_started']
 
 def test_undrained_output_pipe_times_out_without_retrying_delivery(tmp_path):
     path=tmp_path/'records.jsonl'

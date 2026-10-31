@@ -36,12 +36,30 @@ def _user_prompt_dispatch(envelope,args,logger):
     return dispatch_user_prompt_submit(envelope,args,logger)
 
 def dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher=enrich_envelope):
+    result=None
+    logger('INFO','hook_dispatcher_started',invocation_id=invocation_id,
+           session_id=payload.get('session_id') if isinstance(payload,dict) else None,
+           command_hook=args.hook)
+    try:
+        result=_dispatch_hook(payload,args,invocation_id,logger,
+                              dispatchers=dispatchers,enricher=enricher)
+        return result
+    finally:
+        logger('ERROR' if result is None or isinstance(result,Failure) else 'INFO',
+               'hook_dispatcher_finished',result_type=type(result).__name__,
+               reason=result.reason if isinstance(result,Noop) else None,
+               code=result.code if isinstance(result,Failure) else ('dispatcher_exception' if result is None else None))
+
+
+def _dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher=enrich_envelope):
     try:
         if not isinstance(payload,dict):raise ValidationError('invalid_object','input')
         name=require_string(payload,'hook_event_name','input')
         if name!=args.hook:raise ValidationError('event_mismatch','input','hook_event_name',command_hook=args.hook,payload_hook=name)
         registry = {'UserPromptSubmit':_user_prompt_dispatch} if dispatchers is None else dispatchers
-        if name not in registry:return Noop('unsupported_event')
+        if name not in registry:
+            logger('INFO','hook_dispatcher_route_skipped',hook_event_name=name,reason='unsupported_event')
+            return Noop('unsupported_event')
         envelope=ingest_common(payload,invocation_id)
         baseline=deepcopy(envelope)
         envelope=enricher(envelope)
@@ -65,7 +83,10 @@ def dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher=
                 raise ValidationError('invalid_enrichment','common','project_dir') from exc
         logger('INFO','common_input_validated',session_id=envelope.common['session_id'],
                fields=sorted(envelope.common),derived_fields=sorted(envelope.derived))
+        logger('INFO','hook_dispatcher_routed',hook_event_name=name,
+               destination=name,common=envelope.common,derived=envelope.derived)
         return validate_result(registry[name](envelope,args,logger))
     except ValidationError as exc:
+        logger('ERROR','hook_dispatcher_rejected',code=exc.code,stage=exc.stage,field=exc.field)
         if exc.evidence:logger('ERROR','input_rejected',**exc.evidence)
         return Failure(exc.code,exc.stage,exc.field,str(exc))

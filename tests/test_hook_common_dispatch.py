@@ -76,6 +76,7 @@ def test_input_order_and_one_dispatch():
     events=[]
     def seam(e):events.append('seam');return e
     def handler(e,a,l):events.append('handler');return Noop('multiple_relevant')
-    result=dispatch_hook(payload(),ARGS,'id',lambda *a,**k:events.append('log'),
+    result=dispatch_hook(payload(),ARGS,'id',lambda level,event,**k:events.append(event),
                          dispatchers={'UserPromptSubmit':handler},enricher=seam)
-    assert result==Noop('multiple_relevant') and events==['seam','log','handler']
+    assert result==Noop('multiple_relevant') and events==['hook_dispatcher_started','seam','common_input_validated',
+        'hook_dispatcher_routed','handler','hook_dispatcher_finished']

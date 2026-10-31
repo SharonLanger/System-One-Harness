@@ -162,7 +162,14 @@ def main(argv=None, *, dispatcher=None, logger=None):
                 previous_handler=signal.signal(signal.SIGALRM,expire)
                 signal.setitimer(signal.ITIMER_REAL,remaining)
                 timer_started=True
+                log('INFO','gateway_started',process_cwd=os.getcwd(),
+                    claude_project_dir=os.environ.get('CLAUDE_PROJECT_DIR'),
+                    repository_root_argument=args.repository_root,
+                    mode='observe_only' if args.observe_only else ('real' if args.real else 'disabled'))
                 text=sys.stdin.read(MAX_INPUT_CHARS+1)
+                log('INFO','gateway_input_received',raw_input=text[:MAX_INPUT_CHARS],
+                    raw_input_truncated=len(text)>MAX_INPUT_CHARS,
+                    input_chars_read=len(text),input_limit_chars=MAX_INPUT_CHARS)
                 observed_input = False
                 if args.observe_only:
                     observed_input = log('INFO','observation_input_received',
@@ -170,7 +177,7 @@ def main(argv=None, *, dispatcher=None, logger=None):
                         raw_input_truncated=len(text)>MAX_INPUT_CHARS,
                         input_chars_read=len(text),input_limit_chars=MAX_INPUT_CHARS)
                 payload=parse_payload(text,args.hook)
-                log('INFO','gateway_received',input_chars=len(text),fields=sorted(payload))
+                log('INFO','gateway_received',input_chars=len(text),fields=sorted(payload),raw_payload=payload)
                 if args.observe_only:
                     from .project_context import resolve_project_directory
                     project_value=os.environ.get('CLAUDE_PROJECT_DIR')
@@ -192,7 +199,9 @@ def main(argv=None, *, dispatcher=None, logger=None):
                         raise ValidationError('observation_log_failed','observation')
                     result=Noop('observe_only',feature_id='hook_observation')
                 else:
+                    log('INFO','gateway_dispatch_started',destination='hook_dispatcher')
                     result=validate_result((dispatcher or _default_dispatch)(payload,args,invocation_id,log))
+                    log('INFO','gateway_dispatch_finished',result_type=type(result).__name__)
                 if expired:
                     raise TimeoutError('hook deadline exceeded')
                 output=serialize_response(result,args.hook)

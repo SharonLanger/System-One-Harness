@@ -32,7 +32,7 @@ def test_prompt_preserved_and_one_handler(prompt):
     assert result==Noop('no_match') and len(calls)==1
     assert calls[0].prompt==prompt and calls[0].config is ARGS
     assert calls[0].envelope.raw_payload==p
-    assert [x[0][1] for x in logs]==['hook_input_ingested','feature_started','feature_finished']
+    assert [x[0][1] for x in logs]==['event_dispatcher_started','hook_input_ingested','feature_started','feature_finished','event_dispatcher_finished']
     assert all('prompt' not in x[1] for x in logs)
 
 @pytest.mark.parametrize('output',[Context('known'),Noop('multiple_relevant'),Failure('model_error','feature')])
@@ -66,7 +66,7 @@ def test_feature_completion_metadata(output):
     records=[];ticks=iter([3.0,3.25])
     result=dispatch_user_prompt_submit(ingest_common(event(),'id'),ARGS,
         lambda l,e,**d:records.append((l,e,d)),handler=lambda *a:output,clock=lambda:next(ticks))
-    final=records[-1][2]
+    final=next(d for l,e,d in records if e=='feature_finished')
     assert final['duration_seconds']==0.25
     assert final['outcome']==('context' if isinstance(output,Context) else ('noop' if isinstance(output,Noop) else 'error'))
     assert final['reason']==('multiple_relevant' if isinstance(output,Noop) else None)
@@ -78,5 +78,5 @@ def test_unexpected_exception_has_completion_record():
     with pytest.raises(RuntimeError):
         dispatch_user_prompt_submit(ingest_common(event(),'id'),ARGS,
             lambda l,e,**d:records.append((e,d)),handler=handler,clock=lambda:1.0)
-    assert records[-1][0]=='feature_finished'
-    assert records[-1][1]['outcome']=='error' and records[-1][1]['code']=='feature_exception'
+    assert records[-1][0]=='event_dispatcher_finished'
+    assert records[-1][1]['outcome']=='error' and records[-1][1]['code']=='dispatcher_exception'
