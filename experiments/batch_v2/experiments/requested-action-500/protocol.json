@@ -1,7 +1,7 @@
 {
-  "campaign_id": "requested-action-500",
-  "cases_hash": "09ecb8d7992c8115335b3605a9fb191ddca7cc588852ed76339cd841de4ba490",
-  "case_file_sha256": "96798552363d98d3f10193e33e037e1e6c9875063f0f1f6e4dce0099e02514d2",
+  "campaign_id": "requested-action-500-v2",
+  "cases_hash": "87ae28531763144365c56785e16e79b8b1364675f0fbb835a5be0a60182e7641",
+  "case_file_sha256": "7deb6546d3f4583bed834ff4412e964ce5f26dcc90908efc06bc85198b886708",
   "roles_hash": "765ff4f2d9484d84b7660fe78169cafccd8353cf01f9869eee07eb3cc0e7cc76",
   "critical_groups": [
     "misleading",

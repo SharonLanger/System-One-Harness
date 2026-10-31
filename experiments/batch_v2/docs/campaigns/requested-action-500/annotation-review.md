@@ -1,3 +1,5 @@
+> Historical version-1 record. For the current four-choice definition and validation, see [unclear-v2.md](unclear-v2.md). The original review/verification below is preserved, not rerun evidence.
+
 # Annotation review: requested-action-500
 
 Status: input authoring and label-blind review completed; pre-freeze clarifications applied. Dataset version 1 is frozen before target-model inference. No LAYA prediction, probability, or acceptance result was used to set labels, tags or roles.

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "dataset_id": "requested-action-500",
-  "dataset_version": "1",
+  "dataset_version": "2",
   "cases": [
     {
       "id": "case-002",
@@ -36,8 +36,8 @@
     {
       "id": "case-004",
       "input": "quick one: Plase do teh thing we agreed on yesterday.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "missing-context",
@@ -45,8 +45,7 @@
       ],
       "source_family_id": "family-116",
       "split": "development",
-      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-011",
@@ -64,8 +63,8 @@
     {
       "id": "case-013",
       "input": "### one thing ###\nThe  branch  title  says  \"docs\",  but  teh  requested  work  is  both  the  token-store  refactor  and  new  evicton  tests.\n### thx ###",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -76,8 +75,7 @@
       ],
       "source_family_id": "family-108",
       "split": "development",
-      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-014",
@@ -255,8 +253,8 @@
     {
       "id": "case-043",
       "input": "Make the progress indicator accessible to screen readers and add new accessibility tests.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -264,8 +262,7 @@
       ],
       "source_family_id": "family-114",
       "split": "development",
-      "notes": "Production change and new test creation are both active. Direct form.",
-      "desired_abstention": true
+      "notes": "Production change and new test creation are both active. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-045",
@@ -296,8 +293,8 @@
     {
       "id": "case-051",
       "input": "The ticket mentions an explanation, but both deliverables are required now: fix coupon calculation and add new stacked-coupon tests.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -307,14 +304,13 @@
       ],
       "source_family_id": "family-106",
       "split": "development",
-      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-052",
       "input": "The branch title says \"docs\", but the requested work is both the token-store refactor and new eviction tests.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -324,8 +320,7 @@
       ],
       "source_family_id": "family-108",
       "split": "development",
-      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-054",
@@ -601,8 +596,8 @@
     {
       "id": "case-095",
       "input": "Do not act on the old quoted phrase \"explain the function\"; it is unrelated. Continue where you left off on my earlier request.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -612,8 +607,7 @@
       ],
       "source_family_id": "family-120",
       "split": "development",
-      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Authored misleading background; active request unchanged. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-096",
@@ -762,8 +756,8 @@
     {
       "id": "case-118",
       "input": "The bug report contains sample output, not instructions. My actual request is both the cycle-handling fix and new cyclic-graph regression tests.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -773,8 +767,7 @@
       ],
       "source_family_id": "family-112",
       "split": "development",
-      "notes": "Repair plus regression-test creation is intentionally unresolved. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Repair plus regression-test creation is intentionally unresolved. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-119",
@@ -821,8 +814,8 @@
     {
       "id": "case-132",
       "input": "Continue where you left off on my earlier reqest.\n... sorry for the typing",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "missing-context",
@@ -830,8 +823,7 @@
       ],
       "source_family_id": "family-120",
       "split": "development",
-      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-133",
@@ -885,14 +877,13 @@
     {
       "id": "case-157",
       "input": "Translate \"the train arrives at noon\" into Spanish.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [],
       "source_family_id": "family-122",
       "split": "development",
-      "notes": "Translation of ordinary text is not code understanding or modification. Direct form.",
-      "desired_abstention": true
+      "notes": "Translation of ordinary text is not code understanding or modification. Direct form. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-160",
@@ -1086,8 +1077,8 @@
     {
       "id": "case-193",
       "input": "I was reading a code-review thread, but this is a separate arithmetic question: what is 17 multiplied by 23?",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -1095,8 +1086,7 @@
       ],
       "source_family_id": "family-123",
       "split": "development",
-      "notes": "Standalone arithmetic, not analysis of a code expression. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Standalone arithmetic, not analysis of a code expression. Authored misleading background; active request unchanged. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-197",
@@ -1230,8 +1220,8 @@
     {
       "id": "case-220",
       "input": "[urgent? no, just a note]\nDo not act on teh old quoted phrase \"explain the functon\"; it is unrelated. Continue where you left off on my earlier reqest.\n~~~~ end of copied note ~~~~",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -1242,8 +1232,7 @@
       ],
       "source_family_id": "family-120",
       "split": "development",
-      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-223",
@@ -1304,8 +1293,8 @@
     {
       "id": "case-238",
       "input": "Fix the coupon calculation and add new tests for stacked coupons.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -1313,8 +1302,7 @@
       ],
       "source_family_id": "family-106",
       "split": "development",
-      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Direct form.",
-      "desired_abstention": true
+      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-240",
@@ -1390,8 +1378,8 @@
     {
       "id": "case-247",
       "input": "Refactor the token store and write new tests covering eviction.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -1399,8 +1387,7 @@
       ],
       "source_family_id": "family-108",
       "split": "development",
-      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Direct form.",
-      "desired_abstention": true
+      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-251",
@@ -1432,8 +1419,8 @@
     {
       "id": "case-254",
       "input": "Fix the tree traversal so it terminates on cycles, and create regression tests for cyclic graphs.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -1441,8 +1428,7 @@
       ],
       "source_family_id": "family-112",
       "split": "development",
-      "notes": "Repair plus regression-test creation is intentionally unresolved. Direct form.",
-      "desired_abstention": true
+      "notes": "Repair plus regression-test creation is intentionally unresolved. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-255",
@@ -1503,8 +1489,8 @@
     {
       "id": "case-269",
       "input": "uh ok, reqest below ...\n>> My editor tab says generate-tests.ts, but I am asking for a Spanish translation of \"teh train arrives at noon\".\n>> thanks!!",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -1513,8 +1499,7 @@
       ],
       "source_family_id": "family-122",
       "split": "development",
-      "notes": "Translation of ordinary text is not code understanding or modification. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Translation of ordinary text is not code understanding or modification. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-270",
@@ -1535,8 +1520,8 @@
     {
       "id": "case-273",
       "input": "uh ok, reqest below ...\n>> The ticket mentions an explanation, but both deliverables are required now: fix coupon calculation and add new stacked-coupon tests.\n>> thanks!!",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -1547,8 +1532,7 @@
       ],
       "source_family_id": "family-106",
       "split": "development",
-      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-275",
@@ -1619,8 +1603,8 @@
     {
       "id": "case-290",
       "input": "Fix teh tree traversal so it terminates on cycles, and create regression tests for cyclic graphs.\n... sorry for the typing",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -1629,8 +1613,7 @@
       ],
       "source_family_id": "family-112",
       "split": "development",
-      "notes": "Repair plus regression-test creation is intentionally unresolved. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Repair plus regression-test creation is intentionally unresolved. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-296",
@@ -1886,8 +1869,8 @@
     {
       "id": "case-335",
       "input": "Make teh progress indicator accessible to screen readers and add new accessibility tests.  (sent from phone)",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -1896,8 +1879,7 @@
       ],
       "source_family_id": "family-114",
       "split": "development",
-      "notes": "Production change and new test creation are both active. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Production change and new test creation are both active. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-336",
@@ -1942,16 +1924,15 @@
     {
       "id": "case-345",
       "input": "Translate \"teh train arrives at noon\" into Spanish.  (sent from phone)",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "typos"
       ],
       "source_family_id": "family-122",
       "split": "development",
-      "notes": "Translation of ordinary text is not code understanding or modification. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Translation of ordinary text is not code understanding or modification. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-348",
@@ -1981,8 +1962,8 @@
     {
       "id": "case-354",
       "input": "### one thing ###\nThere  is  an  old  note  titled  \"fix  tests\",  but  I  am  referring  to  teh  diffrent  thing  we  agreed  on  yesterday.  Plase  do  that.\n### thx ###",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -1992,8 +1973,7 @@
       ],
       "source_family_id": "family-116",
       "split": "development",
-      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-356",
@@ -2051,8 +2031,8 @@
     {
       "id": "case-363",
       "input": "uh ok, reqest below ...\n>> The issue title is \"review accessibility\". The deliverables are a code change for screen readers and additonal accessibility tests.\n>> thanks!!",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -2063,8 +2043,7 @@
       ],
       "source_family_id": "family-114",
       "split": "development",
-      "notes": "Production change and new test creation are both active. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Production change and new test creation are both active. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-364",
@@ -2155,8 +2134,8 @@
     {
       "id": "case-381",
       "input": "[notes / 09:41 / draft]\nI was reading a code-review thread, but thsi is a separate arithmetic question: what is 17 multiplied by 23?\n... lost my formatting, sry",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -2165,8 +2144,7 @@
       ],
       "source_family_id": "family-123",
       "split": "development",
-      "notes": "Standalone arithmetic, not analysis of a code expression. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Standalone arithmetic, not analysis of a code expression. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-382",
@@ -2200,8 +2178,8 @@
     {
       "id": "case-387",
       "input": "[urgent? no, just a note]\nThe bug report contains sample output, not instructions. My actual reqest is both teh cycle-handling fix and new cyclic-graph regression tests.\n~~~~ end of copied note ~~~~",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -2212,8 +2190,7 @@
       ],
       "source_family_id": "family-112",
       "split": "development",
-      "notes": "Repair plus regression-test creation is intentionally unresolved. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Repair plus regression-test creation is intentionally unresolved. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-388",
@@ -2264,22 +2241,21 @@
     {
       "id": "case-392",
       "input": "Continue where you left off on my earlier request.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "missing-context"
       ],
       "source_family_id": "family-120",
       "split": "development",
-      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Direct form.",
-      "desired_abstention": true
+      "notes": "No earlier request is available and the only quoted action is explicitly excluded. Direct form. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-394",
       "input": "The issue title is \"review accessibility\". The deliverables are a code change for screen readers and additional accessibility tests.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -2289,8 +2265,7 @@
       ],
       "source_family_id": "family-114",
       "split": "development",
-      "notes": "Production change and new test creation are both active. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Production change and new test creation are both active. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-395",
@@ -2338,8 +2313,8 @@
     {
       "id": "case-400",
       "input": "Fix teh coupon calculation and add new tests for stacked coupons.  (sent from phone)",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -2348,22 +2323,20 @@
       ],
       "source_family_id": "family-106",
       "split": "development",
-      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Coequal repair plus additional tests; the taxonomy specifies no precedence. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-401",
       "input": "What is 17 multiplied by 23? Just give teh arithmetic result.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "typos"
       ],
       "source_family_id": "family-123",
       "split": "development",
-      "notes": "Standalone arithmetic, not analysis of a code expression. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Standalone arithmetic, not analysis of a code expression. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-402",
@@ -2381,8 +2354,8 @@
     {
       "id": "case-403",
       "input": "My editor tab says generate-tests.ts, but I am asking for a Spanish translation of \"the train arrives at noon\".",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -2390,8 +2363,7 @@
       ],
       "source_family_id": "family-122",
       "split": "development",
-      "notes": "Translation of ordinary text is not code understanding or modification. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Translation of ordinary text is not code understanding or modification. Authored misleading background; active request unchanged. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-404",
@@ -2498,16 +2470,15 @@
     {
       "id": "case-420",
       "input": "What is 17 multiplied by 23? Just give the arithmetic result.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "simple"
       ],
       "source_family_id": "family-123",
       "split": "development",
-      "notes": "Standalone arithmetic, not analysis of a code expression. Direct form.",
-      "desired_abstention": true
+      "notes": "Standalone arithmetic, not analysis of a code expression. Direct form. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-425",
@@ -2559,8 +2530,8 @@
     {
       "id": "case-434",
       "input": "quick one: Refactor teh token store and write new tests covering evicton.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -2569,8 +2540,7 @@
       ],
       "source_family_id": "family-108",
       "split": "development",
-      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Coequal refactor and new coverage remain unresolved by the label contract. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-436",
@@ -2588,16 +2558,15 @@
     {
       "id": "case-441",
       "input": "Please do the thing we agreed on yesterday.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "missing-context"
       ],
       "source_family_id": "family-116",
       "split": "development",
-      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Direct form.",
-      "desired_abstention": true
+      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Direct form. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-442",
@@ -2868,8 +2837,8 @@
     {
       "id": "case-491",
       "input": "There is an old note titled \"fix tests\", but I am referring to the different thing we agreed on yesterday. Please do that.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -2878,8 +2847,7 @@
       ],
       "source_family_id": "family-116",
       "split": "development",
-      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "The referenced agreement is absent, so the requested action cannot be recovered. Authored misleading background; active request unchanged. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-498",
@@ -2985,30 +2953,28 @@
     {
       "id": "case-010",
       "input": "Help me draft a friendly invitation to a neighborhood picnic.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "simple"
       ],
       "source_family_id": "family-124",
       "split": "calibration",
-      "notes": "Social writing request is outside the code-action taxonomy. Direct form.",
-      "desired_abstention": true
+      "notes": "Social writing request is outside the code-action taxonomy. Direct form. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-012",
       "input": "Take care of the next item from the list I mentioned earlier.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "missing-context"
       ],
       "source_family_id": "family-117",
       "split": "held_out",
-      "notes": "Absent list makes the action unknowable. Direct form.",
-      "desired_abstention": true
+      "notes": "Absent list makes the action unknowable. Direct form. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-016",
@@ -3029,8 +2995,8 @@
     {
       "id": "case-017",
       "input": "Explain teh difference between a comet and an asteroid for a child.\nthanks",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -3038,14 +3004,13 @@
       ],
       "source_family_id": "family-125",
       "split": "held_out",
-      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-018",
       "input": "Repair teh exisitng mock server and add a new test for connection rejection.\nthanks",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -3054,8 +3019,7 @@
       ],
       "source_family_id": "family-109",
       "split": "held_out",
-      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-019",
@@ -3089,8 +3053,8 @@
     {
       "id": "case-024",
       "input": "[notes / 09:41 / draft]\nThe factory is exisitng test code. Fix it and also create additonal tests for its optional fields; both are requested.\n... lost my formatting, sry",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -3102,14 +3066,13 @@
       ],
       "source_family_id": "family-115",
       "split": "calibration",
-      "notes": "Repair of fixture code and new test creation are coequal. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Repair of fixture code and new test creation are coequal. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-025",
       "input": "The clipboard says \"generate tests\", but that is from another conversation. Can you handle this for me?",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -3118,8 +3081,7 @@
       ],
       "source_family_id": "family-118",
       "split": "calibration",
-      "notes": "This has no referent; discarded clipboard text cannot fill it. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "This has no referent; discarded clipboard text cannot fill it. Authored misleading background; active request unchanged. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-026",
@@ -3153,8 +3115,8 @@
     {
       "id": "case-028",
       "input": "Repair the existing mock server and add a new test for connection rejection.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -3162,8 +3124,7 @@
       ],
       "source_family_id": "family-109",
       "split": "held_out",
-      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Direct form.",
-      "desired_abstention": true
+      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-030",
@@ -3295,8 +3256,8 @@
     {
       "id": "case-047",
       "input": "Implement a bulk-delete endpoint and create integraiton tests for it.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -3305,8 +3266,7 @@
       ],
       "source_family_id": "family-107",
       "split": "calibration",
-      "notes": "Coequal production implementation plus new integration tests. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Coequal production implementation plus new integration tests. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-049",
@@ -3364,8 +3324,8 @@
     {
       "id": "case-056",
       "input": "... um .. The clipboard says \"generate tests\", but that is from another conversation. Can you handle thsi for me? ...\n(sent frm a very small keybord)",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -3375,8 +3335,7 @@
       ],
       "source_family_id": "family-118",
       "split": "calibration",
-      "notes": "This has no referent; discarded clipboard text cannot fill it. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "This has no referent; discarded clipboard text cannot fill it. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-057",
@@ -3394,8 +3353,8 @@
     {
       "id": "case-058",
       "input": ">>> An explanation can wait.\n>>> I need both gzip support in teh middleware and new compressed-respnse tests.\n[formatting got mangled]",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -3406,8 +3365,7 @@
       ],
       "source_family_id": "family-111",
       "split": "calibration",
-      "notes": "Feature implementation and new tests are coequal deliverables. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Feature implementation and new tests are coequal deliverables. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-059",
@@ -3499,8 +3457,8 @@
     {
       "id": "case-074",
       "input": "Repair the broken fixture factory and add new tests that exercise optional fixture fields.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -3508,8 +3466,7 @@
       ],
       "source_family_id": "family-115",
       "split": "calibration",
-      "notes": "Repair of fixture code and new test creation are coequal. Direct form.",
-      "desired_abstention": true
+      "notes": "Repair of fixture code and new test creation are coequal. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-080",
@@ -3527,8 +3484,8 @@
     {
       "id": "case-081",
       "input": "--- CHAT FRAGMENT ---\nThis is not a code question despite teh open test file: explain the difference between a comet and an asteroid for a child.\n\n[sent twice? pls use this msg]",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -3539,8 +3496,7 @@
       ],
       "source_family_id": "family-125",
       "split": "held_out",
-      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-082",
@@ -3734,8 +3690,8 @@
     {
       "id": "case-106",
       "input": "  Go wth the second approach we discussed, plase.  ",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "missing-context",
@@ -3743,8 +3699,7 @@
       ],
       "source_family_id": "family-119",
       "split": "calibration",
-      "notes": "Neither the approaches nor their requested actions are supplied. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Neither the approaches nor their requested actions are supplied. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-107",
@@ -3809,8 +3764,8 @@
     {
       "id": "case-114",
       "input": "Both test-related changes matter: fix the current mock server and create an additional connection-rejection test.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -3821,8 +3776,7 @@
       ],
       "source_family_id": "family-109",
       "split": "held_out",
-      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-116",
@@ -3908,16 +3862,15 @@
     {
       "id": "case-124",
       "input": "Suggest three vegetarian lunches I can prepare without an oven.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "simple"
       ],
       "source_family_id": "family-121",
       "split": "calibration",
-      "notes": "Meal suggestions are outside the three code-work labels. Direct form.",
-      "desired_abstention": true
+      "notes": "Meal suggestions are outside the three code-work labels. Direct form. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-125",
@@ -3994,8 +3947,8 @@
     {
       "id": "case-134",
       "input": "--- CHAT FRAGMENT ---\nThe sample list heading here says \"explanations\"; that is not teh list I mean. Take care of the next item from the earlier list.\n\n[sent twice? pls use this msg]",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -4006,8 +3959,7 @@
       ],
       "source_family_id": "family-117",
       "split": "held_out",
-      "notes": "Absent list makes the action unknowable. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Absent list makes the action unknowable. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-135",
@@ -4042,8 +3994,8 @@
     {
       "id": "case-138",
       "input": "*** pasted frm mobile ***\nI have finished fixing tests for today. Now suggest three vegetarian lunches I can prepare withuot an oven.\n--- end ---",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -4052,8 +4004,7 @@
       ],
       "source_family_id": "family-121",
       "split": "calibration",
-      "notes": "Meal suggestions are outside the three code-work labels. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Meal suggestions are outside the three code-work labels. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-139",
@@ -4518,8 +4469,8 @@
     {
       "id": "case-179",
       "input": "[chat paste] Update the curent assertion for the new API respnse and write a separate test for a missing header.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -4528,8 +4479,7 @@
       ],
       "source_family_id": "family-110",
       "split": "held_out",
-      "notes": "Existing-test repair plus additional test generation has no precedence. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Existing-test repair plus additional test generation has no precedence. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-180",
@@ -4607,8 +4557,8 @@
     {
       "id": "case-191",
       "input": "The sample list heading here says \"explanations\"; that is not the list I mean. Take care of the next item from the earlier list.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -4618,14 +4568,13 @@
       ],
       "source_family_id": "family-117",
       "split": "held_out",
-      "notes": "Absent list makes the action unknowable. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Absent list makes the action unknowable. Authored misleading background; active request unchanged. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-194",
       "input": "Do not limit this to explaining the wrapper. Replace it and create new compatibility tests as equal parts of the task.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -4636,8 +4585,7 @@
       ],
       "source_family_id": "family-113",
       "split": "calibration",
-      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-195",
@@ -4796,16 +4744,15 @@
     {
       "id": "case-211",
       "input": "Explain the difference between a comet and an asteroid for a child.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case"
       ],
       "source_family_id": "family-125",
       "split": "held_out",
-      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Direct form.",
-      "desired_abstention": true
+      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Direct form. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-213",
@@ -5048,8 +4995,8 @@
     {
       "id": "case-237",
       "input": "The factory is existing test code. Fix it and also create additional tests for its optional fields; both are requested.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -5060,8 +5007,7 @@
       ],
       "source_family_id": "family-115",
       "split": "calibration",
-      "notes": "Repair of fixture code and new test creation are coequal. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Repair of fixture code and new test creation are coequal. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-239",
@@ -5173,8 +5119,8 @@
     {
       "id": "case-256",
       "input": "Add support for gzip in the response middleware and add tests for compressed responses.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -5182,8 +5128,7 @@
       ],
       "source_family_id": "family-111",
       "split": "calibration",
-      "notes": "Feature implementation and new tests are coequal deliverables. Direct form.",
-      "desired_abstention": true
+      "notes": "Feature implementation and new tests are coequal deliverables. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-258",
@@ -5287,8 +5232,8 @@
     {
       "id": "case-266",
       "input": "This is not a code question despite the open test file: explain the difference between a comet and an asteroid for a child.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -5298,14 +5243,13 @@
       ],
       "source_family_id": "family-125",
       "split": "held_out",
-      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "The word explain alone does not mean explain code; astronomy is out of scope. Authored misleading background; active request unchanged. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-268",
       "input": "Replace the old encryption wrapper and write new compatibility tests for the replacement.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -5313,8 +5257,7 @@
       ],
       "source_family_id": "family-113",
       "split": "calibration",
-      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Direct form.",
-      "desired_abstention": true
+      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-271",
@@ -5362,16 +5305,15 @@
     {
       "id": "case-276",
       "input": "Can you handle this for me?",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "missing-context"
       ],
       "source_family_id": "family-118",
       "split": "calibration",
-      "notes": "This has no referent; discarded clipboard text cannot fill it. Direct form.",
-      "desired_abstention": true
+      "notes": "This has no referent; discarded clipboard text cannot fill it. Direct form. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-278",
@@ -5402,8 +5344,8 @@
     {
       "id": "case-281",
       "input": "A nearby note says \"modify the code\", but it is unrelated. Please go with the second approach we discussed.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -5412,8 +5354,7 @@
       ],
       "source_family_id": "family-119",
       "split": "calibration",
-      "notes": "Neither the approaches nor their requested actions are supplied. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Neither the approaches nor their requested actions are supplied. Authored misleading background; active request unchanged. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-283",
@@ -5504,8 +5445,8 @@
     {
       "id": "case-291",
       "input": "Take care of teh next item from the list I mentioned earlier.\nthanks",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "missing-context",
@@ -5513,8 +5454,7 @@
       ],
       "source_family_id": "family-117",
       "split": "held_out",
-      "notes": "Absent list makes the action unknowable. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Absent list makes the action unknowable. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-292",
@@ -5848,8 +5788,8 @@
     {
       "id": "case-330",
       "input": "  Add support for gzip in teh respnse middleware and add tests for compressed responses.  ",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -5858,8 +5798,7 @@
       ],
       "source_family_id": "family-111",
       "split": "calibration",
-      "notes": "Feature implementation and new tests are coequal deliverables. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Feature implementation and new tests are coequal deliverables. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-334",
@@ -6174,8 +6113,8 @@
     {
       "id": "case-370",
       "input": "Update the current assertion for the new API response and write a separate test for a missing header.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -6183,14 +6122,13 @@
       ],
       "source_family_id": "family-110",
       "split": "held_out",
-      "notes": "Existing-test repair plus additional test generation has no precedence. Direct form.",
-      "desired_abstention": true
+      "notes": "Existing-test repair plus additional test generation has no precedence. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-371",
       "input": "Implement a bulk-delete endpoint and create integration tests for it.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -6198,28 +6136,26 @@
       ],
       "source_family_id": "family-107",
       "split": "calibration",
-      "notes": "Coequal production implementation plus new integration tests. Direct form.",
-      "desired_abstention": true
+      "notes": "Coequal production implementation plus new integration tests. Direct form. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-372",
       "input": "Go with the second approach we discussed, please.",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "missing-context"
       ],
       "source_family_id": "family-119",
       "split": "calibration",
-      "notes": "Neither the approaches nor their requested actions are supplied. Direct form.",
-      "desired_abstention": true
+      "notes": "Neither the approaches nor their requested actions are supplied. Direct form. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-373",
       "input": "... um .. This is not only new coverage or only a repair: correct teh exisitng respnse assertion and add the missing-header test. ...\n(sent frm a very small keybord)",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -6231,8 +6167,7 @@
       ],
       "source_family_id": "family-110",
       "split": "held_out",
-      "notes": "Existing-test repair plus additional test generation has no precedence. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Existing-test repair plus additional test generation has no precedence. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-376",
@@ -6265,16 +6200,15 @@
     {
       "id": "case-380",
       "input": "hey — Suggest three vegetarian lunches I can prepare withuot an oven.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "typos"
       ],
       "source_family_id": "family-121",
       "split": "calibration",
-      "notes": "Meal suggestions are outside the three code-work labels. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Meal suggestions are outside the three code-work labels. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-384",
@@ -6306,8 +6240,8 @@
     {
       "id": "case-386",
       "input": "[chat paste] Can you handle thsi for me?",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "missing-context",
@@ -6315,8 +6249,7 @@
       ],
       "source_family_id": "family-118",
       "split": "calibration",
-      "notes": "This has no referent; discarded clipboard text cannot fill it. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "This has no referent; discarded clipboard text cannot fill it. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-391",
@@ -6420,8 +6353,8 @@
     {
       "id": "case-413",
       "input": "This is not only new coverage or only a repair: correct the existing response assertion and add the missing-header test.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -6432,8 +6365,7 @@
       ],
       "source_family_id": "family-110",
       "split": "held_out",
-      "notes": "Existing-test repair plus additional test generation has no precedence. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Existing-test repair plus additional test generation has no precedence. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-414",
@@ -6469,8 +6401,8 @@
     {
       "id": "case-416",
       "input": "Repair teh broken fixture factory and add new tests that exercise optional fixture fields.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -6479,8 +6411,7 @@
       ],
       "source_family_id": "family-115",
       "split": "calibration",
-      "notes": "Repair of fixture code and new test creation are coequal. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Repair of fixture code and new test creation are coequal. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-418",
@@ -6498,8 +6429,8 @@
     {
       "id": "case-419",
       "input": "hey — Replace teh old encryption wrapper and write new compatibility tests for the replacement.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "boundary-case",
@@ -6508,8 +6439,7 @@
       ],
       "source_family_id": "family-113",
       "split": "calibration",
-      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-421",
@@ -6589,8 +6519,8 @@
     {
       "id": "case-427",
       "input": ">>> A nearby note says \"modify teh code\", but it is unrelated.\n>>> Plase go wth the second approach we discussed.\n[formatting got mangled]",
-      "expected": null,
-      "label_status": "insufficient_context",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -6600,8 +6530,7 @@
       ],
       "source_family_id": "family-119",
       "split": "calibration",
-      "notes": "Neither the approaches nor their requested actions are supplied. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Neither the approaches nor their requested actions are supplied. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. The requested action cannot be determined from the supplied prompt. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-428",
@@ -6650,8 +6579,8 @@
     {
       "id": "case-433",
       "input": "*** pasted frm mobile ***\nDo not limit thsi to explaining teh wrapper. Replace it and create new compatibility tests as equal parts of the task.\n--- end ---",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -6663,8 +6592,7 @@
       ],
       "source_family_id": "family-113",
       "split": "calibration",
-      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Implementation replacement plus new tests has no agreed one-label rule. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-435",
@@ -6682,8 +6610,8 @@
     {
       "id": "case-437",
       "input": "I have finished fixing tests for today. Now suggest three vegetarian lunches I can prepare without an oven.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -6691,8 +6619,7 @@
       ],
       "source_family_id": "family-121",
       "split": "calibration",
-      "notes": "Meal suggestions are outside the three code-work labels. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Meal suggestions are outside the three code-work labels. Authored misleading background; active request unchanged. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-438",
@@ -6710,8 +6637,8 @@
     {
       "id": "case-439",
       "input": "--- CHAT FRAGMENT ---\nBoth test-related changes matter: fix teh curent mock server and create an additonal connection-rejection test.\n\n[sent twice? pls use this msg]",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -6723,8 +6650,7 @@
       ],
       "source_family_id": "family-109",
       "split": "held_out",
-      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Repairing existing test code and creating new tests are distinct coequal labels. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-440",
@@ -6746,8 +6672,8 @@
     {
       "id": "case-443",
       "input": "### one thing ###\nThe  phrase  \"fix  teh  build\"  is  on  my  work  calendar.  Ignore  work;  help  me  draft  a  friendly  invitation  to  a  neighborhood  picnic.\n### thx ###",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "irrelevant-text",
@@ -6757,8 +6683,7 @@
       ],
       "source_family_id": "family-124",
       "split": "calibration",
-      "notes": "Social writing request is outside the code-action taxonomy. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Social writing request is outside the code-action taxonomy. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-445",
@@ -6860,8 +6785,8 @@
     {
       "id": "case-457",
       "input": "Do not choose just one part. Build the bulk-delete endpoint and add its integration tests in this task.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -6872,8 +6797,7 @@
       ],
       "source_family_id": "family-107",
       "split": "calibration",
-      "notes": "Coequal production implementation plus new integration tests. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Coequal production implementation plus new integration tests. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-458",
@@ -6925,16 +6849,15 @@
     {
       "id": "case-464",
       "input": "quick one: Help me draft a friendly invitation to a neighborhood picnic.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "noisy",
       "tags": [
         "typos"
       ],
       "source_family_id": "family-124",
       "split": "calibration",
-      "notes": "Social writing request is outside the code-action taxonomy. Moderate formatting/typo transform; intent preserved.",
-      "desired_abstention": true
+      "notes": "Social writing request is outside the code-action taxonomy. Moderate formatting/typo transform; intent preserved. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-466",
@@ -7097,8 +7020,8 @@
     {
       "id": "case-481",
       "input": "[notes / 09:41 / draft]\nDo not choose just one part. Build teh bulk-delete endpoint and add its integraiton tests in thsi task.\n... lost my formatting, sry",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "heavy",
       "tags": [
         "boundary-case",
@@ -7110,8 +7033,7 @@
       ],
       "source_family_id": "family-107",
       "split": "calibration",
-      "notes": "Coequal production implementation plus new integration tests. Stronger formatting/typo transform of misleading form; intent preserved.",
-      "desired_abstention": true
+      "notes": "Coequal production implementation plus new integration tests. Stronger formatting/typo transform of misleading form; intent preserved. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-484",
@@ -7199,8 +7121,8 @@
     {
       "id": "case-493",
       "input": "The phrase \"fix the build\" is on my work calendar. Ignore work; help me draft a friendly invitation to a neighborhood picnic.",
-      "expected": null,
-      "label_status": "out_of_scope",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "irrelevant-text",
@@ -7209,8 +7131,7 @@
       ],
       "source_family_id": "family-124",
       "split": "calibration",
-      "notes": "Social writing request is outside the code-action taxonomy. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Social writing request is outside the code-action taxonomy. Authored misleading background; active request unchanged. Version 2: expected unclear. None of the three supported code actions fits the active request. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-494",
@@ -7259,8 +7180,8 @@
     {
       "id": "case-497",
       "input": "An explanation can wait. I need both gzip support in the middleware and new compressed-response tests.",
-      "expected": null,
-      "label_status": "taxonomy_pending",
+      "expected": "unclear",
+      "label_status": "settled",
       "noise_level": "regular",
       "tags": [
         "boundary-case",
@@ -7270,8 +7191,7 @@
       ],
       "source_family_id": "family-111",
       "split": "calibration",
-      "notes": "Feature implementation and new tests are coequal deliverables. Authored misleading background; active request unchanged.",
-      "desired_abstention": true
+      "notes": "Feature implementation and new tests are coequal deliverables. Authored misleading background; active request unchanged. Version 2: expected unclear. Competing code-change and new-test deliverables; no single action has precedence. Non-actionable whether accepted as unclear or rejected by the confidence rule."
     },
     {
       "id": "case-499",
