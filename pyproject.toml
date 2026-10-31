@@ -8,6 +8,9 @@ version = "0.1.0"
 requires-python = ">=3.11"
 description = "Reusable mock-first Laya decisions and bounded TypeScript context"
 
+[project.scripts]
+laya-context-router = "laya_context_router.cli:main"
+
 [project.optional-dependencies]
 test = ["pytest>=8,<10"]
 
