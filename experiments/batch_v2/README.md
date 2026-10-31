@@ -4,6 +4,7 @@ Status: implemented on PR #21. Offline fixture execution, collection, resume and
 
 RV2 runs one experiment's question variants × rules × named configurations against the same input cases, then compares the outcomes. Each combination sees each case once; there are no repetitions. Create another experiment by writing two JSON files, using the same runner.
 
+- [Experiment handbook](docs/README.md): research workflow, scoring, input-agent instructions, campaign/run records and the pre-experiment implementation plan.
 - [Input and experiment authoring guide](input-authoring.md): complete cases.json and suite.json examples, label status, noise levels, tags and annotation workflow.
 - [Implementation design](runner-v2-plan.md): execution, checkpoint/resume, output schema, scoring formulas and verification requirements.
 
