@@ -1,7 +1,7 @@
 # Runner V2 — reusable experiment matrix and reporting plan
 
 Date: 2026-10-31  
-Status: design only. This PR contains the plan, README and input-authoring guide; implementation and live inference remain future work.
+Status: implemented with offline mechanical verification; live Mac and actual browser interaction verification remain outstanding. See [verification.md](verification.md). Original design requirements are retained below as the implementation contract.
 
 Documentation: [Run and inspect an experiment](README.md) · [Create cases and suite files](input-authoring.md). The authoring guide provides complete matching JSON examples and an annotation workflow.
 
@@ -270,3 +270,11 @@ All new checks live below experiments/batch_v2/checks. Implement meaningful test
 - Required 24-row fixture example, 8 vector summaries and all expected subgroup counts. Collector rerun changes no predictions and starts no model.
 
 Before implementation handoff, review the schema and accounting examples for internal consistency. Before implementation completion, run the fixture example, applicable tests and a browser check of the local report; report commands and outcomes honestly. Live model behavior remains an explicit Mac check. Do not claim a design review or fixture success proves live SDK compatibility or model accuracy.
+
+
+## 9. Implementation deviation history
+
+- D01: clone unavailable without credentials. Astra approved an exact-SHA connector snapshot, local verification and lease-protected Git tree/commit publication. All 76 production source files match current main by Git blob SHA.
+- D02: feature branch predates merged PR #19. Astra approved integrating main into the feature branch via a two-parent commit. Production files remain identical to main; the PR changes only batch_v2.
+- D03: actual browser test blocked by missing local Chromium, truncated managed browser download and cloud-browser security policy rejecting local file URLs. Browser workarounds were not attempted after that rejection. A browser check script and manual steps are supplied; browser acceptance remains explicitly open.
+- D04: first focused regression command ran from the workspace rather than repo root and failed one relative-path example test. Astra was notified; rerun from repo root is the corrective action. No production change.

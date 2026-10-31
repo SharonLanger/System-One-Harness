@@ -1,6 +1,6 @@
 # Runner V2 (RV2)
 
-Status: design-stage documentation. PR #21 contains the plan and these guides. The `run.py`, `collect.py`, example files and report generator described below are implementation deliverables and are not available yet. Commands below define the intended interface; they have not been executed against an RV2 implementation.
+Status: implemented on PR #21. Offline fixture execution, collection, resume and mechanical checks pass. Live MLX compatibility requires verification on the Mac. Actual browser interaction remains unverified here because no local Chromium is installed and the cloud browser blocks local file URLs; see verification.md.
 
 RV2 runs one experiment's question variants × rules × named configurations against the same input cases, then compares the outcomes. Each combination sees each case once; there are no repetitions. Create another experiment by writing two JSON files, using the same runner.
 
@@ -18,19 +18,19 @@ Use one classification task per experiment. All variants retain the question typ
 
 Generic experiments take string inputs and need no custom runner code. The requested-action and context-scope adapters take the objects required by their existing blocks. The authoring guide shows those distinctions. Expected labels and annotations never go to the model.
 
-## Planned first run
+## First run
 
-After implementation, use the existing repository Python environment from the repository root. Live mode additionally requires a compatible Mac environment with `laya_mlx`, MLX and the selected model already installed/cached. The runner does not install packages or download models automatically. Fixture mode will not require MLX or model weights.
+Use the existing repository Python environment from the repository root. Live mode additionally requires a compatible Mac environment with `laya_mlx`, MLX and the selected model already installed/cached. The runner does not install packages or download models automatically. Fixture mode will not require MLX or model weights.
 
-First run the shipped synthetic example:
+Run the shipped synthetic example (verified):
 
 ```bash
 python experiments/batch_v2/run.py --cases experiments/batch_v2/examples/generic-choice/cases.json --suite experiments/batch_v2/examples/generic-choice/suite.json --mode fixture --rule-mode replay
 ```
 
-This example is required to produce 8 vectors and 24 logical result rows from 2 questions × 2 rules × 2 configurations × 3 cases, backed by 12 synthetic inference records in replay mode. It checks plumbing and reporting, not model accuracy. Its fixture responses must be shipped with the implementation. IDE Play on its launcher will select this explicitly labeled fixture example.
+This example produces 8 vectors and 24 logical result rows from 2 questions × 2 rules × 2 configurations × 3 cases, backed by 12 synthetic inference records in replay mode. It checks plumbing and reporting, not model accuracy. Its fixture responses are shipped in responses.json. IDE Play on its launcher selects this explicitly labeled fixture example.
 
-## Planned workflow for your experiment
+## Workflow for your experiment
 
 After saving the two files under `experiments/batch_v2/experiments/fruit-smoke/`, validate them without loading a model:
 
@@ -79,6 +79,14 @@ Resume uses the frozen definition and completes missing work only if the require
 
 Errors, timeouts and skipped/unattempted inputs are technical statuses, not wrong answers or abstentions. An incomplete run remains visibly partial. The implementation must document exact supported runtime-limit flags and failure exit codes here after they are implemented and verified.
 
-## Documentation handoff
+## Limits and mechanical checks
 
-At implementation completion, replace this design-stage status with verified setup/commands, ship the referenced example and IDE launcher, run the fixture example and applicable checks, and report any remaining live-only verification. Until then these commands are specifications, not claims of runnable software.
+Optional flags: `--max-calls N`, `--max-seconds SECONDS`, `--worker-timeout SECONDS`. Limits must be positive and are frozen for resume. Calls include failed attempts; no warm-up or hidden retries are performed. Worker timeout terminates the subprocess. Live model assets are hashed for resume validation, which can take time for large weights.
+
+```bash
+python -B -m unittest discover -s experiments/batch_v2/checks -v
+```
+
+Technical failures return nonzero; model mistakes alone do not. Explicit call-budget completion can leave a partial run with unattempted rows; inspect manifest status. Offline commands do not prove live model accuracy. The generic fixture execution command uses the bundled response map; for a different experiment, use live mode with the installed model. Additional fixture datasets require a matching injected response fixture, never an implicit fake response.
+
+Browser acceptance on the Mac: open report.html, confirm 8 overview rows, select a vector, then noisy and misleading groups; each should show its one matching row. The report should scroll horizontally on a narrow screen. An optional automated browser check is included at checks/browser-check.cjs for an environment with Playwright and its Chromium installed.

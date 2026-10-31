@@ -1,6 +1,6 @@
 # Authoring RV2 experiment inputs
 
-Status: proposed RV2 schema and authoring instructions, aligned with [the runner design](runner-v2-plan.md). RV2 is not implemented yet. See [README](README.md) for the planned run commands and output files.
+Status: RV2 input schema and authoring instructions, aligned with [the runner design](runner-v2-plan.md). See [README](README.md) for commands and [verification](verification.md) for tested behavior and remaining live/browser checks.
 
 ## 1. Define the classification task first
 
@@ -190,3 +190,4 @@ Every vector receives the same cases. Only settled cases with a valid expected c
 For each scored subgroup, count correct accepted, wrong accepted, correct rejected and wrong rejected. Correct/wrong rejected are the two parts of abstention. This exposes correct LAYA answers lost to a conservative rule as well as wrong answers the rule successfully filtered.
 
 Noise-level rows use their own eligible subgroup denominator. Tag rows do the same and may overlap. In this example the planned distribution is regular=2, noisy=1, simple=1, typos=1 and misleading=1. Those counts describe the inputs regardless of which predictions the model makes. Read operational counts alongside accuracy whenever a subgroup contains unscored or failed cases.
+
