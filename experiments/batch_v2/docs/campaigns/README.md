@@ -1,6 +1,8 @@
 # Campaign index
 
-No real campaign has been initialized by this documentation PR.
+## Prepared experiments
+
+- [requested-action-500](requested-action-500/README.md) — explanation vs additional tests vs code modification — dataset version 1 — first 500-case round prepared; no live results yet. Open its README for the one-command launcher.
 
 After Track A preparation and agreement on a concrete task:
 1. Create docs/campaigns/<campaign-id>/.
