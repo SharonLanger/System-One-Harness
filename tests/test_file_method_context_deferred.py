@@ -1,4 +1,5 @@
 """Deferred scenarios outside the first-version acceptance scope."""
+from examples._plumbing_inspection import plumbing_provider
 
 import pytest
 
@@ -39,7 +40,7 @@ def test_source_replaced_by_outside_symlink_before_outline_does_not_reach_model(
         cwd=root,
         repository_root=root,
         config=RunConfig(),
-        registry=AgentRegistry(loader=lambda *args, **kwargs: Spy()),
+        registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Spy()),
     )
     assert result["status"] == "noop"
     assert calls == [], calls

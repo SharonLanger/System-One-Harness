@@ -1,4 +1,5 @@
 """Overrides, custom preparation, errors, and registry reuse for the new block."""
+from examples._plumbing_inspection import plumbing_provider
 from copy import deepcopy
 from unittest.mock import Mock
 import pytest
@@ -94,7 +95,7 @@ def test_T36_invalid_raw(change):
 def test_T37_T40_errors_once_and_failed_load_not_cached(stage,error):
     h=Harness(error)
     loader=Mock(side_effect=error)
-    if stage=='load':h.registry=AgentRegistry(loader=loader)
+    if stage=='load':h.registry=AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
     for _ in range(2):
         with pytest.raises(type(error)) as caught:h.run()
         assert caught.value is error
@@ -107,4 +108,4 @@ def test_T38_T39_T40_registry_config_isolation():
     for c in configs:h.run(config=c)
     assert h.loads==[('A',{}),('B',{'lang_temperatures':{'he':{'temperature':[.2]*3}}}),('A',{'lang_temperatures':{'en':{'temperature':[.3]*3}}})]
     assert h.calls[2][2]=={'lang':'he'}
-    h.registry=AgentRegistry(loader=h.load);h.run(config=configs[0]);assert len(h.loads)==4
+    h.registry=AgentRegistry(inspection_provider=plumbing_provider, loader=h.load);h.run(config=configs[0]);assert len(h.loads)==4

@@ -1,4 +1,5 @@
 """A/D/G parity and input-contract coverage for additive V2 blocks."""
+from examples._plumbing_inspection import plumbing_provider
 from copy import deepcopy
 import json
 
@@ -31,7 +32,7 @@ def registry(response, calls, expected=None):
                 assert questions == expected
             calls.append((text, deepcopy(questions)))
             return deepcopy(response)
-    return AgentRegistry(loader=lambda *args, **kwargs: Fake())
+    return AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Fake())
 
 
 def legacy_shape(result):
@@ -238,7 +239,7 @@ def test_D11_sdk_question_mutation_does_not_leak_to_next_run():
             response = raw_for(questions, 'sum@1:1')
             questions['method']['criteria'].clear()
             return response
-    shared = AgentRegistry(loader=lambda *args, **kwargs: Mutating())
+    shared = AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Mutating())
     for _ in range(2):
         result = method({'text': 'x', 'source_outline': data}, config=RunConfig(), registry=shared)
         assert result.data['selected_id'] == data['callables'][0]['id']

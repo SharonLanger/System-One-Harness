@@ -128,7 +128,7 @@ def real_local_loader(model, **kwargs):
     return laya_mlx.load(str(path),local_files_only=True,**kwargs)
 
 
-def execute_configuration(d,cfg,path,loader=None):
+def execute_configuration(d,cfg,path,loader=None,*,inspection_provider=None):
     from laya_context_router import log_utils
     from laya_context_router.laya.registry import AgentRegistry
     from laya_context_router.laya.predict import predict
@@ -151,12 +151,13 @@ def execute_configuration(d,cfg,path,loader=None):
         save(r,path)
     try:
         checkpoint()
-        registry=AgentRegistry(loader=loader or real_local_loader)
+        registry=AgentRegistry(loader=loader or real_local_loader, inspection_provider=inspection_provider)
         t=time.monotonic()
         agent=registry.get_agent(config)
         r['load_seconds']=time.monotonic()-t; r['events']+=events()
         class Observed:
             raw=None
+            def get_inspector(self, config): return registry.get_inspector(config)
             def get_agent(self,_):
                 owner=self
                 class Wrapper:

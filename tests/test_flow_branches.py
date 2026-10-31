@@ -1,4 +1,5 @@
 """Bounded composition exercises actual blocks; only SDK boundary is controlled."""
+from examples._plumbing_inspection import plumbing_provider
 import copy
 import json
 
@@ -40,7 +41,7 @@ def sequence_registry(sequence):
     def loader(model, **kwargs):
         config = next(c for c in (A, B) if (c.model, c.load_kwargs()) == (model, kwargs))
         agent = Agent(config); loads.append(agent); return agent
-    return AgentRegistry(loader=loader), remaining, loads, calls
+    return AgentRegistry(inspection_provider=plumbing_provider, loader=loader), remaining, loads, calls
 
 
 def execute(tmp_path, prompt, registry, **kwargs):

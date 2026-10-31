@@ -1,4 +1,5 @@
 """G composition: ordinary Python owns branches; only the SDK boundary is fake."""
+from examples._plumbing_inspection import plumbing_provider
 from copy import deepcopy
 import importlib
 import json
@@ -41,7 +42,7 @@ def fixture_registry(events, confidence=.8, value=.8):
                 return {'answers': {name: {'type': 'noul', 'noul': value,
                     'answer_confidence': confidence} for name in questions}}
         return Agent()
-    return AgentRegistry(loader=loader)
+    return AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
 
 
 def test_G01_independent_blocks_keep_names_config_and_named_policy(tmp_path):
@@ -95,7 +96,7 @@ def test_G05_G06_real_typescript_v2_select_then_extract(tmp_path, multiple, conf
             events.append('predict'); assert text == 'Explain sum' and submitted == questions
             return deepcopy(response)
     result = select({'text':'Explain sum', 'source_outline':data}, config=A,
-                    registry=AgentRegistry(loader=lambda *a, **k: Agent()))
+                    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a, **k: Agent()))
     if result.data['selected_id'] is not None:
         events.append('extract'); extracted = extract_callable(path, result.data['selected_id'])
         assert extracted['code'] == 'static sum(x: number) { return x + 1; }'
@@ -179,7 +180,7 @@ def test_G13_existing_offline_experiment_preserves_summary_and_rule_error(tmp_pa
                           rule_overrides={'method':'missing_policy'}, **kwargs)
         monkeypatch.setattr(experiment,'run_block',invalid)
     output = tmp_path / 'reports'
-    code = experiment.run(input_path=payload,loader=loader,output_root=output,printer=lambda _:None)
+    code = experiment.run(inspection_provider=plumbing_provider, input_path=payload,loader=loader,output_root=output,printer=lambda _:None)
     details_path, = output.rglob('details.json')
     details = json.loads(details_path.read_text())
     summary = (details_path.parent / 'summary.md').read_text()

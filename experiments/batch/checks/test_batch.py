@@ -6,6 +6,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import copy
 import json
 import tempfile
+from examples._plumbing_inspection import plumbing_provider
 import unittest
 from unittest.mock import patch
 import run
@@ -33,7 +34,7 @@ class BatchChecks(unittest.TestCase):
         def loader(*args,**kwargs): self.loads+=1; self.load_args=(args,kwargs);return Agent()
         with tempfile.TemporaryDirectory(dir=OUTPUT) as tmp:
             p=Path(tmp)/'demo.json'
-            record=run.execute_configuration(d,d['configurations'][0],p,loader=loader)
+            record=run.execute_configuration(d,d['configurations'][0],p,loader=loader,inspection_provider=plumbing_provider)
             self.assertEqual(json.loads(p.read_text())['definition'],d)
             self.assertTrue(p.with_suffix('.md').is_file())
             self.assertFalse(p.with_suffix('.trace.tmp').exists())
@@ -97,7 +98,7 @@ class BatchChecks(unittest.TestCase):
         d=self.definition()
         with tempfile.TemporaryDirectory(dir=OUTPUT) as tmp:
             def loader(*a,**k):raise RuntimeError('missing SDK')
-            r=run.execute_configuration(d,d['configurations'][0],Path(tmp)/'demo.json',loader)
+            r=run.execute_configuration(d,d['configurations'][0],Path(tmp)/'demo.json',loader,inspection_provider=plumbing_provider)
         self.assertEqual(r['status'],'failed');self.assertEqual(len(r['cases']),0)
         self.assertIsNone(reporting.metrics(r,'final')['accuracy'])
         self.assertIsNone(reporting.metrics(r,'final')['coverage'])
@@ -134,7 +135,7 @@ class OrchestrationChecks(unittest.TestCase):
                 class Agent:
                     def predict(self,text,questions,**kwargs):
                         return {'answers':{'apple_evidence':{'type':'noul','noul':.5}}}
-                r=run.execute_configuration(snap['definition'],snap['configuration'],p,lambda *a,**k:Agent())
+                r=run.execute_configuration(snap['definition'],snap['configuration'],p,lambda *a,**k:Agent(),inspection_provider=plumbing_provider)
                 self.returncode=0 if r['status']=='completed' else 1
                 assert env['PYTHONDONTWRITEBYTECODE']=='1'
             def wait(self,**kwargs):return self.returncode

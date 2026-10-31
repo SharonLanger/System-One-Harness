@@ -20,6 +20,9 @@ class ObservingRegistry:
         self.registry = registry
         self.raw_response = None
 
+    def get_inspector(self, config):
+        return self.registry.get_inspector(config)
+
     def get_agent(self, config):
         agent = self.registry.get_agent(config)
         owner = self

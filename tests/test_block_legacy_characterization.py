@@ -2,6 +2,7 @@
 
 Expected payloads and decisions are independent of production preparation code.
 """
+from examples._plumbing_inspection import plumbing_provider
 import copy
 import inspect
 import json
@@ -50,7 +51,7 @@ def fake_registry(raw, calls, expected=PAYLOAD, text='Explain alpha', mutate=Fal
             if mutate:
                 questions['method']['instructions'] = 'mutated by SDK'
             return copy.deepcopy(raw)
-    return AgentRegistry(loader=lambda model: Fake())
+    return AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model: Fake())
 
 
 def execute(source=SOURCE, raw=None, calls=None, **kwargs):
@@ -115,7 +116,7 @@ def test_A06_skips_do_not_load_or_predict(case, reason):
         source['callables'][1]['signature'] = source['callables'][0]['signature']
     def forbidden(*args, **kwargs):
         pytest.fail('skip must not load or predict')
-    result = method.run('Explain alpha', source, config=RunConfig(), registry=AgentRegistry(loader=forbidden), **kwargs)
+    result = method.run('Explain alpha', source, config=RunConfig(), registry=AgentRegistry(inspection_provider=plumbing_provider, loader=forbidden), **kwargs)
     assert result == expected_result(reason, None, {}, source)
 
 
@@ -144,7 +145,7 @@ def test_A07_invalid_candidates_fail_before_model(case):
     else: del source['callables']
     def forbidden(*args, **kwargs): pytest.fail('invalid input must not load')
     with pytest.raises(ValueError, match='candidate'):
-        method.run('x', source, config=RunConfig(), registry=AgentRegistry(loader=forbidden))
+        method.run('x', source, config=RunConfig(), registry=AgentRegistry(inspection_provider=plumbing_provider, loader=forbidden))
 
 
 def test_A08_payload_and_source_mapping_are_independent_copies():

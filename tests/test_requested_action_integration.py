@@ -1,4 +1,5 @@
 """New-block log, resource and caller integration without real SDK inference."""
+from examples._plumbing_inspection import PLUMBING_SOURCE
 import json
 import os
 from pathlib import Path
@@ -64,7 +65,7 @@ def test_T45_installed_wheel(tmp_path):
                 if p.suffix in {'.json','.md','.py'}:assert archive.read(f'laya_context_router/{directory}/{p.name}')==p.read_bytes()
         archive.extractall(installed)
     raw=json.dumps(response())
-    code=f'''
+    code=PLUMBING_SOURCE+f'''
 import laya_context_router
 from pathlib import Path
 assert Path(laya_context_router.__file__).is_relative_to({str(installed)!r})
@@ -75,7 +76,7 @@ class Fake:
  def predict(self,text,questions,**kwargs):
   assert text=='outside checkout'
   return {raw}
-r=run({{'prompt':'outside checkout'}},config=RunConfig(model='synthetic'),registry=AgentRegistry(loader=lambda *a,**k:Fake()))
+r=run({{'prompt':'outside checkout'}},config=RunConfig(model='synthetic'),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:Fake()))
 assert r.data=={{'action':'explain'}}
 print('installed requested_action passed')
 '''
@@ -96,7 +97,7 @@ def test_semantic_corpus_is_separate_and_pending_cases_unscored():
 
 def test_T08_T44_fresh_import_and_block_construction(tmp_path):
     root=Path(__file__).resolve().parents[1]
-    code='''
+    code=PLUMBING_SOURCE+'''
 import subprocess
 from unittest.mock import Mock
 from laya_context_router.laya import predict as sdk

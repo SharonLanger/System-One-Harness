@@ -16,6 +16,7 @@ sys.path.insert(0,str(ROOT/'src'))
 from laya_context_router import log_utils
 log_utils.LOG_PATH=HERE/'checks/output/runtime.jsonl'
 from schema import load, validate, hash_value
+from fixture_inspection import plumbing_provider
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def save(path,value):
@@ -98,7 +99,8 @@ def execute(input_data,question,rule,suite,config,registry):
     return run(input_data,config=config,registry=registry,catalog=catalog,question_overrides={name:question['definition']},rule_overrides={name:'experiment-rule'})
 
 class Boundary:
-    def __init__(self,agent): self.agent=agent; self.raw=None; self.payload=None; self.seconds=None
+    def __init__(self,agent,*,inspector): self.inspector=inspector; self.agent=agent; self.raw=None; self.payload=None; self.seconds=None
+    def get_inspector(self,config): return self.inspector
     def get_agent(self,config):
         outer=self
         class Agent:
@@ -136,6 +138,7 @@ def worker(root,config_id):
             registry=AgentRegistry(loader=loader); start=time.monotonic(); agent=registry.get_agent(config); load_seconds=time.monotonic()-start
         except Exception as exc:
             save(root/f'worker-{config_id}-status.json',{'status':'configuration_error','error':str(exc)}); return
+    inspector = registry.get_inspector(config) if registry is not None else plumbing_provider(None, config)
     trace_cursor=0
     def logs():
         nonlocal trace_cursor
@@ -156,8 +159,8 @@ def worker(root,config_id):
                     if not ip.exists():
                         if fixture is not None:
                             key='|'.join([q['id'],config_id,case['id']]); raw=fixture['responses'][key]
-                            boundary=Boundary(RecordedAgent(raw))
-                        else: boundary=Boundary(agent)
+                            boundary=Boundary(RecordedAgent(raw), inspector=inspector)
+                        else: boundary=Boundary(agent, inspector=inspector)
                         
                         # Parent permits one prediction at a time, accounting failed attempts too.
                         attempts=root/'attempts.json'; count=load(attempts)['count'] if attempts.exists() else 0
@@ -180,7 +183,7 @@ def worker(root,config_id):
                     if m['rule_mode']=='direct' or rule['id']==baseline['id']:
                         output=record['baseline_result']; rule_seconds=record['baseline_rule_seconds']
                     else:
-                        rt=time.monotonic(); output=asdict(execute(case['input'],q,rule,suite,config,Boundary(RecordedAgent(record['raw_response'])))); rule_seconds=time.monotonic()-rt
+                        rt=time.monotonic(); output=asdict(execute(case['input'],q,rule,suite,config,Boundary(RecordedAgent(record['raw_response']), inspector=inspector))); rule_seconds=time.monotonic()-rt
                     name=q['definition']['name']; answer=record['raw_response']['answers'][name]
                     decision=output['decisions'].get(name,{})
                     row.update(status=output['status'],raw_label=extract_answer(answer),final_label=decision.get('answer'),accepted=decision.get('decided'),reason=decision.get('reason',output['reason']),enriched=enrich_prediction(answer),block_result=output,inference_seconds=record['inference_seconds'],rule_seconds=rule_seconds,rule_definition=rule['definition'])

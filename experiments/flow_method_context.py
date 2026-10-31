@@ -38,6 +38,7 @@ def run(input_path, stem, script_name='flow_method_context.py'):
 
         class CaptureRegistry:
             def __init__(self): self.observer = ObservingRegistry(AgentRegistry(real=True))
+            def get_inspector(self, cfg): return self.observer.get_inspector(cfg)
             def get_agent(self, cfg):
                 agent = self.observer.get_agent(cfg)
                 owner = self

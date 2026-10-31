@@ -1,3 +1,4 @@
+from examples._plumbing_inspection import plumbing_provider
 import copy
 from pathlib import Path
 import subprocess
@@ -23,7 +24,7 @@ def source(tmp_path, name="src/my file.ts", text='export function greet() { retu
 def forbidden_registry():
     def fail(*args, **kwargs):
         raise AssertionError("must not load")
-    return AgentRegistry(loader=fail)
+    return AgentRegistry(inspection_provider=plumbing_provider, loader=fail)
 
 
 @pytest.mark.parametrize("absolute", [False, True])
@@ -96,7 +97,7 @@ def test_model_failure_and_source_changed_after_selection(tmp_path):
                 if mode=="failure": raise RuntimeError("planned model failure")
                 path.write_text("export function changed() {}")
                 return raw_for(expected,selected)
-        result=flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=RunConfig(),registry=AgentRegistry(loader=lambda model:Fake()))
+        result=flow.run(prompt,cwd=tmp_path,repository_root=tmp_path,config=RunConfig(),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model:Fake()))
         assert result["reason"] == ("model_error" if mode=="failure" else "extractor_error")
         assert result["context"] is None
 

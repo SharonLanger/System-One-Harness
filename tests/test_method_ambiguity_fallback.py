@@ -4,6 +4,7 @@ For V1, detect this ambiguity before model selection and let Claude handle the
 original prompt normally. Do not guess or require owner-enriched descriptions.
 Implementation fix pending; these regression tests currently fail.
 """
+from examples._plumbing_inspection import plumbing_provider
 
 import pytest
 
@@ -34,7 +35,7 @@ def test_indistinguishable_method_candidates_skip_enrichment(tmp_path, source):
         cwd=tmp_path,
         repository_root=tmp_path,
         config=RunConfig(),
-        registry=AgentRegistry(loader=lambda *args, **kwargs: Spy()),
+        registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Spy()),
     )
     assert result["status"] == "noop", result
     assert result["context"] is None
@@ -49,7 +50,7 @@ def test_ambiguous_block_refuses_before_model_load(tmp_path):
         raise AssertionError("Ambiguous candidates must not load a model")
 
     result = select_method("Explain B.run", outline(path), config=RunConfig(),
-                           registry=AgentRegistry(loader=forbidden))
+                           registry=AgentRegistry(inspection_provider=plumbing_provider, loader=forbidden))
     assert result["selected_id"] is None
     assert result["reason"] == "ambiguous_candidates"
     assert result["decisions"] == {}

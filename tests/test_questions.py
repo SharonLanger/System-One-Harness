@@ -1,3 +1,4 @@
+from examples._plumbing_inspection import plumbing_provider
 import copy
 import json
 import pytest
@@ -77,6 +78,6 @@ def test_json_loaded_same_request_result(tmp_path):
     payload={name:q.to_predict_dict() for name,q in load_questions(path).items()}
     assert payload==REQUEST['questions']
     agent=Agent()
-    assert predict(REQUEST['text'],payload,loader=lambda model:agent)==RAW
+    assert predict(REQUEST['text'],payload,inspection_provider=plumbing_provider, loader=lambda model:agent)==RAW
     assert agent.calls==[((REQUEST['text'],REQUEST['questions']),{})]
     assert RAW['answers']['department']['choice']=='billing'

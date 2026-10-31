@@ -29,6 +29,9 @@ class CapturingRegistry:
         self.registry = registry
         self.details = details
 
+    def get_inspector(self, config):
+        return self.registry.get_inspector(config)
+
     def get_agent(self, config):
         agent = self.registry.get_agent(config)
         owner = self
@@ -45,7 +48,7 @@ class CapturingRegistry:
         return CapturingAgent()
 
 
-def run(*, input_path=INPUT_PATH, loader=None, registry=None, model=None,
+def run(*, input_path=INPUT_PATH, loader=None, inspection_provider=None, registry=None, model=None,
         temperature=None, temperature_set=False, lang=None, output_root=None,
         printer=print):
     started = time.monotonic()
@@ -89,10 +92,10 @@ def run(*, input_path=INPUT_PATH, loader=None, registry=None, model=None,
             "requested": {"model": config.model, "temperature": config.temperature, "lang": config.lang},
             "observed": "not_exposed",
         }
-        if registry is not None and loader is not None:
+        if registry is not None and (loader is not None or inspection_provider is not None):
             raise ValueError("pass either registry or loader, not both")
         if registry is None:
-            registry = AgentRegistry(loader=loader, real=(loader is None))
+            registry = AgentRegistry(inspection_provider=inspection_provider, loader=loader, real=(loader is None))
         observer = CapturingRegistry(registry, details)
         stage = "block"
         printer(f"Requested model: {config.model}")

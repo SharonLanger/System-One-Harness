@@ -10,6 +10,7 @@ Multiple detected files are returned by the detector even though V1 enrichment
 supports only one. Do not treat member access or decimals as file references.
 Implementation fix pending; failing cases are intentional regressions.
 """
+from examples._plumbing_inspection import plumbing_provider
 
 import pytest
 
@@ -60,7 +61,7 @@ def test_single_ts_file_with_dotted_expression_can_produce_context(tmp_path, que
     result = flow.run(
         "Explain `main.ts`: " + question,
         cwd=tmp_path, repository_root=tmp_path, config=RunConfig(),
-        registry=AgentRegistry(loader=lambda *args, **kwargs: Spy()),
+        registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Spy()),
     )
     assert result["status"] == "context", result
     assert len(calls) == 1
@@ -73,6 +74,6 @@ def test_multiple_real_files_still_skip_enrichment(tmp_path):
     result = flow.run(
         "Explain `main.ts`: compare with `other.ts`",
         cwd=tmp_path, repository_root=tmp_path, config=RunConfig(),
-        registry=AgentRegistry(loader=forbidden_loader),
+        registry=AgentRegistry(inspection_provider=plumbing_provider, loader=forbidden_loader),
     )
     assert result == {"status": "noop", "reason": "multiple_files", "context": None}

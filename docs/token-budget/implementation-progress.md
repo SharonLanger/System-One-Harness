@@ -74,3 +74,13 @@ Commit 7 published: `87af21166f9c9a29bebf0b9c9f5f2b94066ce099`.
 Expected red: otherwise-valid observed metadata with an actual bound local directory is rejected solely for model_id inequality; further new helper tests assert the absent observation helper. D002 authorizes this narrow insertion before fixture wiring. Command: `python -m pytest -q tests/test_token_budget_local_identity.py`. All original profile assertions remain.
 
 Outcome: expected red 7 failed / 13 passed; profile regression 34 passed; focused budget/predict/live-check 138 passed. The initial full run was incomplete (D004), preserved without claiming success. Diagnostic full Python suite: 1,316 passed, 3 existing skips, captured exit 0 in 246.63s. Local identity remains bound to the actual observed model directory, revision and all prior fingerprints; candidate/unknown models remain refused. Evidence: `evidence/07a-*`.
+
+Commit 7a published: `6a21cff4b48b70dba546a7705d3a9b252d5974be`.
+
+## Commit 8 — explicit fixture capabilities and wrapper forwarding
+
+Expected red: observation wrappers lack get_inspector and readiness run_check lacks explicit provider input (3 failures). Test: `tests/test_token_budget_wrappers.py`. Offline fixtures now opt into a controlled plumbing-only capability outside the installed application package; these reports are explicitly not tokenizer qualification. Existing assertions remain unchanged. Real observation wrappers forward the actual registry capability; readiness unwraps its observation agent before invoking the default verified provider. Batch live/replay paths reuse the actual verified inspector; explicitly selected fixture mode owns its synthetic capability. No production bypass flag or mock auto-detection was introduced.
+
+Targeted regressions: 40 passed. Batch-v2: 16 passed plus 24 subtests. Isolated batch checks: 17 passed, exit 0 (D005). D003 records assertion-preserving edit staging. Full Python gate pending.
+
+Full Python gate completed: 1,319 passed, 3 existing skips in 260.19s; captured exit 0 (`08-green.exit`). All existing offline example and hook scenarios passed.

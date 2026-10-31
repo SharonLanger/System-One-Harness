@@ -1,4 +1,5 @@
 """Synthetic official-protocol input; only laya_mlx boundary is mocked in child."""
+from examples._plumbing_inspection import INSTALL_TEST_PROVIDER_SOURCE
 import json
 import os
 from pathlib import Path
@@ -25,7 +26,7 @@ def hook_case(tmp_path, text='function greet() { return "😀"; }'):
     config = repo/'config.json'; config.write_text(json.dumps({'model':'mock-hook','temperature':.2,'lang':'fr'}))
     shim = tmp_path/'shim'; shim.mkdir(); log = tmp_path/'events.jsonl'
     spec = tmp_path/'spec.json'; spec.write_text(json.dumps({'prompt':event['prompt'],'questions':q,'raw':raw_for(q,chosen)}))
-    (shim/'sitecustomize.py').write_text('''import json, os, sys, types, time
+    (shim/'sitecustomize.py').write_text(INSTALL_TEST_PROVIDER_SOURCE+'''import json, os, sys, types, time
 spec=json.load(open(os.environ['HOOK_TEST_SPEC']))
 def record(data):
     with open(os.environ['HOOK_TEST_LOG'],'a') as f: f.write(json.dumps(data)+'\\n')

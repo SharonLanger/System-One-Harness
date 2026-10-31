@@ -1,4 +1,5 @@
 """Synthetic SDK outputs test transport/policy, never semantic model accuracy."""
+from examples._plumbing_inspection import plumbing_provider
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -22,7 +23,7 @@ class Harness:
     def __init__(self, raw=None):
         self.raw = response() if raw is None else raw
         self.calls=[]; self.loads=[]
-        self.registry=AgentRegistry(loader=self.load)
+        self.registry=AgentRegistry(inspection_provider=plumbing_provider, loader=self.load)
     def load(self,model,**kwargs):
         self.loads.append((model,kwargs)); return self
     def predict(self,text,questions,**kwargs):

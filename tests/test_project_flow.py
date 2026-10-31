@@ -1,4 +1,5 @@
 """Complete project-source-to-hook scenarios, with only the SDK boundary mocked."""
+from examples._plumbing_inspection import plumbing_provider
 import hashlib
 import json
 
@@ -119,7 +120,7 @@ def test_foreign_snapshot_is_taken_after_selection_with_unchanged_selected_sourc
             dep.write_text(updated)
             return raw_for(questions, data["callables"][0]["signature"])
     result = flow.run(prompt, cwd=tmp_path, repository_root=tmp_path, config=CONFIG,
-                      registry=AgentRegistry(loader=lambda *args, **kwargs: Fake()))
+                      registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Fake()))
     assert result["status"] == "context"
     context = result["context"]
     assert context["code"] == raw

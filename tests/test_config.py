@@ -1,3 +1,4 @@
+from examples._plumbing_inspection import plumbing_provider
 import json
 from pathlib import Path
 import subprocess
@@ -23,7 +24,7 @@ def test_registry_a_b_a_temperature_language_and_kwargs():
     loads=[]
     def loader(model, **kwargs):
         agent=Agent(); loads.append((model,kwargs,agent)); return agent
-    registry=AgentRegistry(loader=loader)
+    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
     configs=[RunConfig('A'),RunConfig('B'),RunConfig('A'),RunConfig('A',0.2),RunConfig('A',0.7),RunConfig('A',0.2),RunConfig('A',0,'fr'),RunConfig('A',0,'en')]
     agents=[registry.get_agent(c) for c in configs]
     assert agents[0] is agents[2] and agents[3] is agents[5]
@@ -40,11 +41,11 @@ def test_registry_failed_load_recovery_and_separate_lifetimes():
         calls.append(model)
         if len(calls)==1: raise RuntimeError('load failed')
         return Agent()
-    r=AgentRegistry(loader=loader)
+    r=AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
     with pytest.raises(RuntimeError): r.get_agent(RunConfig())
     a=r.get_agent(RunConfig())
     assert r.get_agent(RunConfig()) is a and len(calls)==2
-    assert AgentRegistry(loader=loader).get_agent(RunConfig()) is not a
+    assert AgentRegistry(inspection_provider=plumbing_provider, loader=loader).get_agent(RunConfig()) is not a
 
 
 def test_registry_starts_fresh_in_separate_processes():
@@ -102,7 +103,7 @@ def test_config_is_immutable_and_load_kwargs_do_not_leak():
 
 
 def test_predict_failure_does_not_replace_agent():
-    agent=Agent(); registry=AgentRegistry(loader=lambda model:agent)
+    agent=Agent(); registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model:agent)
     original=agent.predict
     def fail(*a,**k): raise RuntimeError('predict failed')
     agent.predict=fail

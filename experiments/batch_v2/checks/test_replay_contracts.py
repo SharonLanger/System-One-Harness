@@ -34,13 +34,13 @@ class ReplayContracts(unittest.TestCase):
             for raw in [None, {'answers':{}}, {'answers':{name:{'type':kind}}}, *({'answers':{name:answer(p)}} for p in (.574999,.649999,.9))]:
                 with self.subTest(adapter=adapter,kind=kind,raw=raw):
                     original=deepcopy(raw)
-                    capture=engine.Boundary(engine.RecordedAgent(raw))
+                    capture=engine.Boundary(engine.RecordedAgent(raw), inspector=engine.plumbing_provider(None, RunConfig()))
                     try: engine.execute(input_value,q,baseline,suite,RunConfig(),capture)
                     except Exception: pass
                     captured=deepcopy(capture.raw)
                     def outcome(response):
                         try:
-                            return ('result',engine.execute(input_value,q,strict,suite,RunConfig(),engine.Boundary(engine.RecordedAgent(response))))
+                            return ('result',engine.execute(input_value,q,strict,suite,RunConfig(),engine.Boundary(engine.RecordedAgent(response), inspector=engine.plumbing_provider(None, RunConfig()))))
                         except Exception as exc:
                             return ('error',type(exc).__name__,str(exc))
                     self.assertEqual(outcome(capture.raw),outcome(original))
