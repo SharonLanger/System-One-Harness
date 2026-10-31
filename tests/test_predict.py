@@ -1,4 +1,3 @@
-from examples._plumbing_inspection import plumbing_provider
 import copy
 import json
 import subprocess
@@ -25,7 +24,7 @@ def test_exact_default_contract_and_json():
     def loader(*args, **kwargs):
         loads.append((args, kwargs))
         return agent
-    result = predict(REQUEST['text'], REQUEST['questions'], inspection_provider=plumbing_provider, loader=loader)
+    result = predict(REQUEST['text'], REQUEST['questions'], loader=loader)
     assert loads == [((DEFAULT_MODEL,), {})]
     assert agent.calls == [((REQUEST['text'], REQUEST['questions']), {})]
     assert result == RAW
@@ -35,16 +34,16 @@ def test_exact_default_contract_and_json():
 
 def test_explicit_fixture_model_and_isolation():
     agent = Agent()
-    first = predict(REQUEST['text'], REQUEST['questions'], inspection_provider=plumbing_provider, model=REQUEST['model'], loader=lambda model: agent)
+    first = predict(REQUEST['text'], REQUEST['questions'], model=REQUEST['model'], loader=lambda model: agent)
     first['answers']['department']['choice'] = 'sales'
-    assert predict(REQUEST['text'], REQUEST['questions'], inspection_provider=plumbing_provider, loader=lambda model: agent) == RAW
+    assert predict(REQUEST['text'], REQUEST['questions'], loader=lambda model: agent) == RAW
     assert RAW['answers']['department']['choice'] == 'billing'
 
 
 @pytest.mark.parametrize('raw', [None, [], {}, {'answers':[]}, {'answers':{}}, {'answers':{'department':{}}}, {'answers':{'department':{'type':'noul'}}}])
 def test_invalid_response(raw):
     with pytest.raises(ResponseError):
-        predict('x', REQUEST['questions'], inspection_provider=plumbing_provider, loader=lambda model: Agent(raw))
+        predict('x', REQUEST['questions'], loader=lambda model: Agent(raw))
 
 
 @pytest.mark.parametrize('field,value', [('choice','other'), ('probabilities',{}), ('probabilities',{'billing':float('nan')})])
@@ -52,24 +51,24 @@ def test_invalid_choice(field,value):
     raw = copy.deepcopy(RAW)
     raw['answers']['department'][field] = value
     with pytest.raises(ResponseError):
-        predict('x', REQUEST['questions'], inspection_provider=plumbing_provider, loader=lambda model: Agent(raw))
+        predict('x', REQUEST['questions'], loader=lambda model: Agent(raw))
 
 
 def test_exceptions_are_explicit():
     def fail(*args, **kwargs):
         raise RuntimeError('planned failure')
     with pytest.raises(RuntimeError, match='planned failure'):
-        predict('x', REQUEST['questions'], inspection_provider=plumbing_provider, loader=fail)
+        predict('x', REQUEST['questions'], loader=fail)
     agent = Agent()
     agent.predict = fail
     with pytest.raises(RuntimeError, match='planned failure'):
-        predict('x', REQUEST['questions'], inspection_provider=plumbing_provider, loader=lambda model: agent)
+        predict('x', REQUEST['questions'], loader=lambda model: agent)
 
 
 @pytest.mark.parametrize('questions',[{}, [], {'':{}}, {'q':{'type':'unknown'}}])
 def test_invalid_questions(questions):
     with pytest.raises(ValueError):
-        predict('x', questions, inspection_provider=plumbing_provider, loader=lambda model: pytest.fail('must not load'))
+        predict('x', questions, loader=lambda model: pytest.fail('must not load'))
 
 
 def test_mock_mode_requires_explicit_loader():

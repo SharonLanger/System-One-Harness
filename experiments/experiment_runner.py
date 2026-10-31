@@ -21,7 +21,7 @@ from support import ObservingRegistry, allocate_result_dir, json_safe, start_rec
 from summary import render_summary
 
 
-def execute(stem, label, input_path, *, loader=None, inspection_provider=None, registry=None, model=None,
+def execute(stem, label, input_path, *, loader=None, registry=None, model=None,
             temperature=None, temperature_set=False, lang=None, output_root=None,
             printer=print, compare_model=None, compare_temperature=None,
             compare_temperature_set=False, compare_lang=None):
@@ -56,8 +56,8 @@ def execute(stem, label, input_path, *, loader=None, inspection_provider=None, r
         printer(f"Requested model: {config.model}")
         printer(f"Requested temperature: {config.temperature if config.temperature is not None else 'SDK default'}")
         printer(f"Requested language: {config.lang}")
-        if registry is None: registry = AgentRegistry(inspection_provider=inspection_provider, loader=loader, real=(loader is None))
-        elif loader is not None or inspection_provider is not None: raise ValueError("pass either registry or loader, not both")
+        if registry is None: registry = AgentRegistry(loader=loader, real=(loader is None))
+        elif loader is not None: raise ValueError("pass either registry or loader, not both")
         observer = ObservingRegistry(registry)
         stage = "load"
         printer("Loading or reusing agent")

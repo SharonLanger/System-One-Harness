@@ -1,4 +1,3 @@
-from examples._plumbing_inspection import plumbing_provider
 import copy
 import json
 from pathlib import Path
@@ -60,7 +59,7 @@ def registry_for(text, expected, response, calls):
     def loader(model, **kwargs):
         assert (model, kwargs) == ("mock-selection", {"lang_temperatures": {"fr": {"temperature": [0.2]*3}}})
         return Fake()
-    return AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
+    return AgentRegistry(loader=loader)
 
 
 @pytest.mark.parametrize("text,index,multiple,reason", [
@@ -108,7 +107,7 @@ def test_empty_and_budgets_refuse_before_loader_with_no_truncation(tmp_path):
     data = source_outline(tmp_path)
     def forbidden(*args, **kwargs):
         raise AssertionError("must not load")
-    registry = AgentRegistry(inspection_provider=plumbing_provider, loader=forbidden)
+    registry = AgentRegistry(loader=forbidden)
     empty = {**data, "callables": []}
     assert run("x", empty, config=RunConfig(), registry=registry)["reason"] == "no_candidates"
     for max_candidates in [0, 1]:
@@ -136,14 +135,14 @@ def test_templates_and_exact_named_override_immutable(tmp_path):
     assert {p.name for p in BLOCK_DIR.iterdir() if p.is_file()} == {"questions.json", "rules.json", "block.py", "README.md"}
     for bad in [{}, {"wrong": payload["method"]}, {**payload, "method": {"type": "bad"}}]:
         with pytest.raises(ValueError):
-            block.run("x", config=RunConfig(), registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model: None), question_payloads=bad)
+            block.run("x", config=RunConfig(), registry=AgentRegistry(loader=lambda model: None), question_payloads=bad)
 
 
 def test_duplicate_ids_and_invalid_budgets_rejected(tmp_path):
     data = source_outline(tmp_path)
     def forbidden(*args, **kwargs):
         raise AssertionError("must not load")
-    registry = AgentRegistry(inspection_provider=plumbing_provider, loader=forbidden)
+    registry = AgentRegistry(loader=forbidden)
     duplicated = {**data, "callables": [data["callables"][0]] * 2}
     with pytest.raises(ValueError, match="candidate"):
         run("x", duplicated, config=RunConfig(), registry=registry)

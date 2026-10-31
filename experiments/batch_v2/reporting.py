@@ -167,6 +167,9 @@ def write_reports(run_dir, rows):
 def collect(run_dir):
     root = Path(run_dir)
     manifest = load(root/'manifest.json')
+    if manifest['suite']['adapter'] == 'method-selection':
+        from method_reporting import collect
+        return collect(root)
     cases = manifest['cases']
     suite = manifest['suite']
     rows = []
@@ -193,3 +196,4 @@ def collect(run_dir):
             rows.append(row)
     write_reports(root, rows)
     return rows
+

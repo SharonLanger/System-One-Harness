@@ -39,80 +39,17 @@ def test_configuration_failure(tmp_path):
     r=request(tmp_path);r.config.config=str(tmp_path/'missing.json')
     assert _prepare_feature_config(r).code=='invalid_configuration'
 
-from laya_context_router.hooks.contracts import Context,Noop
-from laya_context_router.hooks.user_prompt_submit.prompt_context_enrichment import (
-    _map_flow_result,enrich_prompt_context)
-
-# Literal exhaustive lists are independent of the production sets.
-@pytest.mark.parametrize('reason',['ineligible_request','unsupported_request','no_file','multiple_files',
-    'excluded','missing','ambiguous','no_candidates','candidate_budget_exceeded','ambiguous_candidates',
-    'input_budget_exceeded','method_undecided','no_single_match','multiple_undecided','multiple_relevant'])
-def test_expected_flow_refusals(reason,tmp_path):
-    assert _map_flow_result({'status':'noop','reason':reason,'context':None},project_root=tmp_path,
-        formatter=lambda *a,**k:pytest.fail('refusal/failure must not format'))==Noop(reason)
-
-@pytest.mark.parametrize('reason',['deadline_exceeded','extractor_error','invalid_dependency_budget',
-    'invalid_fallback_budget','invalid_reference','model_error','source_changed','unknown_candidate',
-    'inaccessible','outside_repository','not_file','invalid_resolution_mode'])
-def test_operational_flow_failures(reason,tmp_path):
-    assert _map_flow_result({'status':'noop','reason':reason,'context':None},project_root=tmp_path,
-        formatter=lambda *a,**k:pytest.fail('refusal/failure must not format'))==Failure(reason,'feature')
-
-@pytest.mark.parametrize('result',[None,{},[],{'status':'wat','reason':None,'context':None},
-    {'status':'noop','reason':'future','context':None},{'status':'noop','reason':'missing','context':{}},
-    {'status':'context','reason':'missing','context':{}},{'status':'context','reason':None,'context':{}},
-    {'status':'noop','reason':False,'context':None}])
-def test_bad_flow_result_never_formats(result,tmp_path):
-    assert _map_flow_result(result,project_root=tmp_path,
-        formatter=lambda *a,**k:pytest.fail('must not format')).code=='invalid_flow_result'
-
-def collector_context(root):
-    code='function chosen() {}';digest='a'*64
-    return {'schema_version':1,'path':str(root/'a.ts'),'source_hash':digest,
-        'callable':{'id':f'{digest}:0:{len(code)}','name':'chosen','signature':'function chosen()',
-                    'start':0,'end':len(code),'location':{'line':1,'column':1}},
-        'code':code,'display_code':code,'diagnostics':[],'limitations':[],
-        'coverage':'partial','dependencies':[],'gaps':[],
-        'collection':{'max_depth':2,'max_dependency_chars':12000,'dependency_chars':0}}
-
-def test_actual_formatter_root_api(tmp_path):
-    result=_map_flow_result({'status':'context','reason':None,'context':collector_context(tmp_path)},project_root=tmp_path)
-    assert result==Context('Selected TypeScript context (partial).\n\nSelected method\n\na.ts (lines 1–1)\nfunction chosen() {}')
-
-@pytest.mark.parametrize('output',[None,'',False])
-def test_invalid_formatter_output(output,tmp_path):
-    result=_map_flow_result({'status':'context','reason':None,'context':collector_context(tmp_path)},
-        project_root=tmp_path,formatter=lambda *a,**k:output)
-    assert result.code=='formatting_error'
-
-def test_formatter_exception(tmp_path):
-    def formatter(*a,**k):raise ValueError('planned')
-    assert _map_flow_result({'status':'context','reason':None,'context':collector_context(tmp_path)},
-        project_root=tmp_path,formatter=formatter).code=='formatting_error'
-
-def test_handler_forwards_explicit_root_mode_and_retains_raw_cwd(tmp_path):
-    calls=[]
-    def flow(prompt,**kwargs):
-        calls.append((prompt,kwargs));return {'status':'noop','reason':'multiple_relevant','context':None}
-    sentinel=object()
-    result=enrich_prompt_context(request(tmp_path),lambda *a,**k:None,flow=flow,registry=sentinel)
-    assert result==Noop('multiple_relevant') and len(calls)==1
-    assert str(calls[0][1]['cwd'])=='/unrelated/cwd'
-    assert calls[0][1]['repository_root']==tmp_path
-    assert calls[0][1]['resolve_from_project_root'] is True
-    assert calls[0][1]['registry'] is sentinel
 
 @pytest.mark.parametrize('real',[False,True])
-def test_real_gateway_disabled_or_ineligible_never_loads_model(tmp_path,real):
+def test_real_gateway_disabled_or_no_reference_never_loads_model(tmp_path,real):
     import json,os,subprocess
     from pathlib import Path
     root=Path(__file__).resolve().parents[1]
     script='''import json,sys
 from laya_context_router.hooks.gateway import main
-import laya_context_router.flows.file_method_context as flow
-import laya_context_router.context_format as fmt
-def forbidden(*a,**k):raise AssertionError('unexpected flow/formatter')
-fmt.format_context=forbidden
+from laya_context_router.laya.registry import AgentRegistry
+def forbidden(*a,**k):raise AssertionError('unexpected model access')
+AgentRegistry.get_agent=forbidden
 records=[]
 main(ARGS,logger=lambda l,e,**d:records.append({'event':e,**d}))
 assert 'laya_mlx' not in sys.modules
@@ -121,77 +58,26 @@ open(LOG,'w').write(json.dumps(records))
     p={'hook_event_name':'UserPromptSubmit','session_id':'session','transcript_path':'unused.jsonl','cwd':str(tmp_path),'prompt':'hello'}
     r=subprocess.run([sys.executable,'-c',script],input=json.dumps(p),text=True,capture_output=True,
         timeout=5,env={**os.environ,'PYTHONPATH':str(root/'src')})
-    code='ineligible_request' if real else 'model_disabled'
+    code='no_file' if real else 'model_disabled'
     assert r.returncode==0 and r.stdout=='' and code in r.stderr
     final=json.loads((tmp_path/'records.json').read_text())[-1]
     assert (final['reason']==code and final['outcome']=='noop') if real else (final['code']==code and final['outcome']=='error')
     assert final['session_id']=='session' and final['stdout_bytes_written']==0
 
-@pytest.mark.parametrize('stage',['root','config','validation','formatting'])
-def test_timeouts_propagate_without_later_work(stage,tmp_path,monkeypatch):
+
+@pytest.mark.parametrize('stage', ['root', 'config'])
+def test_preparation_timeouts_propagate_without_later_work(stage, tmp_path, monkeypatch):
     from pathlib import Path
-    import laya_context_router.laya.config as config
-    import laya_context_router.building_blocks.typescript as typescript
-    def timeout(*a,**k):raise TimeoutError('planned')
-    def forbidden(*a,**k):pytest.fail('dependent work after timeout')
-    r=request(tmp_path)
-    if stage=='root':
-        monkeypatch.setattr(Path,'resolve',timeout)
-        monkeypatch.setattr(config,'load_config',forbidden)
-        r.config.config='unused'
-        with pytest.raises(TimeoutError):_prepare_feature_config(r)
-    elif stage=='config':
-        monkeypatch.setattr(config,'load_config',timeout)
-        r.config.config='unused'
-        with pytest.raises(TimeoutError):_prepare_feature_config(r)
+    from laya_context_router.laya import config
+    def timeout(*args, **kwargs):
+        raise TimeoutError('planned')
+    def forbidden(*args, **kwargs):
+        pytest.fail('dependent work after timeout')
+    r = request(tmp_path); r.config.config = 'unused'
+    if stage == 'root':
+        monkeypatch.setattr(Path, 'resolve', timeout)
+        monkeypatch.setattr(config, 'load_config', forbidden)
     else:
-        value={'status':'context','reason':None,'context':collector_context(tmp_path)}
-        if stage=='validation':
-            monkeypatch.setattr(typescript,'_validate_context',timeout)
-            formatter=forbidden
-        else:formatter=timeout
-        with pytest.raises(TimeoutError):_map_flow_result(value,project_root=tmp_path,formatter=formatter)
-
-
-@pytest.mark.parametrize('outcome',['context','multiple_relevant'])
-def test_feature_unit_flow_and_formatter_exact_counts(tmp_path,outcome):
-    from laya_context_router.laya.config import RunConfig
-    model=tmp_path/'config.json';model.write_text('{"model":"mock-unit","temperature":0.2,"lang":"fr"}')
-    r=request(tmp_path);r.config.config=str(model)
-    flow_calls=[];formatter_calls=[];sentinel=object()
-    data=collector_context(tmp_path)
-    def flow(prompt,**kwargs):
-        flow_calls.append((prompt,kwargs))
-        return {'status':'context','reason':None,'context':data} if outcome=='context' else {'status':'noop','reason':'multiple_relevant','context':None}
-    def formatter(context,**kwargs):
-        formatter_calls.append((context,kwargs));return 'Exact text: 😀\n'
-    result=enrich_prompt_context(r,lambda *a,**k:None,flow=flow,registry=sentinel,formatter=formatter)
-    assert len(flow_calls)==1
-    kwargs=flow_calls[0][1]
-    assert flow_calls[0][0]=='x' and kwargs['config']==RunConfig('mock-unit',0.2,'fr')
-    assert kwargs['repository_root']==tmp_path and kwargs['resolve_from_project_root'] is True
-    assert str(kwargs['cwd'])=='/unrelated/cwd' and kwargs['registry'] is sentinel
-    if outcome=='context':
-        assert result==Context('Exact text: 😀\n') and len(formatter_calls)==1
-        assert formatter_calls[0]==(data,{'project_root':tmp_path})
-    else:
-        assert result==Noop('multiple_relevant') and formatter_calls==[]
-
-
-@pytest.mark.parametrize('scenario',['no_candidates','helper_timeout'])
-def test_real_source_preparation_refuses_before_model(tmp_path,scenario):
-    from laya_context_router.flows.file_method_context import run
-    calls=[]
-    class ForbiddenRegistry:
-        def get_agent(self,*a):calls.append(1);pytest.fail('source failure must not load model')
-    r=request(tmp_path)
-    r=type(r)('Explain `a.ts`: how does it work?',r.envelope,r.config)
-    (tmp_path/'a.ts').write_text('export const amount = 1;')
-    if scenario=='helper_timeout':
-        helper=tmp_path/'sleep.cjs';helper.write_text('setTimeout(() => {}, 30000);')
-        def flow(prompt,**kwargs):return run(prompt,helper=helper,timeout=.1,**kwargs)
-    else:flow=run
-    result=enrich_prompt_context(r,lambda *a,**k:None,flow=flow,registry=ForbiddenRegistry(),
-                                formatter=lambda *a,**k:pytest.fail('must not format'))
-    assert calls==[]
-    assert result==Noop('no_candidates') if scenario=='no_candidates' else result.code=='extractor_error'
+        monkeypatch.setattr(config, 'load_config', timeout)
+    with pytest.raises(TimeoutError):
+        _prepare_feature_config(r)

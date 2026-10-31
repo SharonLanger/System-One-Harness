@@ -4,6 +4,7 @@ Status: implemented on PR #21. Offline fixture execution, collection, resume and
 
 RV2 runs one experiment's question variants × rules × named configurations against the same input cases, then compares the outcomes. Each combination sees each case once; there are no repetitions. Create another experiment by writing two JSON files, using the same runner.
 
+- [Experiment handbook](docs/README.md): research workflow, scoring, input-agent instructions, campaign/run records and the pre-experiment implementation plan.
 - [Input and experiment authoring guide](input-authoring.md): complete cases.json and suite.json examples, label status, noise levels, tags and annotation workflow.
 - [Implementation design](runner-v2-plan.md): execution, checkpoint/resume, output schema, scoring formulas and verification requirements.
 
@@ -58,11 +59,15 @@ Live predictions are not promised to match the expected labels. For a new datase
 
 Each launch prints a new folder under:
 
-`experiments/batch_v2/results/<experiment-id>/<UTC-timestamp>__<unique-id>/`
+`experiments/batch_v2/results/<experiment-id>/YYYY-MM-DD_HH-MM-SS/`
+
+Names use Israel local time and the same convention as the original batch runner, for example `2026-10-31_20-25-03`. Sort names descending to see the latest first. Runs started in the same second receive `_001`, `_002`, etc. Existing result folders keep their names. The requested-action launcher's setup probes use `results/requested-action-500/probes/YYYY-MM-DD_HH-MM-SS/probe.json`.
 
 Open `report.html` locally for interactive vector/group filtering, or `comparison.md` for a readable text report. The local HTML needs no server or network. For programmatic analysis, read `results.jsonl` (one row per vector/case) and `summary.csv` (one row per vector/group).
 
 The folder also includes `manifest.json`, `inferences/` and detailed case checkpoints under `batches/<question-id>__<rule-id>/<config-id>/cases/`. The manifest freezes the exact input definitions/settings. Inference records preserve the raw model evidence; case records preserve the rule decision.
+
+Worker logs contain errors only, capped at 1 MiB per file with two backups. Debug traces are not copied into inference records. See [Results and errors](RESULTS-AND-ERRORS.md) for what is saved, how to inspect a stopped run, and the requested-action development report.
 
 The main table compares vectors. Selecting one vector shows the same metrics for all inputs, each noise level, and each tag. Correct/wrong final answers and abstentions are separate; abstentions are split into correct answers rejected and wrong answers filtered. Read scored and unscored counts alongside accuracy. Noise levels partition the dataset; tags may overlap and must not be summed.
 
@@ -90,3 +95,5 @@ python -B -m unittest discover -s experiments/batch_v2/checks -v
 Technical failures return nonzero; model mistakes alone do not. Explicit call-budget completion can leave a partial run with unattempted rows; inspect manifest status. Offline commands do not prove live model accuracy. The generic fixture execution command uses the bundled response map; for a different experiment, use live mode with the installed model. Additional fixture datasets require a matching injected response fixture, never an implicit fake response.
 
 Browser acceptance on the Mac: open report.html, confirm 8 overview rows, select a vector, then noisy and misleading groups; each should show its one matching row. The report should scroll horizontally on a narrow screen. An optional automated browser check is included at checks/browser-check.cjs for an environment with Playwright and its Chromium installed.
+
+- [Research tooling](research/README.md): role-filtered analysis, metrics, temperature proposals, frozen policies and evidence export. [Verification](docs/track-a-verification.md) distinguishes fixture results from pending live/browser checks.

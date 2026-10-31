@@ -1,5 +1,6 @@
 """Dynamic readable method questions with private source identity mapping."""
 from copy import deepcopy
+from dataclasses import replace
 import json
 from pathlib import Path
 
@@ -7,6 +8,7 @@ from ....block_runtime import Block, PreparedInput, SkipBlock
 from ...typescript import _validate_outline, TypeScriptError
 
 BLOCK_DIR = Path(__file__).parent
+DEFAULT_TEMPERATURE = 0.5
 
 
 def _maps(outline):
@@ -101,8 +103,12 @@ def validate_output(value):
 
 
 def run(input_data, *, config, registry, max_candidates=64, max_input_chars=16000,
-        rule_overrides=None, question_overrides=None, prepare_input=None, catalog=None, strict=False):
-    """Accept a full validated outline; budgets count Unicode characters, not tokens."""
+        rule_overrides=None, question_overrides=None, prepare_input=None, catalog=None):
+    """Use the selected profile unless the caller explicitly supplies a temperature.
+
+    Accept a full validated outline; budgets count Unicode characters, not tokens.
+    """
+    effective_config = replace(config, temperature=DEFAULT_TEMPERATURE) if config.temperature is None else config
     def validate_input(value):
         if (type(max_candidates) is not int or max_candidates < 0
                 or type(max_input_chars) is not int or max_input_chars <= 0):
@@ -120,5 +126,5 @@ def run(input_data, *, config, registry, max_candidates=64, max_input_chars=1600
         return {**deepcopy(value), 'max_candidates': max_candidates, 'max_input_chars': max_input_chars}
     block = Block(BLOCK_DIR / 'block.json', validate_input=validate_input, prepare_input=prepare,
                   reduce=reduce, validate_output=validate_output, validate_prepared=validate_prepared, catalog=catalog)
-    return block.run(input_data, config=config, registry=registry, rule_overrides=rule_overrides,
-                     question_overrides=question_overrides, prepare_input=prepare_input, strict=strict)
+    return block.run(input_data, config=effective_config, registry=registry, rule_overrides=rule_overrides,
+                     question_overrides=question_overrides, prepare_input=prepare_input)

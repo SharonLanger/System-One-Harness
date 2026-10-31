@@ -35,6 +35,10 @@ def _user_prompt_dispatch(envelope,args,logger):
     from .user_prompt_submit.dispatcher import dispatch_user_prompt_submit
     return dispatch_user_prompt_submit(envelope,args,logger)
 
+def _post_compact_dispatch(envelope,args,logger):
+    from .post_compact.dispatcher import dispatch_post_compact
+    return dispatch_post_compact(envelope,args,logger)
+
 def dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher=enrich_envelope):
     result=None
     logger('INFO','hook_dispatcher_started',invocation_id=invocation_id,
@@ -56,7 +60,7 @@ def _dispatch_hook(payload,args,invocation_id,logger,*,dispatchers=None,enricher
         if not isinstance(payload,dict):raise ValidationError('invalid_object','input')
         name=require_string(payload,'hook_event_name','input')
         if name!=args.hook:raise ValidationError('event_mismatch','input','hook_event_name',command_hook=args.hook,payload_hook=name)
-        registry = {'UserPromptSubmit':_user_prompt_dispatch} if dispatchers is None else dispatchers
+        registry = {'UserPromptSubmit':_user_prompt_dispatch, 'PostCompact':_post_compact_dispatch} if dispatchers is None else dispatchers
         if name not in registry:
             logger('INFO','hook_dispatcher_route_skipped',hook_event_name=name,reason='unsupported_event')
             return Noop('unsupported_event')

@@ -1,4 +1,3 @@
-from examples._plumbing_inspection import plumbing_provider
 import copy
 import json
 from pathlib import Path
@@ -28,7 +27,7 @@ def test_single_question_same_envelope(tmp_path):
         def predict(self,text,questions):
             assert text==REQUEST['text'] and questions=={'department':REQUEST['questions']['department']}
             return copy.deepcopy(raw)
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model:Fake())
+    registry=AgentRegistry(loader=lambda model:Fake())
     assert block.run(REQUEST['text'],config=RunConfig(),registry=registry)=={'department':{'answer':'billing','decided':True,'reason':None}}
 
 
@@ -50,7 +49,7 @@ def test_two_question_example_exact_sequence_settings_reuse_and_mixed_results():
     def loader(model,**kwargs):
         assert (model,kwargs)==('mock-A',{'lang_temperatures':{'fr':{'temperature':[0.2]*3}}})
         loads.append(model); return agent
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=loader); config=RunConfig('mock-A',0.2,'fr')
+    registry=AgentRegistry(loader=loader); config=RunConfig('mock-A',0.2,'fr')
     assert run(REQUEST['text'],config=config,registry=registry)=={'department':{'answer':'billing','decided':True,'reason':None},'churn_risk':{'answer':'undecided','decided':False,'reason':'below_threshold:distance_from_boundary'}}
     assert run(REQUEST['text'],config=config,registry=registry)=={'department':{'answer':'undecided','decided':False,'reason':'below_threshold:answer_confidence'},'churn_risk':{'answer':'yes','decided':True,'reason':None}}
     assert loads==['mock-A'] and len(calls)==2 and responses==[]
@@ -99,7 +98,7 @@ def test_block_raw_validation_and_sdk_errors_propagate(tmp_path):
     class Invalid:
         def predict(self,*args): return {'answers':{}}
     with pytest.raises(ResponseError):
-        block.run('ticket',config=RunConfig(),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model:Invalid()))
+        block.run('ticket',config=RunConfig(),registry=AgentRegistry(loader=lambda model:Invalid()))
     def fail(model): raise RuntimeError('planned load error')
     with pytest.raises(RuntimeError,match='planned load error'):
-        block.run('ticket',config=RunConfig(),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=fail))
+        block.run('ticket',config=RunConfig(),registry=AgentRegistry(loader=fail))

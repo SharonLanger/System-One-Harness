@@ -1,4 +1,3 @@
-from examples._plumbing_inspection import plumbing_provider
 from laya_context_router.block_runtime import Block, Catalog, PreparedInput
 
 
@@ -59,7 +58,7 @@ def execute(block, response=None, **kwargs):
         def predict(self,text,questions,**options):
             calls.append((text,deepcopy(questions),options))
             return {'answers':{'local':deepcopy(response or raw())}}
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model,**options: Agent())
+    registry=AgentRegistry(loader=lambda model,**options: Agent())
     return block.run({'text':'  original  '},config=RunConfig(model='fake'),registry=registry,**kwargs),calls
 
 
@@ -140,7 +139,7 @@ def test_invalid_raw_preserves_response_error(tmp_path,response):
     class Agent:
         def predict(self,*args,**kwargs): return {'answers':{'local':response}}
     with pytest.raises(ResponseError):
-        block.run({'text':'x'},config=RunConfig(model='fake'),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:Agent()))
+        block.run({'text':'x'},config=RunConfig(model='fake'),registry=AgentRegistry(loader=lambda *a,**k:Agent()))
 
 
 def test_enrichment_once_each_and_raw_is_unchanged(tmp_path,monkeypatch):
@@ -190,7 +189,7 @@ def test_two_question_binding_partial_override_and_independence(tmp_path):
             calls.append(deepcopy(questions))
             questions['first']['criteria'].clear()
             return {'answers':{'first':raw(),'second':raw(),'extra':raw()}}
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:Agent())
+    registry=AgentRegistry(loader=lambda *a,**k:Agent())
     kwargs={'config':RunConfig(model='x'),'registry':registry}
     result=block.run({'text':''},rule_overrides={'first':'strict'},**kwargs)
     assert not result.decisions['first']['decided'] and result.decisions['second']['decided']
@@ -230,7 +229,7 @@ def test_config_reuse_dispatch_temperature_language_and_invocation(tmp_path):
             predictions.append((self.key,kwargs));return {'answers':{'local':raw()}}
     def loader(model,**kwargs):
         loads.append((model,kwargs)); return Agent((model,kwargs))
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
+    registry=AgentRegistry(loader=loader)
     a=RunConfig(model='A'); b=RunConfig(model='B',temperature=.2,lang='fr')
     for config in (a,b,a,RunConfig(model='A',temperature=.3)):
         block.run({'text':'x'},config=config,registry=registry)
@@ -238,21 +237,21 @@ def test_config_reuse_dispatch_temperature_language_and_invocation(tmp_path):
     assert loads[0][1]=={} and loads[1][1]=={'lang_temperatures':{'fr':{'temperature':[.2]*3}}}
     assert [x[0][0] for x in predictions]==['A','B','A','A']
     assert predictions[1][1]=={'lang':'fr'} and predictions[0][1]=={}
-    block.run({'text':'x'},config=a,registry=AgentRegistry(inspection_provider=plumbing_provider, loader=loader))
+    block.run({'text':'x'},config=a,registry=AgentRegistry(loader=loader))
     assert len(loads)==4
 
 
 def test_load_failure_not_cached_and_prediction_failure_not_retried(tmp_path):
     block=make_block(tmp_path); calls=[]
     def loader(*args,**kwargs): calls.append(1); raise RuntimeError('load')
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
+    registry=AgentRegistry(loader=loader)
     for _ in range(2):
         with pytest.raises(RuntimeError,match='load'):
             block.run({'text':'x'},config=RunConfig(model='x'),registry=registry)
     assert len(calls)==2
     class Agent:
         def predict(self,*args,**kwargs): calls.append(2); raise TimeoutError('deadline')
-    with pytest.raises(TimeoutError): block.run({'text':'x'},config=RunConfig(model='x'),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:Agent()))
+    with pytest.raises(TimeoutError): block.run({'text':'x'},config=RunConfig(model='x'),registry=AgentRegistry(loader=lambda *a,**k:Agent()))
     assert calls==[1,1,2]
 
 
@@ -270,7 +269,7 @@ def test_mismatch_logs_structured_fields_and_no_preparation(tmp_path,monkeypatch
 def test_input_validation_cannot_be_bypassed_by_custom_preparer(tmp_path,value):
     block=make_block(tmp_path)
     with pytest.raises(BlockInputError):
-        block.run(value,config=RunConfig(model='fake'),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *_:pytest.fail('loaded')),
+        block.run(value,config=RunConfig(model='fake'),registry=AgentRegistry(loader=lambda *_:pytest.fail('loaded')),
             prepare_input=lambda *_:pytest.fail('prepared'))
 
 
@@ -343,7 +342,7 @@ def test_all_wrong_pairings_log_and_stop_before_preparation_or_load(tmp_path,mon
     events=[];monkeypatch.setattr(runtime,'log',lambda *args,**kwargs:events.append(kwargs))
     block=make_block(tmp_path,expected,rules=[rule(expected),rule(actual,name='wrong')])
     block.prepare_input=lambda *_:pytest.fail('prepared')
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:pytest.fail('loaded'))
+    registry=AgentRegistry(loader=lambda *a,**k:pytest.fail('loaded'))
     with pytest.raises(BlockConfigurationError):
         block.run({'text':'private'},config=RunConfig(model='fake'),registry=registry,rule_overrides={'local':'wrong'})
     event=next(e for e in events if e.get('code')=='rule_type_mismatch')
@@ -429,7 +428,7 @@ def test_extra_prepared_question_is_rejected_before_loading(tmp_path):
     block=make_block(tmp_path,preparer=prepare)
     with pytest.raises(BlockInputError,match='question names'):
         block.run({'text':'x'},config=RunConfig(model='fake'),
-            registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:pytest.fail('loaded')))
+            registry=AgentRegistry(loader=lambda *a,**k:pytest.fail('loaded')))
 
 
 def test_changed_rule_and_question_reuse_agent_with_current_payload(tmp_path):
@@ -440,7 +439,7 @@ def test_changed_rule_and_question_reuse_agent_with_current_payload(tmp_path):
             payloads.append(deepcopy(questions));return {'answers':{'local':raw()}}
     def loader(model,**kwargs):
         loads.append((model,kwargs));return Agent()
-    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=loader);config=RunConfig(model='same')
+    registry=AgentRegistry(loader=loader);config=RunConfig(model='same')
     original=block.run({'text':'x'},config=config,registry=registry)
     changed=block.run({'text':'x'},config=config,registry=registry,
         rule_overrides={'local':'strict'},question_overrides={'local':{**question(),'instructions':'Changed'}})

@@ -1,3 +1,15 @@
+# Current PR23 contract
+
+Ordinary `predict()` remains compatible and does not perform budget inspection; the SDK may retain its existing truncation behavior. Use `predict_strict()` for pre-inference inspection and rejection. Supplying an inspection provider alone does not enable strict mode.
+
+`strict=True` is available on the shared QuestionBlock/Block runtime, ticket_triage, ticket_triage_v2, requested_action and context_scope. Method selection (legacy and V2) and all flows remain exactly as main and do not expose strict selection. Existing experiments remain exactly as main; the only new experiment files are the seven manual `experiments/tokenizer_smoke/` scripts/documentation. Requested action retains main's default temperature 1.0 and explicit caller overrides.
+
+Limits are centralized in `laya/model_limits.py` with source URLs, review date and periodic review guidance. New models require explicit entries. Strict mode counts with the loaded tokenizer; source/package/tokenizer-file hash gates and copied tokenizer assets are removed. Managed loaded-object integrity checks remain. CODE is still a refused candidate.
+
+Unit tests use mock tokenizers and establish accounting/control flow only. Actual tokenizer parity and live Mac compatibility remain unverified. Sharon runs the manual local-checkpoint smoke cases; no live model, download or campaign is part of this change. Raw token-budget evidence is excluded from the PR tree.
+
+## Historical record (superseded where inconsistent above)
+
 # Experiment tokenizer migration proposal
 
 Status: implementation authorized by Sharon’s later follow-plan instruction. The compatibility design is selected: legacy predict() plus explicit predict_strict(). Existing experiments will be restored to current main; experiment migration/runs are not part of this PR.

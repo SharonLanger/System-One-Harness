@@ -24,7 +24,7 @@ from summary import render_summary
 INPUT_PATH = HERE / "inputs" / "laya_choice.json"
 
 
-def run(*, input_path=INPUT_PATH, loader=None, inspection_provider=None, registry=None, model=None,
+def run(*, input_path=INPUT_PATH, loader=None, registry=None, model=None,
         temperature=None, temperature_set=False, lang=None, output_root=None,
         printer=print):
     started = time.monotonic()
@@ -71,8 +71,8 @@ def run(*, input_path=INPUT_PATH, loader=None, inspection_provider=None, registr
         printer(f"Requested model: {config.model}")
         printer(f"Requested temperature: {config.temperature if config.temperature is not None else 'SDK default'}")
         if registry is None:
-            registry = AgentRegistry(inspection_provider=inspection_provider, loader=loader, real=(loader is None))
-        elif loader is not None or inspection_provider is not None:
+            registry = AgentRegistry(loader=loader, real=(loader is None))
+        elif loader is not None:
             raise ValueError("pass either registry or loader, not both")
         observer = ObservingRegistry(registry)
         stage = "load"

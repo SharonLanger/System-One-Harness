@@ -1,19 +1,20 @@
 """G composition: ordinary Python owns branches; only the SDK boundary is fake."""
-from examples._plumbing_inspection import plumbing_provider
 from copy import deepcopy
 import importlib
 import json
 
 import pytest
 
-from laya_context_router.block_runtime import Block, Catalog, PreparedInput, BlockConfigurationError, BlockInputError
+from laya_context_router.block_runtime import Block, Catalog, PreparedInput
 from laya_context_router.building_blocks.questions.method_selection_v2.block import run as select
 from laya_context_router.building_blocks.typescript import outline, extract_callable
-from laya_context_router.flows import file_method_context as flow
+from laya_context_router.flows import first_method_context as flow
 from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.registry import AgentRegistry
-from test_flow_branches import A, B, setup, sequence_registry, execute
 from test_method_selection import questions_for, raw_for
+
+A = RunConfig("mock-A", 0.2, "fr")
+B = RunConfig("mock-B", 0.7, "en")
 
 
 def fixture_blocks(tmp_path):
@@ -42,7 +43,7 @@ def fixture_registry(events, confidence=.8, value=.8):
                 return {'answers': {name: {'type': 'noul', 'noul': value,
                     'answer_confidence': confidence} for name in questions}}
         return Agent()
-    return AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
+    return AgentRegistry(loader=loader)
 
 
 def test_G01_independent_blocks_keep_names_config_and_named_policy(tmp_path):
@@ -96,7 +97,7 @@ def test_G05_G06_real_typescript_v2_select_then_extract(tmp_path, multiple, conf
             events.append('predict'); assert text == 'Explain sum' and submitted == questions
             return deepcopy(response)
     result = select({'text':'Explain sum', 'source_outline':data}, config=A,
-                    registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a, **k: Agent()))
+                    registry=AgentRegistry(loader=lambda *a, **k: Agent()))
     if result.data['selected_id'] is not None:
         events.append('extract'); extracted = extract_callable(path, result.data['selected_id'])
         assert extracted['code'] == 'static sum(x: number) { return x + 1; }'
@@ -105,44 +106,10 @@ def test_G05_G06_real_typescript_v2_select_then_extract(tmp_path, multiple, conf
     assert events == (['outline','predict','extract'] if extracts else ['outline','predict'])
 
 
-@pytest.mark.parametrize('multiple,confidence,choice,expected_calls', [(.1,.1,'candidate',2),(.9,.1,'candidate',1),(.1,.95,'none_or_unclear',1)])
-def test_G07_migrated_flow_preserves_bounded_fallback(tmp_path, multiple, confidence, choice, expected_calls):
-    _, data, prompt, second, questions = setup(tmp_path)
-    label = data['callables'][0]['signature'] if choice == 'candidate' else choice
-    sequence = [(A,prompt,questions,raw_for(questions,label,multiple,confidence))]
-    if expected_calls == 2: sequence.append((B,second,questions,raw_for(questions,label,confidence=.1)))
-    registry, remaining, loads, calls = sequence_registry(sequence)
-    result = execute(tmp_path,prompt,registry,fallback_config=B)
-    assert result['status'] == 'noop' and len(calls) == expected_calls and not remaining
-    assert len(loads) == expected_calls
 
 
-@pytest.mark.parametrize('error,reason', [(BlockConfigurationError('bad rule'),'model_error'),
-    (BlockInputError('bad input'),'model_error'),(RuntimeError('SDK failure'),'model_error'),
-    (TimeoutError('deadline'),'deadline_exceeded')])
-def test_G11_existing_flow_error_boundary_preserves_noop_reason(tmp_path, error, reason):
-    _, _, prompt, _, questions = setup(tmp_path)
-    registry, remaining, _, calls = sequence_registry([(A,prompt,questions,error)])
-    assert execute(tmp_path,prompt,registry) == {'status':'noop','reason':reason,'context':None}
-    assert not remaining and len(calls) == 1
 
 
-def test_G08_migrated_flow_forwards_project_resolution_timeout_and_budgets(tmp_path, monkeypatch):
-    _, data, prompt, _, questions = setup(tmp_path); forwarded = {}
-    for name in ('resolve_file','outline','collect_project_context'):
-        original = getattr(flow,name)
-        def wrapper(*args, _name=name, _original=original, **kwargs):
-            forwarded[_name] = deepcopy(kwargs)
-            return _original(*args, **kwargs)
-        monkeypatch.setattr(flow,name,wrapper)
-    registry, remaining, _, _ = sequence_registry([(A,prompt,questions,raw_for(questions,data['callables'][0]['signature']))])
-    result = execute(tmp_path,prompt,registry,resolve_from_project_root=True,timeout=9,
-                     max_dependency_depth=1,max_dependency_chars=4321)
-    assert result['status'] == 'context' and not remaining
-    assert forwarded['resolve_file']['resolve_from_project_root'] is True
-    assert all(v['timeout'] == 9 for v in forwarded.values())
-    assert forwarded['collect_project_context']['max_depth'] == 1
-    assert forwarded['collect_project_context']['max_dependency_chars'] == 4321
 
 
 def test_G12_imports_do_not_load_agents_or_run_flows(monkeypatch):
@@ -180,7 +147,7 @@ def test_G13_existing_offline_experiment_preserves_summary_and_rule_error(tmp_pa
                           rule_overrides={'method':'missing_policy'}, **kwargs)
         monkeypatch.setattr(experiment,'run_block',invalid)
     output = tmp_path / 'reports'
-    code = experiment.run(inspection_provider=plumbing_provider, input_path=payload,loader=loader,output_root=output,printer=lambda _:None)
+    code = experiment.run(input_path=payload,loader=loader,output_root=output,printer=lambda _:None)
     details_path, = output.rglob('details.json')
     details = json.loads(details_path.read_text())
     summary = (details_path.parent / 'summary.md').read_text()

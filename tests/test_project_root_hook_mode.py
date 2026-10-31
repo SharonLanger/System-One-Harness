@@ -1,12 +1,10 @@
-"""Root-mode selection retains the real resolver/helper; model alone is stubbed."""
+"""Root resolver contracts and production-hook root/cwd isolation."""
 import json
 import subprocess
 import sys
-from pathlib import Path
 import pytest
 from laya_context_router.building_blocks.resolve_file import resolve_file
-from laya_context_router.flows.file_method_context import run
-from test_prompt_hook import hook_case,ROOT
+from test_prompt_hook import hook_case, ROOT, expected_context, hook_trace
 
 @pytest.mark.parametrize('value',[None,0,1,'true',[],{}])
 def test_invalid_root_mode_fails_before_helper_or_model(value,tmp_path,monkeypatch):
@@ -14,8 +12,6 @@ def test_invalid_root_mode_fails_before_helper_or_model(value,tmp_path,monkeypat
     monkeypatch.setattr(facade.typescript,'resolve_reference',lambda *a,**k:pytest.fail('helper ran'))
     with pytest.raises(ValueError,match='boolean'):
         resolve_file('a.ts',cwd=tmp_path,repository_root=tmp_path,resolve_from_project_root=value)
-    assert run('Explain `a.ts`: method?',cwd=tmp_path,repository_root=tmp_path,config=None,registry=None,
-               resolve_from_project_root=value)['reason']=='invalid_resolution_mode'
 
 def test_legacy_and_root_search_bases_differ(tmp_path):
     nested=tmp_path/'nested';nested.mkdir()
@@ -34,25 +30,26 @@ def invoke_gateway(case,*,process_cwd=ROOT):
 def test_actual_gateway_root_selection_and_display_ignore_cwd(tmp_path,location):
     code='function greet() { return "ROOT"; }'
     case=hook_case(tmp_path,code)
-    from test_prompt_hook import hook_trace
     trace=hook_trace(case)
+    nested=case['path'].parent
     root_file=case['repo']/'a.ts';case['path'].replace(root_file)
     case['path'].write_text('function other() { return "NESTED"; }')
+    case['path'] = root_file
     unrelated=tmp_path/'unrelated';unrelated.mkdir()
-    cwd={'nested':case['path'].parent,'root':case['repo'],'unrelated':unrelated}[location]
+    cwd={'nested':nested,'root':case['repo'],'unrelated':unrelated}[location]
     case['event']['cwd']=str(cwd)
     before=json.dumps(case['event'])
     result=invoke_gateway(case,process_cwd=unrelated)
     assert result.returncode==0
     context=json.loads(result.stdout)['hookSpecificOutput']['additionalContext']
-    assert context.startswith('Selected TypeScript context (partial).\n\nSelected method\n\na.ts (lines 1–1)\n'+code)
+    assert context == expected_context(case)
     assert 'NESTED' not in context and str(case['repo']) not in context
     assert json.dumps(case['event'])==before
     records=[json.loads(line) for line in trace.read_text().splitlines()]
     ingested=next(r for r in records if r['event']=='hook_input_ingested')
     assert ingested['details']['cwd']==str(cwd)
     events=[json.loads(x) for x in case['log'].read_text().splitlines()]
-    assert len(events)==2  # one load, one prediction; no duplicate inference
+    assert [event['kind'] for event in events] == ['action', 'selection']
 
 @pytest.mark.parametrize('reference,status',[('../outside/a.ts','outside_repository'),
     ('missing/a.ts','missing'),('escape.ts','outside_repository')])
@@ -81,24 +78,6 @@ def test_wrapper_and_shared_entry_return_identical_context(tmp_path):
     assert direct.returncode==compat.returncode==0
     assert direct.stdout==compat.stdout and json.loads(direct.stdout)
 
-@pytest.mark.parametrize('mode',['multiple','model_error','invalid_budget'])
-def test_actual_gateway_complete_noop_and_errors(tmp_path,mode):
-    case=hook_case(tmp_path)
-    spec=json.loads(case['spec'].read_text())
-    if mode=='multiple':
-        spec['raw']['answers']['multiple_relevant']['noul']=.95
-    if mode=='model_error':spec['error']=True
-    if mode=='invalid_budget':case['args']+=['--max-dependency-depth','-1']
-    case['spec'].write_text(json.dumps(spec))
-    if mode in {'multiple','model_error'}:
-        shim=Path(case['env']['PYTHONPATH'].split(__import__('os').pathsep)[0])/'sitecustomize.py'
-        with shim.open('a') as f:
-            f.write("\nimport laya_context_router.flows.file_method_context as flow\nimport laya_context_router.context_format as fmt\ndef forbidden(*a,**k):raise AssertionError('must not collect or format')\nflow.collect_project_context=forbidden\nfmt.format_context=forbidden\n")
-    result=invoke_gateway(case)
-    assert result.returncode==0 and result.stdout==''
-    reason={'multiple':'multiple_relevant','model_error':'model_error','invalid_budget':'invalid_budget'}[mode]
-    assert reason in result.stderr
-    if mode=='invalid_budget':assert not case['log'].exists()
 
 
 @pytest.mark.parametrize('reference',['../outside.ts','escape.ts'])

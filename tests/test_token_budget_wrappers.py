@@ -1,23 +1,15 @@
-"""Wrapper capability forwarding; controlled fixtures are not tokenizer evidence."""
-import sys
-from pathlib import Path
+"""Opaque observation wrappers retain the ordinary prediction contract."""
+from copy import deepcopy
 from types import SimpleNamespace
-import pytest
+from laya_context_router.laya.predict import predict
+from test_predict import REQUEST, RAW
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'experiments'))
-from support import ObservingRegistry
-from block_method_selection import CapturingRegistry
 
-@pytest.mark.parametrize('wrapper', [lambda r: ObservingRegistry(r), lambda r: CapturingRegistry(r,{})])
-def test_observation_wrapper_preserves_actual_inspector(wrapper):
-    token=object(); config=object(); seen=[]
-    original=SimpleNamespace(get_inspector=lambda c:(seen.append(c),token)[1])
-    wrapped=wrapper(original)
-    assert hasattr(wrapped,'get_inspector'), 'missing inspection forwarding'
-    assert wrapped.get_inspector(config) is token
-    assert seen == [config]
-
-def test_live_check_accepts_explicit_inspection_provider():
-    import inspect
-    from laya_context_router.live_check import run_check
-    assert 'inspection_provider' in inspect.signature(run_check).parameters
+def test_observation_wrapper_needs_only_prediction_capability():
+    calls=[]
+    inner=SimpleNamespace(predict=lambda *a, **kw: (calls.append(1), deepcopy(RAW))[1])
+    class Wrapper:
+        def get_agent(self, config):
+            return SimpleNamespace(predict=inner.predict)
+    assert predict(REQUEST['text'], REQUEST['questions'], registry=Wrapper()) == RAW
+    assert calls == [1]

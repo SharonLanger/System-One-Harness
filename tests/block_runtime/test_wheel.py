@@ -1,5 +1,4 @@
 """New defaults and runtime execute from wheel resources outside the checkout."""
-from examples._plumbing_inspection import PLUMBING_SOURCE
 import os
 from pathlib import Path
 import subprocess
@@ -18,7 +17,7 @@ def test_new_catalog_and_mocked_block_execute_from_isolated_wheel(tmp_path):
                 if source.suffix in {'.json','.py','.md'}:
                     assert archive.read(f'laya_context_router/{directory}/{source.name}')==source.read_bytes()
         archive.extractall(installed)
-    code=PLUMBING_SOURCE+'''
+    code='''
 from laya_context_router.block_runtime import Catalog, Block, PreparedInput
 from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.registry import AgentRegistry
@@ -28,7 +27,7 @@ class Agent:
   assert text=='hello' and set(questions)=={'local'}
   return {'answers':{'local':{'type':'noul','noul':.8,'answer_confidence':.9}}}
 block=Block({'name':'installed','questions':{'local':{'question_ref':'multiple_relevant','rule_ref':'multiple_methods_default'}}},validate_input=lambda x:x,prepare_input=lambda x,q:PreparedInput(x['text'],q),reduce=lambda d,s:d,validate_output=lambda x:x)
-result=block.run({'text':'hello'},config=RunConfig(model='mock'),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:Agent()))
+result=block.run({'text':'hello'},config=RunConfig(model='mock'),registry=AgentRegistry(loader=lambda *a,**k:Agent()))
 assert result.decisions['local']['answer']=='yes'
 print('installed runtime passed')
 '''

@@ -4,7 +4,7 @@ import sys
 sys.dont_write_bytecode = True
 import os
 os.environ['PYTHONDONTWRITEBYTECODE']='1'
-import json, time, uuid, platform, subprocess, hashlib, importlib.metadata
+import json, time, platform, subprocess, hashlib, importlib.metadata
 from pathlib import Path
 from copy import deepcopy
 from datetime import datetime, timezone
@@ -16,7 +16,8 @@ sys.path.insert(0,str(ROOT/'src'))
 from laya_context_router import log_utils
 log_utils.LOG_PATH=HERE/'checks/output/runtime.jsonl'
 from schema import load, validate, hash_value
-from fixture_inspection import plumbing_provider
+from run_paths import allocate
+from worker_logging import worker_errors, POLICY as LOGGING_POLICY
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def save(path,value):
@@ -46,7 +47,7 @@ def adapter_fingerprint():
     return hash_value({p.name:hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(HERE.glob('*.py'))})
 
 def model_fingerprint(suite,mode):
-    if mode=='fixture': return {'fixture':hash_value(load(HERE/'examples/generic-choice/responses.json'))}
+    if mode=='fixture': return {'fixture':hash_value(load(Path(suite['fixture_responses']) if suite.get('fixture_responses') else HERE/'examples/generic-choice/responses.json'))}
     values={}
     for cfg in suite['configurations']:
         path=resolve_model(cfg['model'])
@@ -79,6 +80,9 @@ def execute(input_data,question,rule,suite,config,registry):
     from laya_context_router.answers.rules import RulesConfig
     from laya_context_router.block_runtime.catalog import Catalog, TypedRule
     from laya_context_router.questions.models import Question
+    if suite["adapter"] == "method-selection":
+        from method_adapter import execute as execute_method
+        return execute_method(input_data, question, rule, suite, config, registry)
     name=question['definition']['name']
     class ExperimentCatalog(Catalog):
         def rule(self,reference):
@@ -99,8 +103,7 @@ def execute(input_data,question,rule,suite,config,registry):
     return run(input_data,config=config,registry=registry,catalog=catalog,question_overrides={name:question['definition']},rule_overrides={name:'experiment-rule'})
 
 class Boundary:
-    def __init__(self,agent,*,inspector): self.inspector=inspector; self.agent=agent; self.raw=None; self.payload=None; self.seconds=None
-    def get_inspector(self,config): return self.inspector
+    def __init__(self,agent): self.agent=agent; self.raw=None; self.payload=None; self.seconds=None
     def get_agent(self,config):
         outer=self
         class Agent:
@@ -116,19 +119,22 @@ class RecordedAgent:
     def predict(self,*args,**kwargs): return deepcopy(self.raw)
 
 def row_base(manifest,q,r,c,case,iid):
-    return {**deepcopy(case),'case_id':case['id'],'experiment_id':manifest['suite']['experiment_id'],'run_id':manifest['run_id'],'question_id':q['id'],'rule_id':r['id'],'config_id':c['id'],'inference_id':iid,'inference_shared':manifest['rule_mode']=='replay','dataset_version':manifest['cases']['dataset_version'],'input_hash':hash_value(case['input']),'evaluation_kind':'rule-replay' if manifest['rule_mode']=='replay' and r['id']!=manifest['suite']['baseline']['rule_id'] else 'direct','question_hash':hash_value(q),'rule_hash':hash_value(r),'config_hash':hash_value(c),'_labels':manifest['suite']['labels']}
+    return {**deepcopy(case),'case_id':case['id'],'experiment_id':manifest['suite']['experiment_id'],'run_id':manifest['run_id'],'question_id':q['id'],'rule_id':r['id'],'config_id':c['id'],'inference_id':iid,'inference_shared':manifest['rule_mode']=='replay','dataset_version':manifest['cases']['dataset_version'],'input_hash':hash_value(case['input']),'evaluation_kind':'rule-replay' if manifest['rule_mode']=='replay' and r['id']!=manifest['suite']['baseline']['rule_id'] else 'direct','question_hash':hash_value(q),'rule_hash':hash_value(r),'config_hash':hash_value(c),'_labels':manifest['suite'].get('labels', [])}
 
 def worker(root,config_id):
-    from laya_context_router import log_utils
+    with worker_errors(Path(root)/f'worker-{config_id}.jsonl') as diagnostics:
+        return _worker(root, config_id, diagnostics)
+
+def _worker(root,config_id,diagnostics):
     from laya_context_router.laya.config import RunConfig
     from laya_context_router.laya.registry import AgentRegistry
     from laya_context_router.answers.interpret import extract_answer
     from laya_context_router.answers.enrich import enrich_prediction
     root=Path(root); m=load(root/'manifest.json'); suite=m['suite']; cfg=next(c for c in suite['configurations'] if c['id']==config_id)
     config=RunConfig.from_dict({k:v for k,v in cfg.items() if k!='id'})
-    log_utils.LOG_PATH=root/f'worker-{config_id}.jsonl'
+    diagnostics.context={'config_id':config_id}
     baseline=next(r for r in suite['rules'] if r['id']==suite['baseline']['rule_id'])
-    fixture=load(HERE/'examples/generic-choice/responses.json') if m['mode']=='fixture' else None
+    fixture=load(Path(suite['fixture_responses']) if suite.get('fixture_responses') else HERE/'examples/generic-choice/responses.json') if m['mode']=='fixture' else None
     def loader(model,**kwargs):
         import laya_mlx
         return laya_mlx.load(str(resolve_model(model)),local_files_only=True,**kwargs)
@@ -137,16 +143,8 @@ def worker(root,config_id):
         try:
             registry=AgentRegistry(loader=loader); start=time.monotonic(); agent=registry.get_agent(config); load_seconds=time.monotonic()-start
         except Exception as exc:
+            diagnostics('ERROR','worker','configuration_failed',error=exc)
             save(root/f'worker-{config_id}-status.json',{'status':'configuration_error','error':str(exc)}); return
-    inspector = registry.get_inspector(config) if registry is not None else plumbing_provider(None, config)
-    trace_cursor=0
-    def logs():
-        nonlocal trace_cursor
-        p=log_utils.LOG_PATH
-        if not p.exists(): return []
-        with p.open() as f:
-            f.seek(trace_cursor); lines=f.readlines(); trace_cursor=f.tell()
-        return [json.loads(l) for l in lines if l.strip()]
     for q in suite['questions']:
         selected=[r for qq,r,c in vectors(suite) if qq['id']==q['id'] and c['id']==config_id]
         for case in m['cases']['cases']:
@@ -154,40 +152,52 @@ def worker(root,config_id):
                 dest=case_path(root,q,rule,cfg,case)
                 if dest.exists(): continue
                 iid=inference_id(q,rule,cfg,case,m['rule_mode']); ip=root/'inferences'/f'{iid}.json'
+                diagnostics.context={'config_id':config_id,'question_id':q['id'],'rule_id':rule['id'],'case_id':case['id'],'inference_id':iid}
                 start_rule=time.monotonic(); row=row_base(m,q,rule,cfg,case,iid)
                 try:
-                    if not ip.exists():
+                    method_mode = suite["adapter"] == "method-selection"
+                    from method_evidence import read as read_evidence, write as write_evidence
+                    saved_evidence = read_evidence(root, iid) if method_mode else None
+                    if (saved_evidence is None) if method_mode else (not ip.exists()):
                         if fixture is not None:
                             key='|'.join([q['id'],config_id,case['id']]); raw=fixture['responses'][key]
-                            boundary=Boundary(RecordedAgent(raw), inspector=inspector)
-                        else: boundary=Boundary(agent, inspector=inspector)
+                            boundary=Boundary(RecordedAgent(raw))
+                        else: boundary=Boundary(agent)
                         
                         # Parent permits one prediction at a time, accounting failed attempts too.
                         attempts=root/'attempts.json'; count=load(attempts)['count'] if attempts.exists() else 0
                         cap=m['limits'].get('max_calls')
                         if cap is not None and count>=cap: return
                         save(attempts,{'count':count+1})
+                        if suite['adapter']=='method-selection':
+                            with (root/'attempt-events.jsonl').open('a') as ledger:
+                                ledger.write(json.dumps({'inference_id':iid,'question_id':q['id'],'config_id':config_id,'case_id':case['id']})+'\n');ledger.flush();os.fsync(ledger.fileno())
                         save(root/'active.json',{'config_id':config_id,'question_id':q['id'],'rule_id':rule['id'],'case_id':case['id'],'inference_id':iid,'started_utc':now()})
                         actual=baseline if m['rule_mode']=='replay' else rule
                         result=None; error=None
                         try: result=execute(case['input'],q,actual,suite,config,boundary)
                         except Exception as exc: error={'type':type(exc).__name__,'message':str(exc)}
-                        record={'id':iid,'status':'error' if error else 'completed','error':error,'raw_response':boundary.raw,'payload':boundary.payload,'inference_seconds':boundary.seconds,'baseline_rule_seconds':max(0,time.monotonic()-start_rule-(boundary.seconds or 0)),'load_seconds':load_seconds,'baseline_result':asdict(result) if result else None,'logs':logs(),'requested_config':cfg,'effective_temperature':None,'availability':{'effective_temperature':'not exposed at the SDK boundary','tokens':'not exposed','checkpoint_revision':'local fingerprint in manifest','precision':'not exposed'},'created_utc':now()}
+                        record={'id':iid,'status':'error' if error else 'completed','error':error,'raw_response':boundary.raw,'payload':boundary.payload,'inference_seconds':boundary.seconds,'baseline_rule_seconds':max(0,time.monotonic()-start_rule-(boundary.seconds or 0)),'load_seconds':load_seconds,'baseline_result':asdict(result) if result else None,'logs':[],'requested_config':cfg,'effective_temperature':None,'availability':{'effective_temperature':'not exposed at the SDK boundary','tokens':'not exposed','checkpoint_revision':'local fingerprint in manifest','precision':'not exposed'},'created_utc':now()}
                         # Preserve malformed non-JSON SDK values without hiding a technical error.
                         try: json.dumps(record,allow_nan=False)
                         except (ValueError,TypeError): record['raw_response']={'unserializable_repr':repr(boundary.raw)}
-                        save(ip,record)
+                        if method_mode:
+                            write_evidence(root,q["id"],cfg["id"],iid,record)
+                        else: save(ip,record)
                         (root/'active.json').unlink(missing_ok=True)
-                    record=load(ip)
+                    record=read_evidence(root,iid) if method_mode else load(ip)
+                    if suite['adapter']=='method-selection' and (record.get('raw_response') or {}).get('usage',{}).get('truncated'):
+                        raise ValueError('truncated model response')
                     if record['error']: raise RuntimeError(record['error']['type']+': '+record['error']['message'])
                     if m['rule_mode']=='direct' or rule['id']==baseline['id']:
                         output=record['baseline_result']; rule_seconds=record['baseline_rule_seconds']
                     else:
-                        rt=time.monotonic(); output=asdict(execute(case['input'],q,rule,suite,config,Boundary(RecordedAgent(record['raw_response']), inspector=inspector))); rule_seconds=time.monotonic()-rt
+                        rt=time.monotonic(); output=asdict(execute(case['input'],q,rule,suite,config,Boundary(RecordedAgent(record['raw_response'])))); rule_seconds=time.monotonic()-rt
                     name=q['definition']['name']; answer=record['raw_response']['answers'][name]
                     decision=output['decisions'].get(name,{})
                     row.update(status=output['status'],raw_label=extract_answer(answer),final_label=decision.get('answer'),accepted=decision.get('decided'),reason=decision.get('reason',output['reason']),enriched=enrich_prediction(answer),block_result=output,inference_seconds=record['inference_seconds'],rule_seconds=rule_seconds,rule_definition=rule['definition'])
                 except Exception as exc:
+                    diagnostics('ERROR','worker','case_failed',error=exc)
                     row.update(status='error',error={'type':type(exc).__name__,'message':str(exc)},raw_label=None,final_label=None,accepted=None)
                 save(dest,row)
                 save(root/f'heartbeat-{config_id}.json',{'completed_utc':now(),'last_case':case['id']})
@@ -195,16 +205,14 @@ def worker(root,config_id):
 
 def create(cases,suite,mode,rule_mode,limits):
     validate(cases,suite)
-    supported={('generic-question','choice'),('generic-question','noul'),('requested-action','choice'),('context-scope','choice')}
+    supported={('generic-question','choice'),('generic-question','noul'),('requested-action','choice'),('context-scope','choice'),('method-selection','choice')}
     if rule_mode=='replay' and (suite['adapter'],suite['question_type']) not in supported: raise ValueError('Replay parity not verified for adapter/type')
     parent=HERE/'results'/suite['experiment_id']; parent.mkdir(parents=True,exist_ok=True)
-    while True:
-        rid=datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ')+'__'+uuid.uuid4().hex[:10]; root=parent/rid
-        try: root.mkdir(); break
-        except FileExistsError: pass
+    root=allocate(parent); rid=root.name
     try: mf=model_fingerprint(suite,mode); model_error=None
     except Exception as exc: mf=None; model_error=str(exc)
     m={'schema_version':1,'run_id':rid,'cases':deepcopy(cases),'suite':deepcopy(suite),'cases_hash':hash_value(cases),'suite_hash':hash_value(suite),'mode':mode,'rule_mode':rule_mode,'limits':limits,'source_hash':source_fingerprint(),'adapter_hash':adapter_fingerprint(),'runtime_versions':versions(),'python':platform.python_version(),'model_fingerprint':mf,'model_error':model_error,'parity_revision':'rv2-offline-contracts-v1','source_revision':load(HERE/'source-snapshot.json'),'device':platform.machine(),'precision':None,'availability':{'precision':'not exposed by loader','effective_settings':'requested settings are not proof of effective settings'},'started_utc':now(),'started_local':datetime.now(ZoneInfo('Asia/Jerusalem')).isoformat(),'status':'created'}
+    m['logging_policy']=deepcopy(LOGGING_POLICY)
     m['execution_hash']=hash_value({'mode':mode,'rule_mode':rule_mode,'limits':limits})
     vs=vectors(suite); n=len(cases['cases'])
     m['planned_counts']={'vectors':len(vs),'cases':n,'logical_outcomes':len(vs)*n,'inference_calls':len({(q['id'],c['id']) for q,r,c in vs})*n if rule_mode=='replay' else len(vs)*n}
@@ -262,6 +270,9 @@ def run(root):
     finally:
         if m['status']!='interrupted': m['status']='completed'
         m['unique_inference_seconds']=sum((load(p).get('inference_seconds') or 0) for p in (root/'inferences').glob('*.json'))
+        if m['suite']['adapter']=='method-selection':
+            from method_evidence import all_records
+            m['unique_inference_seconds']=sum(r.get('inference_seconds') or 0 for r in all_records(root))
         m['ended_utc']=now(); m['wall_seconds']=m.get('wall_seconds',0)+time.monotonic()-start
         m['inference_attempts']=load(root/'attempts.json')['count'] if (root/'attempts.json').exists() else 0
         rows=collect(root)
@@ -269,3 +280,4 @@ def run(root):
         if any(r['status']!='completed' for r in rows): m['status']='partial'
         save(root/'manifest.json',m)
     return 1 if failure else 0
+

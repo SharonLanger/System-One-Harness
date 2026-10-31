@@ -1,25 +1,25 @@
-# Token-budget implementation status
+# Current PR23 contract
 
-The branch contains implementation through increment 10. Latest published implementation commit before this cleanup: `9600df2a0684a63df280f0052314defdf5f115f0`. Increment 11 was prepared but remained unpublished; it has been preserved separately and removed from this worktree. No PR merge or main integration is included.
+Ordinary `predict()` remains compatible and does not perform budget inspection; the SDK may retain its existing truncation behavior. Use `predict_strict()` for pre-inference inspection and rejection. Supplying an inspection provider alone does not enable strict mode.
 
-## User-directed mock-only cleanup
+`strict=True` is available on the shared QuestionBlock/Block runtime, ticket_triage, ticket_triage_v2, requested_action and context_scope. Method selection (legacy and V2) and all flows remain exactly as main and do not expose strict selection. Existing experiments remain exactly as main; the only new experiment files are the seven manual `experiments/tokenizer_smoke/` scripts/documentation. Requested action retains main's default temperature 1.0 and explicit caller overrides.
 
-The latest instruction explicitly replaces real-tokenizer unit tests with mocked boundaries and removes the fixture bundle. This overrides the historical plan's mandatory real-fixture/parity requirements.
+Limits are centralized in `laya/model_limits.py` with source URLs, review date and periodic review guidance. New models require explicit entries. Strict mode counts with the loaded tokenizer; source/package/tokenizer-file hash gates and copied tokenizer assets are removed. Managed loaded-object integrity checks remain. CODE is still a refused candidate.
 
-Changes:
+Unit tests use mock tokenizers and establish accounting/control flow only. Actual tokenizer parity and live Mac compatibility remain unverified. Sharon runs the manual local-checkpoint smoke cases; no live model, download or campaign is part of this change. Raw token-budget evidence is excluded from the PR tree.
 
-- Removed `tests/fixtures/token-budget/` in full, including copied SDK code, tokenizer/model configuration, manifest and associated licenses/notices.
-- Removed the preparation script and obsolete prepared-fixture ignore rule; test dependencies now require pytest only.
-- Replaced real encoding/SDK parity tests with controlled token IDs, rendered-input assertions and hand-specified sequence/marker expectations. Preserved accounting boundaries, all-question rejection, snapshots, error/log correlation, mutation detection and block propagation tests.
-- Removed tracked raw execution output under `docs/token-budget/evidence/`; preserved it outside the checkout and in existing Git history.
-- Production loaded-tokenizer behavior is unchanged. `ExactTokenizer` remains because production verification uses it. No experiment files were edited or experiment tests/run commands executed for this cleanup.
+## Conflict resolution
 
-Coverage limitation: current unit tests do not establish real-tokenizer or SDK parity. Historical measurements are not a current qualification claim. Experiment cleanup and runtime/hash simplification remain pending.
+Integrated current main `6260d6d0ba948e7506461fa2a06c1fb67dc4268d` while preserving its experiment, flow, method-selection and retired-test decisions. Historical full-suite counts describe earlier snapshots, not this final tree. Final verification is intentionally focused; results are recorded after completion.
 
-Validation: mocked budget suite passed 128 tests. Repeated with imports of tokenizers, numpy and laya_mlx actively blocked: 128 passed in 1.13s, and none of those modules were loaded. Selected non-experiment prediction/configuration/question/interpretation/block regressions passed 270 tests in 3.02s. No full-suite or experiment run was performed for this cleanup. Git diff checks passed; production executable AST is unchanged. Prior experiment edits already present in the PR remain pending cleanup; this commit makes no additional experiment changes.
+## Final focused verification
 
-## Authorized compatibility completion
+355 tests passed in 29.82s on the resolved source (exit 0):
 
-The follow-plan instruction selects legacy `predict` plus explicit `predict_strict`. Both share response validation/copying; only strict calls inspect and reject. `strict=True` is explicitly forwarded by QuestionBlock, Block.run, public question blocks and the sandbox flow. Default callers/replay remain unchecked and emit no fitting report. Opaque strict calls refuse. New compatibility tests were red (5 failures); split and block tests passed 68 checks. Existing signature assertions were updated only for the intentional additive strict keyword. Next: documented static profiles, exact latest-main experiment restoration, and final regression.
+```bash
+PYTHONPATH=src:. python -m pytest -q tests/test_token_budget_*.py tests/test_requested_action_contract.py tests/test_requested_action_block.py tests/test_v2_blocks.py tests/test_block_legacy_characterization.py tests/test_predict.py tests/test_live_check.py tests/test_method_ambiguity_fallback.py tests/test_prompt_file_list.py tests/test_prompt_hook.py tests/test_v2_flow_composition.py
+```
 
-Static-profile increment: all limits now live in `laya/model_limits.py` with primary-source snapshot URLs, review date and quarterly/SDK-change review guidance. New models need explicit entries. Runtime/source/tokenizer file fingerprint checks and independent vocabulary loading were removed; strict inspection uses the loaded model tokenizer and checks effective limits, hooks and managed mutation. This is reviewed-limit support, not hash-proven runtime identity or real-tokenizer qualification. CODE remains a refused candidate. Mock tests: 126 passed, including loaded-agent inspection with asset reads forbidden. Saved-response replay now has dedicated deep-copy/no-loader coverage, and V2 public strict forwarding is tested.
+`npm --prefix typescript-helper run build` passed. The first focused run found two missing generated-helper failures and one obsolete exact ticket signature expectation (269 passed, 3 failed). Astra approved build-only recovery and the authorized additive ticket signature correction; all three then passed before the final focused run. Method-selection assertions remained unchanged.
+
+Smoke `run.py --help`, syntax checks for all six Python entry files, and five mocked payload/boundary checks passed without importing tokenizers, laya_mlx, mlx or numpy. Existing experiments, all flows and both method-selection families match pinned main by blob and file mode. No full-suite rerun or live experiment was performed. Raw logs remain outside the repository.

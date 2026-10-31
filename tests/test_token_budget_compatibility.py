@@ -47,14 +47,6 @@ def test_public_blocks_explicitly_select_strict(module_name,input_data):
     with pytest.raises(InspectionUnavailable):module.run(input_data,config=RunConfig(),registry=registry,strict=True)
 
 
-def test_legacy_method_adapter_forwards_strict():
-    from test_block_legacy_characterization import SOURCE
-    from laya_context_router.building_blocks.questions.method_selection.block import run
-    from laya_context_router.laya.config import RunConfig
-    registry=SimpleNamespace(get_agent=lambda c:SimpleNamespace(predict=lambda *a,**k:pytest.fail('predicted')))
-    with pytest.raises(InspectionUnavailable):run('Explain alpha',SOURCE,config=RunConfig(),registry=registry,strict=True)
-
-
 def test_saved_response_replay_needs_no_loader_or_tokenizer(monkeypatch):
     stored=deepcopy(RAW); events=[]
     class RecordedAgent:
@@ -70,9 +62,20 @@ def test_saved_response_replay_needs_no_loader_or_tokenizer(monkeypatch):
     assert stored==RAW and 'input_budget_rejected' not in events
 
 
-def test_v2_method_adapter_forwards_strict():
-    from test_v2_blocks import source
-    from laya_context_router.building_blocks.questions.method_selection_v2.block import run
+def test_method_selection_signatures_preserve_main_contract():
+    import inspect
+    from laya_context_router.building_blocks.questions.method_selection.block import run as legacy
+    from laya_context_router.building_blocks.questions.method_selection_v2.block import run as modern
+    assert 'strict' not in inspect.signature(legacy).parameters
+    assert 'strict' not in inspect.signature(modern).parameters
+
+
+def test_requested_action_preserves_temperature_when_selecting_strict(monkeypatch):
+    from laya_context_router.building_blocks.questions.requested_action import block
     from laya_context_router.laya.config import RunConfig
-    registry=SimpleNamespace(get_agent=lambda c:SimpleNamespace(predict=lambda *a,**k:pytest.fail('predicted')))
-    with pytest.raises(InspectionUnavailable):run({'text':'Explain sum','source_outline':source()},config=RunConfig(),registry=registry,strict=True)
+    seen=[]
+    monkeypatch.setattr(block.Block, 'run', lambda self, data, **kwargs: seen.append(kwargs))
+    for temperature in (None, 0.25):
+        block.run({'prompt':'Explain it'}, config=RunConfig(temperature=temperature), registry=object(), strict=True)
+    assert [v['config'].temperature for v in seen] == [1.0, 0.25]
+    assert all(v['strict'] is True for v in seen)

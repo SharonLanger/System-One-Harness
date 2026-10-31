@@ -1,11 +1,27 @@
-# Mock-only token-budget unit tests
+# Current PR23 contract
 
-The latest user instruction replaces the former real-tokenizer/SDK fixture strategy. Unit tests must not load real tokenizer assets or import the tokenizer/MLX SDK to perform tokenization.
+Ordinary `predict()` remains compatible and does not perform budget inspection; the SDK may retain its existing truncation behavior. Use `predict_strict()` for pre-inference inspection and rejection. Supplying an inspection provider alone does not enable strict mode.
 
-`tests/token_budget_support.py` supplies controlled token IDs and a mock runtime lock/encoding boundary. Tests cover rendered input and ordering, below/at/above limits, an explicitly scripted 83-token option within a 105-token request, state retention direction, marker positions, final slicing, all-question refusal, stable reports, timeout/logging behavior, configuration mutations, block propagation and caller snapshots. Hand-specified assembly expectations replace copied-SDK comparisons. These tests do not establish real-tokenizer accuracy or upstream SDK parity; actual runtime qualification is not claimed by this suite.
+`strict=True` is available on the shared QuestionBlock/Block runtime, ticket_triage, ticket_triage_v2, requested_action and context_scope. Method selection (legacy and V2) and all flows remain exactly as main and do not expose strict selection. Existing experiments remain exactly as main; the only new experiment files are the seven manual `experiments/tokenizer_smoke/` scripts/documentation. Requested action retains main's default temperature 1.0 and explicit caller overrides.
 
-The copied SDK source, tokenizer/model configurations, bundled notices/licenses, prepared vocabulary, and preparation script have been removed. The test extra requires pytest only. `ExactTokenizer` remains production code because actual loaded-agent verification still calls it; it is not used by these unit tests. Production logic and experiments are unchanged by this cleanup.
+Limits are centralized in `laya/model_limits.py` with source URLs, review date and periodic review guidance. New models require explicit entries. Strict mode counts with the loaded tokenizer; source/package/tokenizer-file hash gates and copied tokenizer assets are removed. Managed loaded-object integrity checks remain. CODE is still a refused candidate.
 
-Run unit tests with `python -m pytest -q tests/test_token_budget*.py`. No asset preparation or network access is required. Regression checks for this cleanup exclude experiment tests and do not launch experiments. Raw execution output is not committed; concise results are recorded in implementation-progress.md. Earlier research/verification documents are historical, not current test qualification claims.
+Unit tests use mock tokenizers and establish accounting/control flow only. Actual tokenizer parity and live Mac compatibility remain unverified. Sharon runs the manual local-checkpoint smoke cases; no live model, download or campaign is part of this change. Raw token-budget evidence is excluded from the PR tree.
 
-Unpublished increment 11, experiment cleanup, runtime/hash simplification, and any main integration remain outside this cleanup. The pull request remains open and unmerged.
+## Validation scope
+
+Dedicated mocked budget tests cover ordinary opaque registries/replay, strict success/refusal/failure, no prediction after overflow, request snapshots, accounting boundaries, correlation, and managed mutations. Current requested-action and block tests cover main's temperatures, optional strict ticket/requested-action paths, and legacy method-selection compatibility. Manual smoke scripts receive syntax/help and mocked payload checks only.
+
+No real-tokenizer fixtures, copied SDK source, preparation script or raw test logs are tracked. Earlier full-suite totals are historical and are not qualification of the resolved source.
+
+## Final focused verification
+
+355 tests passed in 29.82s on the resolved source (exit 0):
+
+```bash
+PYTHONPATH=src:. python -m pytest -q tests/test_token_budget_*.py tests/test_requested_action_contract.py tests/test_requested_action_block.py tests/test_v2_blocks.py tests/test_block_legacy_characterization.py tests/test_predict.py tests/test_live_check.py tests/test_method_ambiguity_fallback.py tests/test_prompt_file_list.py tests/test_prompt_hook.py tests/test_v2_flow_composition.py
+```
+
+`npm --prefix typescript-helper run build` passed. The first focused run found two missing generated-helper failures and one obsolete exact ticket signature expectation (269 passed, 3 failed). Astra approved build-only recovery and the authorized additive ticket signature correction; all three then passed before the final focused run. Method-selection assertions remained unchanged.
+
+Smoke `run.py --help`, syntax checks for all six Python entry files, and five mocked payload/boundary checks passed without importing tokenizers, laya_mlx, mlx or numpy. Existing experiments, all flows and both method-selection families match pinned main by blob and file mode. No full-suite rerun or live experiment was performed. Raw logs remain outside the repository.

@@ -92,7 +92,7 @@ npm --prefix typescript-helper test
 python -m pytest -q
 ```
 
-- [Requested-action block](src/laya_context_router/building_blocks/questions/requested_action/README.md): prompt-only action classification, overrides and evaluation limits.
+- [Requested-action block](src/laya_context_router/building_blocks/questions/requested_action/README.md): C1 short choices, temperature 1.0 by default, and gap ≥ 0.10. See the [500-case results and selected profile](docs/requested-action/requested-action-500-results.md).
 - [TypeScript utility contracts](typescript-helper/README.md): detection, path resolution,
   signature-only outlines, exact extraction, called-callable navigation and context collection.
 - [Supporting utility implementation evidence](docs/supporting-utilities-results.md): test-first changes and validation.
@@ -134,4 +134,7 @@ See [manual plugin setup](plugins/hook-laya/README.md) for Sharon's preferred co
 
 For each hook, the gateway reads Claude's process environment `CLAUDE_PROJECT_DIR` and adds a nullable `derived.project_dir` to the internal envelope. Original event cwd and explicit feature source root remain separate. See [project-context verification](docs/verification/plugin-project-context.md) for the user-run two-session test and worktree limitations.
 
-Strict input-budget inspection runs at the shared prediction boundary before request inference. See [token-budget migration](docs/token-budget-migration.md) for typed failures, explicit custom-provider wiring, runtime qualification and the sandbox flow’s generic error mapping.
+
+## Optional strict input budgets
+
+Existing `predict()` calls remain compatible and unchecked. Select `predict_strict()` for loaded-tokenizer inspection before inference, or `strict=True` on supported blocks (including ticket triage and requested action). Method-selection V2 and flows keep their existing APIs. See [strict migration](docs/token-budget-migration.md) for supported APIs, typed refusals and limitations, and [manual tokenizer smoke cases](experiments/tokenizer_smoke/README.md) for user-run local-model checks. Unit tests use mocks; real tokenizer/runtime parity remains unverified.

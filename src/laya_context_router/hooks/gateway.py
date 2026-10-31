@@ -13,6 +13,7 @@ from .contracts import Context, Noop, Failure, ValidationError, validate_result
 from ..json_utils import _unique_pairs
 
 MAX_INPUT_CHARS = 65536
+POST_COMPACT_INPUT_CHARS = 1024 * 1024
 
 class Parser(argparse.ArgumentParser):
     def error(self, message):
@@ -27,6 +28,7 @@ def parse_args(argv):
     p.add_argument('--repository-root')
     p.add_argument('--config')
     mode = p.add_mutually_exclusive_group()
+    mode.add_argument('--log-state', action='store_true')
     mode.add_argument('--real', action='store_true')
     mode.add_argument('--observe-only', action='store_true',
                       help='record hook input and project metadata without invoking dispatchers')
@@ -35,6 +37,8 @@ def parse_args(argv):
     p.add_argument('--max-dependency-depth', type=int, default=2)
     p.add_argument('--max-dependency-chars', type=int, default=12000)
     args = p.parse_args(argv)
+    if args.log_state and args.hook != "PostCompact":
+        raise ValidationError("invalid_log_state_hook", "invocation", "hook")
     if not args.hook.strip():
         raise ValidationError('invalid_hook_argument', 'invocation', 'hook')
     if (not math.isfinite(args.deadline) or not 0 < args.deadline <= 300
@@ -44,7 +48,7 @@ def parse_args(argv):
     return args
 
 def parse_payload(text, hook):
-    if len(text) > MAX_INPUT_CHARS:
+    if len(text) > (POST_COMPACT_INPUT_CHARS if hook == 'PostCompact' else MAX_INPUT_CHARS):
         raise ValidationError('input_budget_exceeded', 'input')
     try:
         payload = json.loads(text, object_pairs_hook=_unique_pairs,
@@ -88,6 +92,8 @@ def _expired(signum, frame):
 
 def _default_dispatch(payload, args, invocation_id, logger):
     from .dispatcher import dispatch_hook
+    if args.hook == 'PostCompact':
+        return dispatch_hook(payload, args, invocation_id, logger)
     from .project_context import enrich_project_context
     project_dir = os.environ.get('CLAUDE_PROJECT_DIR')
     return dispatch_hook(payload, args, invocation_id, logger,
@@ -155,6 +161,7 @@ def main(argv=None, *, dispatcher=None, logger=None):
         try:
             with isolate_stdout():
                 args=parse_args(argv)
+                args.deadline_at = started + args.deadline
                 remaining=args.deadline-(monotonic()-started)
                 if remaining<=0:
                     expired=True
@@ -165,26 +172,27 @@ def main(argv=None, *, dispatcher=None, logger=None):
                 log('INFO','gateway_started',process_cwd=os.getcwd(),
                     claude_project_dir=os.environ.get('CLAUDE_PROJECT_DIR'),
                     repository_root_argument=args.repository_root,
-                    mode='observe_only' if args.observe_only else ('real' if args.real else 'disabled'))
-                text=sys.stdin.read(MAX_INPUT_CHARS+1)
-                log('INFO','gateway_input_received',raw_input=text[:MAX_INPUT_CHARS],
-                    raw_input_truncated=len(text)>MAX_INPUT_CHARS,
-                    input_chars_read=len(text),input_limit_chars=MAX_INPUT_CHARS)
+                    mode='log_state' if args.log_state else ('observe_only' if args.observe_only else ('real' if args.real else 'disabled')))
+                input_limit = POST_COMPACT_INPUT_CHARS if args.hook == 'PostCompact' else MAX_INPUT_CHARS
+                text=sys.stdin.read(input_limit+1)
+                log('INFO','gateway_input_received',raw_input=None if args.hook == 'PostCompact' else text[:MAX_INPUT_CHARS],
+                    raw_input_truncated=len(text)>input_limit,
+                    input_chars_read=len(text),input_limit_chars=input_limit)
                 observed_input = False
                 if args.observe_only:
                     observed_input = log('INFO','observation_input_received',
-                        raw_input=text[:MAX_INPUT_CHARS],
-                        raw_input_truncated=len(text)>MAX_INPUT_CHARS,
-                        input_chars_read=len(text),input_limit_chars=MAX_INPUT_CHARS)
+                        raw_input=None if args.hook == 'PostCompact' else text[:MAX_INPUT_CHARS],
+                        raw_input_truncated=len(text)>input_limit,
+                        input_chars_read=len(text),input_limit_chars=input_limit)
                 payload=parse_payload(text,args.hook)
-                log('INFO','gateway_received',input_chars=len(text),fields=sorted(payload),raw_payload=payload)
+                log('INFO','gateway_received',input_chars=len(text),fields=sorted(payload),raw_payload=None if args.hook == 'PostCompact' else payload)
                 if args.observe_only:
                     from .project_context import resolve_project_directory
                     project_value=os.environ.get('CLAUDE_PROJECT_DIR')
                     project_dir,status=resolve_project_directory(project_value)
                     session=payload.get('session_id')
                     validated_session=session if isinstance(session,str) else None
-                    recorded=log('INFO','hook_observed',raw_payload=payload,
+                    recorded=log('INFO','hook_observed',raw_payload=None if args.hook == 'PostCompact' else payload,
                         session_id=session if isinstance(session,str) else None,
                         claude_project_dir=project_value,
                         derived={'project_dir':project_dir},project_dir_status=status,
@@ -194,7 +202,7 @@ def main(argv=None, *, dispatcher=None, logger=None):
                         would_invoke_dispatcher='laya_context_router.hooks.dispatcher.dispatch_hook',
                         event_dispatcher=('laya_context_router.hooks.user_prompt_submit.dispatcher.'
                             'dispatch_user_prompt_submit' if args.hook=='UserPromptSubmit' else None),
-                        supported_event=args.hook=='UserPromptSubmit',dispatcher_invoked=False)
+                        supported_event=args.hook in ('UserPromptSubmit', 'PostCompact'),dispatcher_invoked=False)
                     if not observed_input or not recorded:
                         raise ValidationError('observation_log_failed','observation')
                     result=Noop('observe_only',feature_id='hook_observation')

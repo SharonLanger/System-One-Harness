@@ -1,4 +1,3 @@
-from examples._plumbing_inspection import plumbing_provider
 from laya_context_router.building_blocks.questions.method_selection.block import run
 from laya_context_router.building_blocks.typescript import outline
 from laya_context_router.laya.config import RunConfig
@@ -21,7 +20,7 @@ def test_model_sees_readable_labels_and_selection_maps_back_to_source_id(tmp_pat
             seen.append(label)
             return raw_for(questions, label)
     result = run('Explain calculateInvoiceTotal', source, config=RunConfig(),
-                 registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Agent()))
+                 registry=AgentRegistry(loader=lambda *args, **kwargs: Agent()))
     assert result['selected_id'] == candidate['id']
     assert result['label_map'][seen[0]] == candidate['id']
     assert result['candidate_map'][candidate['id']]['path'] == str(path)
@@ -38,5 +37,5 @@ def test_default_invoice_has_exact_readable_method_identifiers():
             assert questions['method']['criteria']['calculateInvoiceTotal'].startswith('export function calculateInvoiceTotal(')
             return raw_for(questions, 'calculateInvoiceTotal')
     result = run('Explain total', source, config=RunConfig(),
-                 registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *args, **kwargs: Agent()))
+                 registry=AgentRegistry(loader=lambda *args, **kwargs: Agent()))
     assert result['selected_id'] == source['callables'][0]['id']

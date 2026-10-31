@@ -1,51 +1,96 @@
 # Requested action
 
-Classify the requested outcome from one prompt using the existing V2 runtime.
-This block is additive; no production hook or flow invokes it automatically.
+Classify the requested outcome from one prompt using the shared V2 runtime.
+The opt-in `first_method_context` flow calls this block before selecting methods.
+
+## Selected profile and research
+
+The default is combination **#3** from the
+[500-case V2 research report](../../../../../docs/requested-action/requested-action-500-results.md):
+
+- **Question:** C1 short choices, with four ordered labels.
+- **Requested temperature:** 1.0 when the caller leaves temperature unset.
+- **Rule:** R4, `probability_gap >= 0.10` (inclusive), with no confidence gate.
+
+On the 66 easy cases, this combination accepted 51 answers with zero observed
+mistakes. On all 500 cases, it accepted 286 answers with 75 mistakes: **57.2%
+coverage and 26.2% wrong among accepted answers**. The easy-case result is not an
+accuracy guarantee or evidence of a below-20% overall failure rate. The report
+contains all five compared profiles, exact tables, source evidence, design links,
+and the decision to adopt #3.
 
 ```python
 from laya_context_router.building_blocks.questions.requested_action.block import run
 from laya_context_router.laya.config import RunConfig
 from laya_context_router.laya.registry import AgentRegistry
 
-# The caller supplies and owns the invocation's registry.
-# Use an injected loader in tests; real=True only for deliberate live execution.
+# The caller owns the invocation's registry. Inject a loader in tests.
+# real=True is only for deliberate live execution.
 registry = AgentRegistry(real=True)
 result = run({"prompt": "Write tests for calculateTotal in invoice.ts."},
              config=RunConfig(), registry=registry)
-# result.data == {"action": "generate_tests"} if that label is accepted
+# Uses requested temperature 1.0 for this block.
+# result.data == {"action": "generate_tests"} if that label is accepted.
 ```
+
+## Input and choices
 
 Input is exactly `{"prompt": nonblank_string}`. Missing/extra keys and nonstring
 or blank values raise BlockInputError before agent loading. The original text,
 including surrounding whitespace, Unicode and filenames, passes unchanged.
-Filenames are text; the block reads no target files or TypeScript outlines.
+Filenames are text; this block reads no target files or TypeScript outlines.
 
-One `requested_action` choice question has three stable IDs:
+The question lives in `defaults/questions/requested_action.json`; `block.json`
+references it. It exactly matches the campaign's C1 definition, including the
+shared instruction and these four choice descriptions:
 
-- `explain`: understand production or test code without changing it.
-- `generate_tests`: create additional tests using existing code as reference.
-- `modify_code`: fix, refactor or implement production or test code.
+| Choice | Description |
+| --- | --- |
+| `explain` | Explain production or test code; no edits. |
+| `generate_tests` | Add new tests / additional coverage. |
+| `modify_code` | Fix, refactor or implement code, including existing-test repair. |
+| `unclear` | Cannot select one supported action: missing intent, competing actions, or none fits. Non-actionable. |
 
-The question lives in `defaults/questions/requested_action.json`; block.json
-references it. The separate `requested_action_default` typed rule requires both
-`answer_confidence >= 0.5` and enriched `probability_gap >= 0.15`, inclusive.
-These thresholds and the question wording are provisional, not calibrated.
-Model confidence and act_probability are not default gates.
+The separate typed rule `requested_action_default` applies only the enriched
+probability gap. Enrichment subtracts the second-highest probability from the
+highest and rounds to four decimals before the inclusive 0.10 comparison.
+`answer_confidence`, SDK confidence and `act_probability` are not acceptance gates.
+Malformed supplied confidence fields still fail ordinary response validation.
 
-Returns the existing BlockResult. Accepted output has status `completed`, null
-top-level reason, one decision, and exactly `data={"action": <stable ID>}`.
-Rule rejection also completes successfully, with action/answer `undecided`,
-`decided=False`, and the existing evaluator's decision reason, such as
-`below_threshold:probability_gap` or `field_missing:answer_confidence`.
+## Output and fallback
+
+Returns the existing BlockResult. Successful evaluation has status `completed`,
+null top-level reason, and one detailed decision.
+
+| Prediction outcome | Detailed decision | Public `data.action` |
+| --- | --- | --- |
+| Accepted supported action | Original action, `decided=True` | `explain`, `generate_tests`, or `modify_code` |
+| Accepted `unclear` | `answer="unclear"`, `decided=True` | `undecided` |
+| Rule rejection | `answer="undecided"`, `decided=False`, evaluator reason | `undecided` |
+
+The public result remains exactly `{"action": <action>}`. Accepted unclear and rule
+rejection are distinguishable in detailed decisions, but both take the existing
+no-enrichment path in `first_method_context`. There is no new public action branch.
+Intent classification does not authorize edits or establish the edit target.
+
 A caller's SkipBlock yields status `skipped`, its top-level reason, empty decisions,
-and `data={"action": "undecided"}`. Invalid input/configuration and malformed SDK
+and `{"action": "undecided"}`. Invalid input/configuration and malformed SDK
 responses are errors. Loader errors, SDK exceptions and TimeoutError propagate;
 there is no retry, fallback model or fabricated classification.
 
+## Configuration and overrides
+
+The wrapper replaces an unset (`None`) temperature with **1.0** for this block
+only. It preserves explicit numeric temperatures (including 0), model, language,
+and the caller's immutable RunConfig. Shared RunConfig defaults and other blocks
+are unchanged. Default and explicit 1.0 calls reuse the same registry entry.
+A later block using SDK-default temperature can load a separate cached agent.
+Calling the generic `Block` runtime directly bypasses this wrapper's default;
+use this module's `run` function for the selected profile.
+
 ```python
 result = run(
-    {"prompt": prompt}, config=config, registry=registry,
+    {"prompt": prompt}, config=RunConfig(temperature=0.5), registry=registry,
     rule_overrides={"requested_action": "my_choice_rule"},
     question_overrides={"requested_action": full_choice_question},
     catalog=my_catalog,
@@ -53,43 +98,33 @@ result = run(
 ```
 
 Named rules must exist in the supplied catalog and be choice-compatible. Question
-overrides may be a full definition or a catalog reference. They can change
-instructions/descriptions/order but must retain the same type and three IDs.
-A full definition contains `type`, `instructions`, and `criteria` (see the default
-JSON). There is no inline rule merge. Defaults and caller inputs remain unchanged.
+overrides may be a full definition or catalog reference. Instructions,
+descriptions and order can change, but overrides must retain type `choice` and
+all **four** IDs. Historical three-choice overrides/responses must add `unclear`.
+A full definition contains `type`, `instructions`, and `criteria`. There is no
+inline rule merge. Caller inputs and catalog defaults are not mutated.
 
-Custom `prepare_input(value, questions)` can explicitly replace the submitted
-text and return PreparedInput; text must stay nonblank and question names, type,
-and labels must remain valid. Custom state does not determine the result.
-Construction/catalog access is lazy with respect to model loading. Each run uses
-one prediction and one enrichment; caller-owned registry reuse follows existing
-model/temperature/language caching semantics. Existing debug logs retain effective
-configuration, question, raw response, enriched metrics and decision.
-
-Callers can branch on `result.data["action"]` and use their normal path on
-`undecided`. Intent is not authorization. In particular `modify_code` does not
-establish that production code is the edit target.
+Custom `prepare_input(value, questions)` can explicitly replace submitted text
+and return PreparedInput. Text must stay nonblank, and question names, type and
+labels must remain valid. Custom state does not determine the result.
+Construction/catalog access does not load a model. Each run uses one prediction
+and one enrichment; the caller owns registry lifetime. Debug logs retain the
+resolved configuration, question, raw response, enriched metrics and decision.
 
 ## Evaluation and input limits
 
 Run deterministic tests with `python -m pytest -q tests/test_requested_action*.py`.
-Synthetic SDK envelopes prove transport, validation, rule evaluation and extraction,
-not live Laya classification accuracy. `tests/fixtures/requested_action_prompts.json`
-contains E01–E22, including a held-out split and unsettled cases excluded from
-accuracy scoring. Do not tune using the held-out split. Mixed test generation and
-repair remains a taxonomy review case. Out-of-taxonomy and context-dependent
-prompts can be confidently misclassified; there is no unknown detector.
+These use synthetic SDK responses and verify transport, validation, extraction,
+configuration, gap boundaries, unclear fallback and exact parity with the frozen
+C1/R4 experiment definitions. They do not measure live semantic accuracy.
 
-No live inference, model download, new experiment runner or tokenizer is included.
-Question instructions, choices, formatting and prompt share the model input
-budget. This version forwards the prompt unchanged and does not count tokens,
-guard overflow or verify SDK truncation. The long-string test proves transport
-only. No safe character/line budget or complete-input processing is claimed.
-See the [token-budget investigation handoff](https://chatgpt.com/library?file_id=libfile_34e77d9a23788191893a8542d585ea94&account_id=personal)
-and [implementation plan](../../../../../docs/requested-action/requested-action-block-plan.md).
+The older E01–E22 corpus in `tests/fixtures/requested_action_prompts.json` retains
+its historical annotations; it is not the V2 500-case evidence. The research report
+links the current campaign and explains its four-label taxonomy and limitations.
 
-Future opt-in evaluation on Sharon's Mac should record model/revision, SDK version,
-requested temperature, actual question/rule, raw and enriched output, expected
-label/status, decision reason, and verified length/truncation diagnostics. Report
-wrong accepted answers and abstentions separately; abstention is not a correct
-classification. Distinguish requested model identity from verified loaded identity.
+No model download or live inference is needed to test these changes. Question
+instructions, choices, formatting and prompt share the model input budget. This
+block forwards the prompt unchanged and does not itself count tokens, guard
+overflow or verify SDK truncation. Long-string tests prove transport only.
+See the [token-budget implementation plan](https://chatgpt.com/library?file_id=libfile_1ac2aa7c68b8819195ce55d60dc35792&account_id=personal)
+and [original block design](../../../../../docs/requested-action/requested-action-block-plan.md).

@@ -50,7 +50,7 @@ def capture_trace(offset):
         return []
 
 
-def run(*, input_path=INPUT_PATH, model=None, temperature=None, loader=None, inspection_provider=None,
+def run(*, input_path=INPUT_PATH, model=None, temperature=None, loader=None,
         output_root=None, printer=print):
     started, stamp = time.monotonic(), datetime.now().astimezone()
     offset = LOG_PATH.stat().st_size if LOG_PATH.exists() else 0
@@ -82,7 +82,7 @@ def run(*, input_path=INPUT_PATH, model=None, temperature=None, loader=None, ins
         for name, question in details["questions"].items():
             printer("QUESTION AND RULE: " + name + "\n" + json.dumps(question, indent=2))
         printer("Calling ticket_triage_v2 now (one model request)...")
-        registry = CapturingRegistry(AgentRegistry(inspection_provider=inspection_provider, loader=loader, real=loader is None), details)
+        registry = CapturingRegistry(AgentRegistry(loader=loader, real=loader is None), details)
         result = run_block({'text': payload['text']}, config=config, registry=registry,
                            catalog=catalog, rule_overrides=OVERRIDES)
         details['result'] = asdict(result)

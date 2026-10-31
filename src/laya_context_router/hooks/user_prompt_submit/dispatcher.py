@@ -12,8 +12,8 @@ class PromptRequest:
     config: object
 
 def _default_handler(request,logger):
-    from .prompt_context_enrichment import enrich_prompt_context
-    return enrich_prompt_context(request,logger)
+    from ...flows.first_method_context import handle_prompt
+    return handle_prompt(request,logger)
 
 def dispatch_user_prompt_submit(envelope,args,logger,*,handler=None,clock=monotonic):
     result=None

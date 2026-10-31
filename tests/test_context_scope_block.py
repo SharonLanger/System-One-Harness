@@ -1,5 +1,4 @@
 """C01–C24: actual scope block pipeline with only the SDK boundary faked."""
-from examples._plumbing_inspection import plumbing_provider
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -34,7 +33,7 @@ def registry(raw=None, calls=None, loads=None, error=None):
     def loader(*args, **kwargs):
         loads.append((args, kwargs))
         return Agent()
-    return AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
+    return AgentRegistry(loader=loader)
 
 _DEFAULT = object()
 

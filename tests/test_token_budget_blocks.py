@@ -64,19 +64,6 @@ def test_minimal_consumer_receives_full_report_without_retry(instrumentation):
     assert run_with_diagnostics(lambda:sentinel) is sentinel
 
 
-def test_existing_sandbox_keeps_generic_result_and_actionable_boundary(tmp_path,instrumentation):
-    from laya_context_router.flows.file_method_context import run
-    registry,calls,events=instrumentation
-    (tmp_path/'a.ts').write_text('export function greet() { return "hello"; }')
-    result=run('Explain `a.ts`: '+'word '*1200,cwd=tmp_path,repository_root=tmp_path,
-               config=RunConfig(),registry=registry,fallback_config=RunConfig(model='never-loaded'),strict=True)
-    assert result=={'status':'noop','reason':'model_error','context':None}
-    assert not calls and len(registry._agents)==1
-    errors=[e for e in events if e[0]=='ERROR']
-    assert len(errors)==1 and errors[0][2]['report']['violations']
-    assert 'migration' in errors[0][2]['report']['hint']
-
-
 def test_validator_budget_error_rebound_but_malformed_error_unchanged(monkeypatch):
     api=importlib.import_module('laya_context_router.laya.predict');events=[]
     monkeypatch.setattr(api,'log',lambda level,component,event,**kw:events.append((level,kw)))

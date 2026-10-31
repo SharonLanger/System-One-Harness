@@ -1,6 +1,4 @@
 """C09/C35–C40: actual registry, logs, caller composition and wheel resources."""
-from examples._plumbing_inspection import PLUMBING_SOURCE
-from examples._plumbing_inspection import plumbing_provider
 from copy import deepcopy
 import json
 import os
@@ -38,7 +36,7 @@ def test_C35_C36_registry_reuse_and_identity():
 def test_C23_C36_failed_load_not_cached():
     attempts=[]
     def loader(*args,**kwargs):attempts.append(1);raise RuntimeError('load failed')
-    shared=AgentRegistry(inspection_provider=plumbing_provider, loader=loader)
+    shared=AgentRegistry(loader=loader)
     for _ in range(2):
         with pytest.raises(RuntimeError,match='load failed'):
             block.run({'prompt':'x'},config=RunConfig(),registry=shared)
@@ -84,7 +82,7 @@ def test_C40_installed_wheel_resources_and_execution(tmp_path):
         for path in ['defaults/questions/context_scope.json','defaults/rules/context_scope_default.json',
                      'building_blocks/questions/context_scope/block.json','building_blocks/questions/context_scope/README.md']:
             assert archive.read('laya_context_router/'+path)==(root/'src/laya_context_router'/path).read_bytes()
-    code=PLUMBING_SOURCE+'''
+    code='''
 import pathlib
 import laya_context_router
 from laya_context_router.building_blocks.questions.context_scope.block import run
@@ -94,7 +92,7 @@ class Fake:
  def predict(self,text,questions,**kwargs):
   assert text=='Explain it' and set(questions)=={'context_scope'}
   return {'answers':{'context_scope':{'type':'choice','choice':'method_only','answer_confidence':.8,'probabilities':{'method_only':.8,'called_methods':.1,'calling_methods':.06,'both_directions':.04}}}}
-result=run({'prompt':'Explain it'},config=RunConfig(model='fake'),registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda *a,**k:Fake()))
+result=run({'prompt':'Explain it'},config=RunConfig(model='fake'),registry=AgentRegistry(loader=lambda *a,**k:Fake()))
 assert result.data=={'scope':'method_only'}
 assert 'site-packages' in str(pathlib.Path(laya_context_router.__file__))
 print('scope wheel passed')

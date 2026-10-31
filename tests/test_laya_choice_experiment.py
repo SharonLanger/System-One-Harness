@@ -1,5 +1,3 @@
-from examples._plumbing_inspection import INSTALL_TEST_PROVIDER_SOURCE
-from examples._plumbing_inspection import plumbing_provider
 import copy
 import json
 import os
@@ -39,7 +37,7 @@ def test_choice_runs_adapter_writes_truthful_report(tmp_path):
 
     output = tmp_path / "results" / "laya_choice"
     messages = []
-    status = laya_choice.run(inspection_provider=plumbing_provider, loader=loader, output_root=output, printer=messages.append)
+    status = laya_choice.run(loader=loader, output_root=output, printer=messages.append)
     assert status == 0
     assert loads == [("aac6fef/laya-typed-decisions-mlx", {})]
     source = json.loads(laya_choice.INPUT_PATH.read_text())
@@ -64,7 +62,7 @@ def test_overrides_use_existing_run_config_mapping(tmp_path):
     def loader(model, **kwargs):
         seen.append((model, kwargs))
         return agent
-    status = laya_choice.run(inspection_provider=plumbing_provider, loader=loader, model="demo/model", temperature=0.25,
+    status = laya_choice.run(loader=loader, model="demo/model", temperature=0.25,
                              temperature_set=True, lang="fr", output_root=tmp_path,
                              printer=lambda _: None)
     assert status == 0
@@ -74,7 +72,7 @@ def test_overrides_use_existing_run_config_mapping(tmp_path):
 
 def test_invalid_response_is_saved_as_failed_and_nonzero(tmp_path):
     messages = []
-    status = laya_choice.run(inspection_provider=plumbing_provider, loader=lambda *_a, **_k: Agent({"answers": {}}),
+    status = laya_choice.run(loader=lambda *_a, **_k: Agent({"answers": {}}),
                              output_root=tmp_path, printer=messages.append)
     assert status == 1
     run_dir, = list(tmp_path.iterdir())
@@ -100,7 +98,7 @@ def test_invalid_input_still_saves_failed_report(tmp_path):
     input_path.write_text('{"text":"hello","questions":{},"config":[]}', encoding="utf-8")
     output = tmp_path / "results"
     messages = []
-    assert laya_choice.run(inspection_provider=plumbing_provider, input_path=input_path, output_root=output,
+    assert laya_choice.run(input_path=input_path, output_root=output,
                            loader=lambda *_a, **_k: None, printer=messages.append) == 1
     run_dir, = output.iterdir()
     details = json.loads((run_dir / "details.json").read_text())
@@ -122,7 +120,7 @@ def test_direct_script_imports_checkout_src_from_unrelated_cwd_without_pythonpat
     shutil.copytree(ROOT / "experiments" / "inputs", experiments / "inputs")
     (project / "src").symlink_to(ROOT / "src", target_is_directory=True)
     sdk = experiments / "laya_mlx.py"
-    sdk.write_text(INSTALL_TEST_PROVIDER_SOURCE+'''
+    sdk.write_text('''
 class Agent:
     def predict(self, text, questions, **kwargs):
         return {"answers": {"fruit": {

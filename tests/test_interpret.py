@@ -1,4 +1,3 @@
-from examples._plumbing_inspection import plumbing_provider
 import copy
 import json
 from pathlib import Path
@@ -25,7 +24,7 @@ def test_legacy_extract_exact(prediction,answer):
 
 
 def test_captured_multiquestion_full_pipeline_no_ground_truth():
-    raw=predict(REQUEST['text'],REQUEST['questions'],inspection_provider=plumbing_provider, model=REQUEST['model'],loader=lambda model:Agent(RAW))
+    raw=predict(REQUEST['text'],REQUEST['questions'],model=REQUEST['model'],loader=lambda model:Agent(RAW))
     original=copy.deepcopy(raw)
     decisions=interpret(raw,REQUEST['questions'],policies(REQUEST['questions']))
     assert {name:entry['answer'] for name,entry in decisions.items()}=={'department':'billing','urgency':'medium — issue needs resolving within a few days','churn_risk':'yes','sentiment':'negative','contains_threat':'yes'}
@@ -67,7 +66,7 @@ def test_invalid_predictions_never_accepted(change):
     assert any(not d['decided'] and d['reason'].startswith('invalid_prediction:') for d in got.values())
     # JSON preserves NaN literals for this equality check without treating them as valid data.
     assert json.dumps(raw,sort_keys=True)==json.dumps(original,sort_keys=True)
-    with pytest.raises(ResponseError): predict('x',REQUEST['questions'],inspection_provider=plumbing_provider, loader=lambda model:Agent(raw))
+    with pytest.raises(ResponseError): predict('x',REQUEST['questions'],loader=lambda model:Agent(raw))
 
 
 def test_requested_questions_all_returned_extra_ignored_missing_policy_errors():
