@@ -50,3 +50,11 @@ Commit 4 published: `7e241154870cced73f0131504b4f1e086dda0591`.
 Expected red: missing `inspect_request` assertion. Tests exercise state below/at/above actual profile allowances, conversation-list retention direction, final slice and structural marker loss, full-request requirement independently of earlier cuts, and all-question measurement. Command: `python -m pytest -q tests/test_token_budget_request.py`.
 
 Outcome: 11 expected missing-request assertions failed; green full accounting/independent parity regressions: 69 passed. Each question has independent allowances and all violations; report contains counts only, with stage-local and final retention separated. Evidence: `evidence/05-{red,green}.log`.
+
+Commit 5 published: `0e194be46e3e3bd96312bb19732bd98a73419bba`.
+
+## Commit 6 — verified model/runtime capability
+
+Expected red: new profile tests assert missing `budget_profiles` module. Tests cover independently assembled observed metadata, all identity/limit fingerprints, candidate refusal, hook refusal, lazy unsupported-agent refusal and mutation detection. Actual Mac runtime remains unqualified; these are host verification tests, not neural evidence. Command: `python -m pytest -q tests/test_token_budget_profiles.py`.
+
+Outcome: 14 expected missing-profile assertions failed; green profile/accounting/parity suite: 83 passed. Verification requires resolved checkpoint identity, effective limits, tokenizer/config bytes, exact supported runtime source hashes (including global hook composition), and matching loaded tokenizer state. The adapter encodes under the SDK's own synchronization lock. Unknown/custom opaque agents and candidate code model are refused. Live Apple Silicon execution is still pending. Evidence: `evidence/06-{red,green}.log`.
