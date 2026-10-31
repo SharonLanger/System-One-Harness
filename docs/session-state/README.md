@@ -8,7 +8,7 @@ import {SessionStateStore} from '../../typescript-helper/src/session-state';
 // Both arguments come from the caller's runtime configuration/payload.
 const state = new SessionStateStore('/absolute/path/to/lcr/logs', sessionId);
 
-// Hook caller example. Hook integration is a later increment.
+// Store API example; runtime hooks use the shared Python bridge.
 await state.save({
   source: {kind: 'hook', name: 'UserPromptSubmit'},
   type: 'UserPromptSubmit',
@@ -30,7 +30,7 @@ Files live at `<logsRoot>/session-state/<sessionId>.jsonl`. The caller must supp
 
 Each line records `source`, `type`, `payload`, and a UTC ISO `timestamp` assigned when save is called. Loads return file order. Event types are open strings. Full prompt text and code are not required.
 
-One shared instance serializes its operations. Input is captured before queueing and results do not alias caller data. Share one instance per session; separate instances/processes are not coordinated. Before hooking up the Python runtime, decide writer ownership and bridging explicitly. No hook or flow is wired in this increment.
+One shared instance serializes its operations. Input is captured before queueing and results do not alias caller data. Share one instance per session; separate instances/processes are not coordinated. The Python runtime bridge in `hooks/session_state.py` coordinates cooperating hook processes with a per-session lock. PostCompact saves its existing hook event; first_method_context checks history and conditionally saves enrichment under that same lock. Direct TypeScript writers bypass that process lock.
 
 Before appending, the store validates existing history. A valid final record without LF receives a separator LF before the next event, preserving all old bytes. Corrupt history, including invalid UTF-8, rejects with the path and line number. Read/write failures propagate; no automatic retries, repairs, or truncation occur. Each save reads the full history, so cost grows with log size; this is intentional for the initial small logs. A successful append does not guarantee survival across power loss. The log directory is assumed to be application-owned; this class does not defend against external symlink manipulation.
 
@@ -46,3 +46,6 @@ npm --prefix typescript-helper test
 Tests use temporary files and injected filesystem failures, with no Claude, LAYA, or tokenizer calls. Existing `logs/` ignore rules cover generated session files.
 
 Hook event naming: source.kind is hook; source.name and type preserve the exact hook name (PostCompact, UserPromptSubmit). Flow action types use snake_case, such as context_enriched. Existing historical records are never rewritten.
+
+
+First-flow session policy is documented in [the implementation design](../first-flow/session-state-design.md) and [implementation results](../first-flow/session-state-implementation.md). The flow saves state only when it commits to returning enrichment. Checks, skips and errors go exclusively to regular debug logs. Matching file/method/signature/range enrichment is suppressed until a later PostCompact record.

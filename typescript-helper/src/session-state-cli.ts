@@ -22,15 +22,23 @@ async function main(): Promise<void> {
   if (request === null || typeof request !== 'object' || Array.isArray(request)) {
     throw new TypeError('Session state request must be an object');
   }
-  const {logsRoot, sessionId, event} = request as Record<string, unknown>;
+  const {logsRoot, sessionId, event, operation} = request as Record<string, unknown>;
   if (typeof logsRoot !== 'string' || typeof sessionId !== 'string') {
     throw new TypeError('Session state request requires string logsRoot and sessionId');
   }
   const store = new SessionStateStore(logsRoot, sessionId);
-  await store.save(event as SessionEventInput);
+  if (operation === 'load') {
+    if ('event' in request) throw new TypeError('Load does not accept an event');
+    process.stdout.write(JSON.stringify({events: await store.load()}) + '\n');
+  } else if (operation === undefined || operation === 'save') {
+    await store.save(event as SessionEventInput);
+  } else {
+    throw new TypeError('Unknown session state operation');
+  }
 }
 
 void main().catch((error: unknown) => {
   process.stderr.write(`session-state-cli: ${error instanceof Error ? error.message : 'Unknown error'}\n`);
   process.exitCode = 1;
 });
+
