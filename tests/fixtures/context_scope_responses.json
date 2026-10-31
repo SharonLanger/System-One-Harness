@@ -1,0 +1,81 @@
+{
+  "synthetic": true,
+  "responses": {
+    "method_only": {
+      "answers": {
+        "context_scope": {
+          "type": "choice",
+          "choice": "method_only",
+          "probabilities": {
+            "method_only": 0.8,
+            "called_methods": 0.1,
+            "calling_methods": 0.06,
+            "both_directions": 0.04
+          },
+          "answer_confidence": 0.8,
+          "confidence": 0.2,
+          "action": {
+            "act_probability": 1
+          }
+        }
+      }
+    },
+    "called_methods": {
+      "answers": {
+        "context_scope": {
+          "type": "choice",
+          "choice": "called_methods",
+          "probabilities": {
+            "called_methods": 0.8,
+            "method_only": 0.1,
+            "calling_methods": 0.06,
+            "both_directions": 0.04
+          },
+          "answer_confidence": 0.8,
+          "confidence": 0.2,
+          "action": {
+            "act_probability": 1
+          }
+        }
+      }
+    },
+    "calling_methods": {
+      "answers": {
+        "context_scope": {
+          "type": "choice",
+          "choice": "calling_methods",
+          "probabilities": {
+            "calling_methods": 0.8,
+            "method_only": 0.1,
+            "called_methods": 0.06,
+            "both_directions": 0.04
+          },
+          "answer_confidence": 0.8,
+          "confidence": 0.2,
+          "action": {
+            "act_probability": 1
+          }
+        }
+      }
+    },
+    "both_directions": {
+      "answers": {
+        "context_scope": {
+          "type": "choice",
+          "choice": "both_directions",
+          "probabilities": {
+            "both_directions": 0.8,
+            "method_only": 0.1,
+            "called_methods": 0.06,
+            "calling_methods": 0.04
+          },
+          "answer_confidence": 0.8,
+          "confidence": 0.2,
+          "action": {
+            "act_probability": 1
+          }
+        }
+      }
+    }
+  }
+}
