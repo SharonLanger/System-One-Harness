@@ -1,0 +1,16 @@
+{
+  "name": "method_selection_v2_default",
+  "question_type": "choice",
+  "conditions": [
+    {
+      "field": "answer_confidence",
+      "op": "gte",
+      "value": 0.7
+    },
+    {
+      "field": "probability_gap",
+      "op": "gte",
+      "value": 0.25
+    }
+  ]
+}
