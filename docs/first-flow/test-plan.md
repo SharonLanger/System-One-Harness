@@ -1,12 +1,10 @@
 # LAYA first method-context flow — detailed test plan
 
 Date: 2026-10-31  
-Status: implementation authorized; token-integration cases remain explicitly required before merge.  
+Status: non-token first-flow coverage implemented; sandbox cleanup authorized and executed.
 Design: [First-flow design and Sol handoff](https://chatgpt.com/library?file_id=libfile_8162b9ed215c8191a1c195013523bfe0&account_id=personal).
 
-This revision replaces the earlier 107-case plan. It contains **61 focused cases**, with parameterized variations where stated. It does not authorize changing experiments, existing tests, utilities, shared runtime, or logging infrastructure.
-
-Sharon's latest decision: proceed with the flow, its tests, and a draft PR now. Tokenizer support is a **pre-merge requirement**, not a blocker for this implementation work. Record dependent cases as pending in the PR; do not fabricate a token API, add blanket skips, or claim the gate passed. Unit tests must mock tokenizer/model outcomes, never invoke a real tokenizer or model.
+The original plan lists 61 case IDs, including future tokenizer proposals. Current first-flow coverage is implemented as 122 tests with mocked public building blocks and real deterministic utilities. Token-specific cases remain separate future work, not acceptance requirements for this cleanup. Existing test edits are authorized for sandbox retirement and migration of useful shared hook checks.
 
 ## 1. Test boundary and files
 
@@ -33,7 +31,7 @@ Use only new files, for example:
 
 Do not modify top-level test configuration, shared conftest files, old test helpers, old snapshots, experiment tests, or example runners. Test support must not globally affect tests outside this new directory.
 
-Sol must follow the design's mandatory Astra escalation rule for any deviation. A necessary existing-test change is a scope decision, not an automatic fix.
+Ask Astra for focused mitigation only when an unexpected unresolved issue needs judgment.
 
 ## 2. Fixture setup and independent oracles
 
@@ -135,23 +133,9 @@ All size cases use independently measured complete candidate strings. Tests may 
 | O09 | Parameterize emoji/supplementary Unicode and configured limits below/above 8,000. | Count two UTF-16 units for supplementary characters; smaller valid limit respected; larger config cannot raise hard cap. Invalid Unicode yields formatting failure. |
 | O10 | Combine partial/unavailable navigation, budget omission where applicable, and fixture-specific excluded-content markers. | Required notes/footer all count toward final cap. No callee bodies, unrelated declarations, internal IDs, scores, token reports, log prefixes, or raw errors leak into payload. |
 
-## 8. T — Existing token outcomes and metadata (7 cases)
+## 8. T — Separate tokenizer follow-up
 
-These cases test consumption at the mocked building-block boundary, not tokenizer arithmetic or guard implementation.
-
-**Dependency rule:** use the actual public types/fields supplied by the completed existing tokenizer integration. The inspected main does not establish that integration yet. T01–T04 and metadata-present variants of T05–T07 are deferred, explicitly tracked pre-merge cases. Implement the independently testable cases now and report the pending ones; do not create placeholder passing/skipped tests or invent lookalike types. Complete these cases before merge after the existing tokenizer surface is available, using mocked outcomes only. This authorized deferral does not itself require another approval or Astra escalation. Other deviations still do.
-
-| ID | Setup and action | Required assertions |
-|---|---|---|
-| T01 | Requested-action fake raises/returns the existing typed input-too-large outcome with a fixed report. | Noop input-token-budget refusal attributed to action; no selection/extraction/navigation; report retained in diagnostics; no retry. |
-| T02 | Action succeeds; selection fake returns the same existing oversize outcome. | No context; no extraction/navigation; attribution is selection; original prompt/outline not trimmed or rewritten for another attempt. |
-| T03 | Parameterize each block's existing inspection-unavailable outcome with absent counts. | Failure at active stage; unknown counts remain unavailable, not zero or “fits”; no fallback inference. |
-| T04 | Parameterize each block's existing inspection-failed outcome. | Failure distinct from deliberate size refusal; retain established diagnostic category; no retries or arbitrary exception-string classification. |
-| T05 | Return existing supported token metadata on successful fixed block results. | Preserve counts/provenance separately per block and request; no mutation, invented values, new BlockResult fields, registry observer, or second tokenizer invocation. |
-| T06 | Return valid block results without optional metadata. | Semantic routing remains definitive; diagnostics say unavailable. Absence of metadata is not proof the shared guard was executed. No requirement to modify runtime to fill the gap. |
-| T07 | Supply differing preflight/usage counts and multiple reports where the existing API supports them; parameterize ordinary block-local candidate/character refusals. | Do not conflate output character cap, input-token limits, per-sequence counts, post-inference usage, or existing block-local budget reasons. None enter hook context. |
-
-Existing tokenizer component coverage retains responsibility for its own implementation. This flow suite validates orchestration with mocked tokenizer/block outcomes only; do not add tokenizer fixtures, execute an actual tokenizer, or modify its component tests.
+T01–T05 and metadata-present variants of T06–T07 are future tokenizer-integration proposals, outside this task. T06 unavailable-metadata behavior and ordinary block-local refusal variants of T07 are covered now. No placeholder skips or live tokenizer calls are added. H03 token variants and optional-token L05 variants likewise remain future work.
 
 ## 9. L — Reused logging and exact enrichment (5 cases)
 
@@ -169,7 +153,7 @@ Only the new flow's additional records are counted for the “once” assertion;
 
 At this level, invoke the actual gateway, common dispatcher, event dispatcher and default handler. Patch only the two block boundaries plus explicitly named failure dependencies. Do not inject a replacement feature handler in the primary route test.
 
-For subprocess cases, a small test-local bootstrap may install the block fakes before invoking the existing CLI/gateway. It must not alter routing, launch the legacy handler, modify production entry points, or change existing tests.
+For subprocess cases, a small test-local bootstrap may install the block fakes before invoking the existing CLI/gateway. It must not alter routing, launch the legacy handler, modify production entry points, or bypass the actual default route.
 
 | ID | Setup and action | Required assertions |
 |---|---|---|
@@ -184,27 +168,7 @@ For subprocess cases, a small test-local bootstrap may install the block fakes b
 
 ## 11. Execution and scope review
 
-Before implementation, record baseline results for the affected existing hook suites. Add the new cases incrementally and run the focused group after each behavior is implemented.
-
-Use existing repository setup/build commands from the design. Minimum flow command:
-
-```bash
-python -m pytest -q tests/first_flow
-```
-
-Then run the affected existing hook suites and full Python regression as prescribed by the design. Do not edit, exclude, replace, or mark failing old tests as expected failures merely because the new suite passes. The known old-default-hook expectation conflict must go to Astra before landing the dispatcher switch; any required existing-test edit needs an approved scope amendment.
-
-At handoff, map S01–S04, P01–P10, R01–R10, N01–N07, O01–O10, T01–T07, L01–L05, and H01–H08 to actual test names/results. A short summary is sufficient; do not generate a large tracking framework.
-
-Review the final diff manually:
-
-- New production code only in `flows/first_method_context.py`.
-- Existing production edit only the event dispatcher's import/call connection.
-- New test files/fixtures only in the listed test-owned directories.
-- No experiment, shared-runtime, utility, dependency, logger, existing-test, or unrelated-file changes.
-- No tracked logs, model downloads, or generated evidence trees.
-
-Tests must be meaningful behavioral checks. Do not assert implementation line counts or write tests that merely restate the formatter's construction code.
+Use tests/first_flow plus focused shared-hook/component groups during migration, followed by one full Python run. Retire sandbox-only tests; preserve meaningful infrastructure and utility assertions. Do not hide failures using exclusions, xfails or new skips. The small compatibility re-export keeps existing experiment imports usable. Record retired/adapted/retained coverage and actual results in the PR. No generated evidence framework or repeated broad test loop is needed.
 
 ## 12. Acceptance evidence and limits
 
@@ -212,5 +176,4 @@ Provide one offline successful hook response with its matching decoded log paylo
 
 Offline flow tests prove routing, reuse, source handling, formatting and transport. They do not prove model answer quality, tokenizer correctness, live Claude consumption, or end-to-end live latency. Existing component tests and an optional later live check cover those areas.
 
-Report draft implementation results separately from merge readiness. The PR must remain unmerged while tokenizer support or the old-hook compatibility decision is unresolved. Do not expand the task to resolve them without the design's Astra/Sharon decision process.
-
+Report implementation and test results accurately. Tokenizer remains separate work. Normal checkout/CI confirmation and Sharon's merge review remain outstanding; no merge is performed by this cleanup.

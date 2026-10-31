@@ -2,7 +2,7 @@
 
 The hook gateway owns transport/deadlines. Building blocks own semantic decisions;
 the deterministic TypeScript helpers own parsing and source identity validation.
-Tokenizer integration is a separate pre-merge dependency of this draft flow.
+Tokenizer work is separate and outside this flow.
 """
 from copy import copy
 from dataclasses import replace

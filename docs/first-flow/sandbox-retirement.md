@@ -1,6 +1,6 @@
 # Sol handoff: finish first flow and retire sandbox tests
 
-Status: handoff only. Creating this document does not implement the cleanup.
+Status: executed in PR #29; final Python suite passes. Historical instructions below describe the approved cleanup.
 Repository: SharonLanger/laya-context-router
 Work in existing draft PR #29: https://github.com/SharonLanger/laya-context-router/pull/29
 Branch: `codex/first-method-context-flow`
@@ -166,3 +166,16 @@ Use the existing test setup, dependencies and scripts. Do not change package/loc
 - No merge or deployment is performed.
 
 If a genuine new shared-component defect prevents completion, describe the specific issue and smallest proposed change before expanding scope. Routine sandbox-test retirement and relevant hook-test migration are already authorized by Sharon.
+
+
+## Execution results
+
+Cleanup published in commit `3782b9c1b53eb125bddd8a6b50d5147ce62be35f` after updating from main's session-state additions. Five dedicated sandbox test modules were retired; mixed modules retain shared/component assertions and migrate useful hook cases to public block mocks. The compatibility entry and unchanged preparation helper preserve existing callers.
+
+- Focused cleanup: 233 passed (including all 122 first-flow tests).
+- Retained readiness group: 11 passed; root/cwd variants: 3 passed.
+- One post-cleanup full Python run: 1,162 passed, 2 skipped, zero failures (244.21 seconds).
+- Both remaining skips are unchanged configuration-duplicate cases. One old sandbox skip was removed with its retired suite; no skips/xfails/exclusions were introduced.
+- No experiments, examples, shared utility/runtime, dependency or gateway/dispatcher implementation changes in this cleanup. No real model/tokenizer or experiment execution.
+
+Verification used the previously approved blob-verified reconstructed snapshot plus the four exact main additions. Normal complete-checkout/CI confirmation remains outstanding. Tokenizer is separate pending work. PR #29 remains draft and unmerged.
