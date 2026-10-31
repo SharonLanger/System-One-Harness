@@ -1,6 +1,6 @@
 # Method selection 200
 
-Implementation of [the expanded experiment plan](plan.md). The campaign uses 200 explanation requests, two method-question wordings, the ten unchanged rules from requested-action-500/versions/1/suite.json, and temperatures 0.5, 0.8, 1.0, 1.1. The multiple-method guard remains fixed. Production defaults are unchanged.
+Implementation of [the expanded experiment plan](plan.md). The campaign uses 200 explanation requests, two method-question wordings, the ten unchanged rules from requested-action-500/versions/1/suite.json, and temperatures 0.5, 0.8, 1.0, 1.1. The multiple-method guard remains fixed. The campaign preserves frozen experimental settings. The subsequent [V2 adoption report](../../../../../src/laya_context_router/building_blocks/questions/method_selection_v2/research/method-selection-200-results.md) documents the selected production default and development evidence.
 
 ## Run from the repository root
 

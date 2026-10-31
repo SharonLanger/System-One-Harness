@@ -1,0 +1,35 @@
+{
+  "description": "Downloaded development summary exports; local SHA-256 hashes verify the committed copies, not original inference partitions.",
+  "files": [
+    {
+      "file": "vectors.csv",
+      "sha256": "5dc4affd2c91f5f0ad841afb4242ab048a73efa06048247eebefc1814694e7fc",
+      "source_url": "https://drive.google.com/file/d/14OpwKgI3prLrngLjLIY2Bn7g5fFqPiYw/view"
+    },
+    {
+      "file": "groups.csv",
+      "sha256": "f012eb45044832c07895534bfa520869a0fecb8ff24e0e531fb94198dcf052a9",
+      "source_url": "https://drive.google.com/file/d/1zZfPFRaql0jZPTyIu5JSwi5PERmtvB1E/view"
+    },
+    {
+      "file": "raw-answers.csv",
+      "sha256": "5a85c0fc78266ef06b3ec6441658e3d1aa8744425661a2790cb71eac28f061fb",
+      "source_url": "https://drive.google.com/file/d/15hy2ZBF5F8jnqAIcrY_6sBLMqvNpiee2/view"
+    },
+    {
+      "file": "totals.json",
+      "sha256": "ceab308092fd059f804ccd6c31c9d1963517fea2cd18d2353f49af8c6e8b1540",
+      "source_url": "https://drive.google.com/file/d/1PoyKwn4mj0QH6SZ1OaZhWBU8D1EOUMLw/view"
+    },
+    {
+      "file": "reasons.json",
+      "sha256": "841ce04c2109e76636b91787884f8bbc78ce5b3c9a601f0ad8d6f7eb011f323e",
+      "source_url": "https://drive.google.com/file/d/1bs7EP96P_tZt8qx_j4bojYtvypkHiGEL/view"
+    },
+    {
+      "file": "baseline-differences.json",
+      "sha256": "fb599de3e11139eabbae8cc1504bde9c68875963da021344315ea3694cfbf254",
+      "source_url": "https://drive.google.com/file/d/1lkqX77cT-6WovLx3oYw8Mhyly1erlHbT/view"
+    }
+  ]
+}
