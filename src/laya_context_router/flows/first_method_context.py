@@ -14,6 +14,8 @@ from ..building_blocks import typescript
 from ..building_blocks.file_reference_utils import detect_configured_references
 from ..building_blocks.resolve_file import resolve_file
 from ..hooks.contracts import Context, Failure, Noop
+from ..hooks.session_state import inspect_and_save_event
+from .first_method_context_utils import SelectedMethod, EnrichmentDecision, build_enrichment_event, decide_enrichment
 
 _FLOW_ID = 'first_method_context'
 _CAP = 8000
@@ -59,12 +61,17 @@ def _units(text):
     return len(text.encode('utf-16-le')) // 2
 
 
-def _method_header(path, candidate, code):
+def _method_lines(candidate, code):
     first = candidate['location']['line']
     breaks = len(re.findall(r'\r\n|[\r\n\u2028\u2029]', code))
     if code.endswith(('\r', '\n', '\u2028', '\u2029')):
         breaks -= 1
     last = first + max(0, breaks)
+    return first, last
+
+
+def _method_header(path, candidate, code):
+    first, last = _method_lines(candidate, code)
     separator = '\n' if code.endswith(('\n', '\u2028', '\u2029')) else '\n\n'
     return ('Enriched Prompt for System 1\n'
             f'File: {_metadata(path)} | Method: {_metadata(candidate["name"])} | Lines: {first}–{last}\n'
@@ -129,10 +136,42 @@ def handle_prompt(request, logger, *, registry=None):
         registry = AgentRegistry(real=True)
     return run(request.prompt, project_root=root, config=prepared['model_config'],
                registry=registry, logger=logger,
-               max_context_chars=getattr(args, 'max_context_chars', _CAP))
+               max_context_chars=getattr(args, 'max_context_chars', _CAP),
+               finalize_enrichment=lambda selected: finalize_enrichment(request, logger, selected))
 
 
-def run(prompt, *, project_root, config, registry, logger, max_context_chars=_CAP):
+def finalize_enrichment(request, logger, selected):
+    """Commit the final state decision; ordinary persistence errors preserve context."""
+    common = getattr(getattr(request, 'envelope', None), 'common', {})
+    session_id = common.get('session_id') if isinstance(common, dict) else None
+    details = dict(session_id=session_id, path=selected.file_path, method=selected.name,
+                   start_line=selected.start_line, end_line=selected.end_line)
+    def decide(history):
+        decision = decide_enrichment(history, selected)
+        return decision, build_enrichment_event(selected) if decision.allow else None
+    try:
+        deadline = getattr(request.config, 'deadline_at', None)
+        if deadline is None or session_id is None:
+            raise ValueError('session_state_metadata_missing')
+        decision = inspect_and_save_event(session_id, decide, deadline=deadline)
+    except TimeoutError:
+        raise
+    except Exception as exc:
+        _log(logger, 'session_state_enrichment_failed', error_type=type(exc).__name__,
+             message=str(exc), **details)
+        return EnrichmentDecision(True, 'state_unavailable')
+    for index in decision.legacy_event_indices:
+        _log(logger, 'legacy_metadata_ignored', record_index=index, **details)
+    _log(logger, 'enrichment_allowed' if decision.allow else 'enrichment_skipped',
+         reason=decision.reason, matched_event_index=decision.matched_event_index,
+         latest_compaction_index=decision.latest_compaction_index, **details)
+    if decision.allow:
+        _log(logger, 'session_state_saved', event_type='context_enriched', **details)
+    return decision
+
+
+def run(prompt, *, project_root, config, registry, logger, max_context_chars=_CAP,
+        finalize_enrichment=None):
     """Return the existing hook outcome; never retry or reinterpret a block answer."""
     stage = 'configuration'
     def finish(result):
@@ -256,10 +295,21 @@ def run(prompt, *, project_root, config, registry, logger, max_context_chars=_CA
         if packed is None:
             return finish(Noop('output_budget_exceeded'))
         text, included = packed
+        context = Context(text)
+        if finalize_enrichment is not None:
+            try:
+                first, last = _method_lines(candidate, extracted['code'])
+                selected = SelectedMethod(str(path), candidate['name'], candidate['signature'], first, last)
+            except (ValueError, KeyError, TypeError) as exc:
+                _log(logger, 'session_state_enrichment_failed', error_type=type(exc).__name__,
+                     message='invalid_selected_method')
+            else:
+                if not finalize_enrichment(selected).allow:
+                    return finish(Noop('already_enriched_since_compaction'))
         _log(logger, 'enrichment_prepared', additional_context=text, path=relative,
              method=candidate['name'], context_utf16_units=_units(text),
              included_methods=included, omitted_methods=len(rows)-included)
-        return finish(Context(text))
+        return finish(context)
     except TimeoutError:
         raise
     except Exception as exc:
@@ -267,3 +317,4 @@ def run(prompt, *, project_root, config, registry, logger, max_context_chars=_CA
                 'block_error' if stage in {'requested_action', 'method_selection'} else
                 'formatting_error' if stage == 'formatting' else 'source_error')
         return finish(Failure(code, stage, message=type(exc).__name__))
+
