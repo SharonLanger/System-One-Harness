@@ -243,3 +243,46 @@ def test_D11_sdk_question_mutation_does_not_leak_to_next_run():
         result = method({'text': 'x', 'source_outline': data}, config=RunConfig(), registry=shared)
         assert result.data['selected_id'] == data['callables'][0]['id']
     assert calls == [expected, expected] and data == before
+
+
+def test_D07_custom_preparer_calls_real_outline_exactly_once(tmp_path, monkeypatch):
+    from laya_context_router.building_blocks import typescript
+    from laya_context_router.building_blocks.questions.method_selection_v2.block import prepare
+    path = tmp_path / 'prepared.ts'
+    path.write_text('function calculate() { return 7; }')
+    original_outline = typescript.outline
+    data = original_outline(path)
+    calls = []
+    utility_calls = []
+    def traced_outline(actual_path):
+        utility_calls.append(actual_path)
+        return original_outline(actual_path)
+    monkeypatch.setattr(typescript, 'outline', traced_outline)
+    def custom(value, questions):
+        # A flow can arrange this explicit utility operation in its injected
+        # preparer while retaining the same validated block input contract.
+        refreshed = typescript.outline(value['source_outline']['path'])
+        assert refreshed == value['source_outline']
+        return prepare({**value, 'source_outline': refreshed}, questions)
+    result = method({'text': 'Explain calculate', 'source_outline': data},
+                    config=RunConfig(), registry=registry(raw_for(questions_for(data), 'calculate'), calls),
+                    prepare_input=custom)
+    assert utility_calls == [str(path)]
+    assert len(calls) == 1
+    assert result.status == 'completed'
+    assert result.data['selected_id'] == data['callables'][0]['id']
+
+
+@pytest.mark.parametrize('change', ['unknown_id', 'unmapped_id', 'missing_field', 'wrong_shape', 'selected_with_reason'])
+def test_D12_method_output_validator_rejects_invalid_domain_result(change):
+    from laya_context_router.building_blocks.questions.method_selection_v2.block import validate_output
+    candidate = source()['callables'][0]
+    value = {'selected_id': candidate['id'], 'reason': None,
+             'candidate_map': {candidate['id']: deepcopy(candidate)}, 'label_map': {'sum': candidate['id']}}
+    if change == 'unknown_id': value['selected_id'] = 'fabricated'
+    if change == 'unmapped_id': value['label_map'] = {}
+    if change == 'missing_field': del value['candidate_map']
+    if change == 'wrong_shape': value = []
+    if change == 'selected_with_reason': value['reason'] = 'method_undecided'
+    with pytest.raises(ValueError, match='invalid method selection result'):
+        validate_output(value)
