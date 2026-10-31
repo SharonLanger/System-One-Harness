@@ -17,3 +17,7 @@ Changes:
 Coverage limitation: current unit tests do not establish real-tokenizer or SDK parity. Historical measurements are not a current qualification claim. Experiment cleanup and runtime/hash simplification remain pending.
 
 Validation: mocked budget suite passed 128 tests. Repeated with imports of tokenizers, numpy and laya_mlx actively blocked: 128 passed in 1.13s, and none of those modules were loaded. Selected non-experiment prediction/configuration/question/interpretation/block regressions passed 270 tests in 3.02s. No full-suite or experiment run was performed for this cleanup. Git diff checks passed; production executable AST is unchanged. Prior experiment edits already present in the PR remain pending cleanup; this commit makes no additional experiment changes.
+
+## Authorized compatibility completion
+
+The follow-plan instruction selects legacy `predict` plus explicit `predict_strict`. Both share response validation/copying; only strict calls inspect and reject. `strict=True` is explicitly forwarded by QuestionBlock, Block.run, public question blocks and the sandbox flow. Default callers/replay remain unchecked and emit no fitting report. Opaque strict calls refuse. New compatibility tests were red (5 failures); split and block tests passed 68 checks. Existing signature assertions were updated only for the intentional additive strict keyword. Next: documented static profiles, exact latest-main experiment restoration, and final regression.

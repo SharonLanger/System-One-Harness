@@ -139,7 +139,7 @@ def _inspect_or_raise(registry, config, state, questions):
     return measured
 
 
-def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None):
+def _predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None, strict=False):
     """Inspect the final private request, then return copied validated raw JSON."""
     from .config import RunConfig
     from .registry import AgentRegistry
@@ -157,7 +157,8 @@ def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, co
         model=config.model, temperature=config.temperature, lang=config.lang)
     try:
         agent = registry.get_agent(config)
-        _inspect_or_raise(registry, config, state_snapshot, question_snapshot)
+        if strict:
+            _inspect_or_raise(registry, config, state_snapshot, question_snapshot)
         raw = agent.predict(state_snapshot, question_snapshot, **config.predict_kwargs())
         log("DEBUG", "laya", "response_received", response=raw)
         result = deepcopy(validate_response(raw, response_questions))
@@ -174,3 +175,15 @@ def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, co
         raise
     log("INFO", "laya", "response_validated")
     return result
+
+
+def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None):
+    """Backward-compatible prediction; no token inspection or fitting claim."""
+    return _predict(text, questions, model=model, loader=loader, real=real, config=config,
+                    registry=registry, inspection_provider=inspection_provider)
+
+
+def predict_strict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None):
+    """Inspect the exact payload and refuse before inference when unsafe."""
+    return _predict(text, questions, model=model, loader=loader, real=real, config=config,
+                    registry=registry, inspection_provider=inspection_provider, strict=True)

@@ -45,7 +45,7 @@ def test_method_override_never_called_even_before_validation(managed,method,monk
     api=importlib.import_module('laya_context_router.laya.predict')
     monkeypatch.setattr(api,'log',lambda level,component,event,**kw:events.append((level,kw)))
     registry=SimpleNamespace(get_agent=lambda c:agent,get_inspector=lambda c:inspector)
-    with pytest.raises(InspectionUnavailable) as caught:api.predict('hello',{'q':BASE},registry=registry)
+    with pytest.raises(InspectionUnavailable) as caught:api.predict_strict('hello',{'q':BASE},registry=registry)
     assert not calls
     errors=[kw for level,kw in events if level=='ERROR']
     assert len(errors)==1 and errors[0]['report']==caught.value.report

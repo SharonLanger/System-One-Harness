@@ -101,7 +101,7 @@ def validate_output(value):
 
 
 def run(input_data, *, config, registry, max_candidates=64, max_input_chars=16000,
-        rule_overrides=None, question_overrides=None, prepare_input=None, catalog=None):
+        rule_overrides=None, question_overrides=None, prepare_input=None, catalog=None, strict=False):
     """Accept a full validated outline; budgets count Unicode characters, not tokens."""
     def validate_input(value):
         if (type(max_candidates) is not int or max_candidates < 0
@@ -121,4 +121,4 @@ def run(input_data, *, config, registry, max_candidates=64, max_input_chars=1600
     block = Block(BLOCK_DIR / 'block.json', validate_input=validate_input, prepare_input=prepare,
                   reduce=reduce, validate_output=validate_output, validate_prepared=validate_prepared, catalog=catalog)
     return block.run(input_data, config=config, registry=registry, rule_overrides=rule_overrides,
-                     question_overrides=question_overrides, prepare_input=prepare_input)
+                     question_overrides=question_overrides, prepare_input=prepare_input, strict=strict)

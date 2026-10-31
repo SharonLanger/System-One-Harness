@@ -6,7 +6,7 @@ from .contracts import (BlockConfigurationError, BlockInputError, BlockExecution
                         PreparedInput, BlockResult, SkipBlock)
 from ..json_utils import load_json
 from ..questions.models import Question
-from ..laya.predict import predict, validate_response
+from ..laya.predict import predict, predict_strict, validate_response
 from ..answers.enrich import enrich_prediction
 from ..answers.interpret import extract_answer
 from ..answers.rules import accepts
@@ -85,7 +85,7 @@ class Block:
                         expected_type=kind, actual_type=rule.question_type)
             raise BlockConfigurationError(f'rule_type_mismatch: {name}: {rule.name} requires {rule.question_type}, question is {kind}')
 
-    def run(self, input_data, *, config, registry, rule_overrides=None, question_overrides=None, prepare_input=None):
+    def run(self, input_data, *, config, registry, rule_overrides=None, question_overrides=None, prepare_input=None, strict=False):
         try:
             questions, rules = self._resolve({} if rule_overrides is None else rule_overrides,
                                               {} if question_overrides is None else question_overrides)
@@ -130,7 +130,8 @@ class Block:
         log('DEBUG', 'block_runtime', 'prepared', block=self.name, questions=prepared.questions)
         # predict validates and copies SDK output. Deliberately preserve ResponseError,
         # loader errors and TimeoutError for the flow's existing error boundary.
-        raw = predict(prepared.text, deepcopy(prepared.questions), config=config, registry=registry)
+        if type(strict) is not bool: raise ValueError("strict must be boolean")
+        raw = (predict_strict if strict else predict)(prepared.text, deepcopy(prepared.questions), config=config, registry=registry)
         validate_response(raw, prepared.questions)
         decisions = {}
         for name in prepared.questions:

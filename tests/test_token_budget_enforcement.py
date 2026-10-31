@@ -42,7 +42,7 @@ def test_all_losses_refuse_without_any_forward(kind,calls,mock_provider):
     else:
         questions['bad']={'type':'noul','instructions':'word '*500}
     with pytest.raises(InputTokenBudgetExceeded) as caught:
-        api.predict(state,questions,registry=boundary(forwards,mock_provider))
+        api.predict_strict(state,questions,registry=boundary(forwards,mock_provider))
     report=caught.value.report
     assert forwards==[] and report['request_inference_started'] is False
     assert [q['question_id'] for q in report['questions']]==list(questions)
@@ -54,7 +54,7 @@ def test_all_losses_refuse_without_any_forward(kind,calls,mock_provider):
 @pytest.mark.parametrize('provider,error',[ (None,InspectionUnavailable), (lambda *a:(_ for _ in ()).throw(RuntimeError('private failure')),InspectionFailed), (lambda *a:SimpleNamespace(inspect=lambda *a,**k:None),InspectionFailed)])
 def test_missing_or_broken_capability_never_predicts(provider,error,calls):
     events,forwards=calls
-    with pytest.raises(error) as caught:api.predict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
+    with pytest.raises(error) as caught:api.predict_strict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
     assert forwards==[]
     assert len([e for e in events if e[0]=='ERROR'])==1
     assert 'private failure' not in json.dumps(caught.value.report)
@@ -65,7 +65,7 @@ def test_deadline_is_not_wrapped_or_bypassed(where,calls,monkeypatch):
     def fail(*a,**k):raise deadline
     provider=fail if where=='provider' else lambda *a:SimpleNamespace(inspect=fail)
     if where=='log':monkeypatch.setattr(api,'log',fail)
-    with pytest.raises(TimeoutError) as caught:api.predict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
+    with pytest.raises(TimeoutError) as caught:api.predict_strict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
     assert caught.value is deadline and forwards==[]
 
 
@@ -74,7 +74,7 @@ def test_logging_failure_keeps_typed_rejection(calls,monkeypatch,mock_provider):
     def broken(level,*a,**kw):
         if level=='ERROR':raise OSError('disk')
     monkeypatch.setattr(api,'log',broken)
-    with pytest.raises(InputTokenBudgetExceeded):api.predict('hello '*2000,REQUEST['questions'],registry=boundary(forwards,mock_provider))
+    with pytest.raises(InputTokenBudgetExceeded):api.predict_strict('hello '*2000,REQUEST['questions'],registry=boundary(forwards,mock_provider))
     assert not forwards
 
 @pytest.mark.parametrize('state',['hello',{'content':'hello'},[{'role':'user','content':'hello'}]])
@@ -92,20 +92,20 @@ def test_snapshot_survives_loader_and_agent_mutation(state,calls):
         if isinstance(state,list):state.clear()
         return original_loader(*a,**kw)
     registry._loader=loader
-    assert api.predict(state,questions,registry=registry)==RAW
+    assert api.predict_strict(state,questions,registry=registry)==RAW
     assert inspected==[original] and forwards[0][:2]==original
 
 
 def test_loader_error_keeps_identity(calls):
     _,forwards=calls;error=RuntimeError('loader')
     def loader(*a,**kw):raise error
-    with pytest.raises(RuntimeError) as caught:api.predict('hello',REQUEST['questions'],loader=loader,inspection_provider=plumbing_provider)
+    with pytest.raises(RuntimeError) as caught:api.predict_strict('hello',REQUEST['questions'],loader=loader,inspection_provider=plumbing_provider)
     assert caught.value is error and not forwards
 
 
 def test_existing_question_validation_precedes_load(calls):
     _,forwards=calls
-    with pytest.raises(ValueError):api.predict('hello',{},loader=lambda *a:pytest.fail('loaded'))
+    with pytest.raises(ValueError):api.predict_strict('hello',{},loader=lambda *a:pytest.fail('loaded'))
     assert not forwards
 
 
@@ -114,7 +114,7 @@ def test_provider_error_uses_current_request_correlation(calls,monkeypatch):
     source=InspectionUnavailable(make_report('fixture',request_id='old-request'),'unsupported')
     monkeypatch.setattr('laya_context_router.laya.budget.uuid4',lambda:SimpleNamespace(hex='current-request'))
     def provider(*a):raise source
-    with pytest.raises(InspectionUnavailable) as caught:api.predict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
+    with pytest.raises(InspectionUnavailable) as caught:api.predict_strict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
     assert caught.value.report['request_id']=='current-request'
     assert events[-1][2]['report']==caught.value.report and not forwards
 
@@ -123,5 +123,5 @@ def test_verified_validator_preserves_malformed_input(calls):
     _,forwards=calls;error=ValueError('SDK question malformed')
     def validate(*a):raise error
     provider=lambda *a:SimpleNamespace(validate_request=validate,inspect=lambda *a,**k:pytest.fail('inspected'))
-    with pytest.raises(ValueError) as caught:api.predict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
+    with pytest.raises(ValueError) as caught:api.predict_strict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
     assert caught.value is error and not forwards

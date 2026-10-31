@@ -28,7 +28,7 @@ def run(prompt, *, cwd, repository_root, config, registry,
         reference_pattern=_OMITTED_REFERENCE_PATTERN, node='node', helper=DEFAULT_HELPER,
         timeout=5.0, max_candidates=64, max_input_chars=16000,
         fallback_config=None, fallback_max_input_chars=16000,
-        max_dependency_depth=2, max_dependency_chars=12000, resolve_from_project_root=False):
+        max_dependency_depth=2, max_dependency_chars=12000, resolve_from_project_root=False, strict=False):
     """Only `Explain `backtick path`: question` qualifies for this first flow.
 
     Exactly one lexical file mention must equal that target. This is an explicit
@@ -89,7 +89,7 @@ def run(prompt, *, cwd, repository_root, config, registry,
         return _noop('extractor_error')
     try:
         selection = select_method(prompt, source_outline, config=config, registry=registry,
-                                  max_candidates=max_candidates, max_input_chars=max_input_chars)
+                                  max_candidates=max_candidates, max_input_chars=max_input_chars, **({"strict": True} if strict else {}))
         multiple = selection['decisions'].get('multiple_relevant', {})
         if (fallback_config is not None and selection['reason'] == 'method_undecided'
                 and multiple.get('decided') is True and multiple.get('answer') == 'no'):
@@ -98,7 +98,7 @@ def run(prompt, *, cwd, repository_root, config, registry,
             second_text = prompt + '\n\nFallback candidate signatures (same source snapshot):\n' + '\n'.join(
                 f"{candidate['signature']}" for candidate in source_outline['callables'])
             selection = select_method(second_text, source_outline, config=fallback_config, registry=registry,
-                                      max_candidates=max_candidates, max_input_chars=fallback_max_input_chars)
+                                      max_candidates=max_candidates, max_input_chars=fallback_max_input_chars, **({"strict": True} if strict else {}))
     except TimeoutError as exc:
         log("ERROR", "flow", "selection_timeout", error=exc)
         return _noop('deadline_exceeded')

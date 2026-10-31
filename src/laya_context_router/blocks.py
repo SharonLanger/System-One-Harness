@@ -4,7 +4,7 @@ from .questions.load import load_questions
 from .questions.models import Question
 from .answers.rules import load_named_rules
 from .answers.interpret import interpret
-from .laya.predict import predict
+from .laya.predict import predict, predict_strict
 from .log_utils import log
 
 class QuestionBlock:
@@ -18,7 +18,7 @@ class QuestionBlock:
             questions={name:q.to_predict_dict() for name,q in self.questions.items()},
             rules=self.policies)
 
-    def run(self,text,*,config,registry,question_payloads=None):
+    def run(self,text,*,config,registry,question_payloads=None,strict=False):
         if question_payloads is None:
             questions={name:q.to_predict_dict() for name,q in self.questions.items()}
         else:
@@ -30,6 +30,7 @@ class QuestionBlock:
                 questions[name]=Question.from_dict({**payload,'name':name}).to_predict_dict()
         log("DEBUG", "questions", "prepared", block=self.directory,
             dynamic=question_payloads is not None, questions=questions)
-        raw=predict(text,questions,config=config,registry=registry)
+        if type(strict) is not bool: raise ValueError("strict must be boolean")
+        raw=(predict_strict if strict else predict)(text,questions,config=config,registry=registry)
         return interpret(raw,questions,self.policies)
 

@@ -23,11 +23,11 @@ def validate_output(value):
 
 
 def run(input_data, *, config, registry, rule_overrides=None, question_overrides=None,
-        prepare_input=None, catalog=None):
+        prepare_input=None, catalog=None, strict=False):
     """Return BlockResult; blank text is preserved, including whitespace."""
     block = Block(BLOCK_DIR / 'block.json', validate_input=validate_input,
                   prepare_input=prepare, reduce=lambda decisions, state: {},
                   validate_output=validate_output, catalog=catalog)
     return block.run(input_data, config=config, registry=registry,
                      rule_overrides=rule_overrides, question_overrides=question_overrides,
-                     prepare_input=prepare_input)
+                     prepare_input=prepare_input, strict=strict)

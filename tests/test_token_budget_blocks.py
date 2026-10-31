@@ -41,7 +41,7 @@ def test_both_blocks_propagate_identical_error_without_downstream_work(kind,inst
     else:
         monkeypatch.setattr('laya_context_router.block_runtime.runtime.enrich_prediction',lambda *a,**k:pytest.fail('enriched'))
         block=modern(reduced);state='hello'
-    with pytest.raises(InputTokenBudgetExceeded) as caught:block.run(state,config=RunConfig(),registry=registry)
+    with pytest.raises(InputTokenBudgetExceeded) as caught:block.run(state,config=RunConfig(),registry=registry,strict=True)
     errors=[e for e in events if e[0]=='ERROR']
     assert len(errors)==1 and errors[0][2]['error'] is caught.value
     assert errors[0][2]['report']==caught.value.report
@@ -56,7 +56,7 @@ def test_minimal_consumer_receives_full_report_without_retry(instrumentation):
     from examples.budget_diagnostics import run_with_diagnostics
     registry,calls,events=instrumentation
     block=QuestionBlock(BLOCK_DIR)
-    result=run_with_diagnostics(block.run,'hello '*2000,config=RunConfig(),registry=registry)
+    result=run_with_diagnostics(block.run,'hello '*2000,config=RunConfig(),registry=registry,strict=True)
     assert result['status']=='input_rejected'
     assert result['report']==next(e[2]['report'] for e in events if e[0]=='ERROR')
     assert not calls
@@ -69,7 +69,7 @@ def test_existing_sandbox_keeps_generic_result_and_actionable_boundary(tmp_path,
     registry,calls,events=instrumentation
     (tmp_path/'a.ts').write_text('export function greet() { return "hello"; }')
     result=run('Explain `a.ts`: '+'word '*1200,cwd=tmp_path,repository_root=tmp_path,
-               config=RunConfig(),registry=registry,fallback_config=RunConfig(model='never-loaded'))
+               config=RunConfig(),registry=registry,fallback_config=RunConfig(model='never-loaded'),strict=True)
     assert result=={'status':'noop','reason':'model_error','context':None}
     assert not calls and len(registry._agents)==1
     errors=[e for e in events if e[0]=='ERROR']
@@ -86,6 +86,6 @@ def test_validator_budget_error_rebound_but_malformed_error_unchanged(monkeypatc
     inspector=SimpleNamespace(validate_request=validate,inspect=lambda *a,**k:pytest.fail('inspected'))
     agent=SimpleNamespace(predict=lambda *a,**k:pytest.fail('predicted'))
     registry=SimpleNamespace(get_agent=lambda c:agent,get_inspector=lambda c:inspector)
-    with pytest.raises(InspectionUnavailable) as caught:api.predict('hello',{'q':{'type':'noul','instructions':'Is it?'}},registry=registry)
+    with pytest.raises(InspectionUnavailable) as caught:api.predict_strict('hello',{'q':{'type':'noul','instructions':'Is it?'}},registry=registry)
     assert caught.value.report['request_id']=='current-validator-request'
     assert [d for level,d in events if level=='ERROR'][0]['report']==caught.value.report

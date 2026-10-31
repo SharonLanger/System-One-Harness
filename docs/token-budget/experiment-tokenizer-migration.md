@@ -1,6 +1,6 @@
 # Experiment tokenizer migration proposal
 
-Status: design only; no experiment or production code changes authorized by this document.
+Status: implementation authorized by Sharon’s later follow-plan instruction. The compatibility design is selected: legacy predict() plus explicit predict_strict(). Existing experiments will be restored to current main; experiment migration/runs are not part of this PR.
 Date: 2026-10-31
 Reference: PR #23, inspected implementation head cba25cc3893d581f0a0ef605e4d6f8199f1648c6.
 
