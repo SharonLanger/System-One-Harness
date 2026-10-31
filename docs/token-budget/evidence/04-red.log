@@ -1,0 +1,352 @@
+FFFFFFFFFFFFFF                                                           [100%]
+=================================== FAILURES ===================================
+__________________________ test_first_option_cap[47] ___________________________
+
+length = 47
+
+    @pytest.mark.parametrize('length',[47,48,49])
+    def test_first_option_cap(length):
+        tok=tokenizer();q=dict(BASE,criteria={'a':description_at(tok,length),'b':'Short.'})
+>       r=inspect(q); o=r['measurement']['options'][0]
+          ^^^^^^^^^^
+
+tests/test_token_budget_head.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'Choose the relevant function.', 'criteria': {'a': 'word word word word word word w... word word word word word word word word word word word word word word word word word word word word ', 'b': 'Short.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+__________________________ test_first_option_cap[48] ___________________________
+
+length = 48
+
+    @pytest.mark.parametrize('length',[47,48,49])
+    def test_first_option_cap(length):
+        tok=tokenizer();q=dict(BASE,criteria={'a':description_at(tok,length),'b':'Short.'})
+>       r=inspect(q); o=r['measurement']['options'][0]
+          ^^^^^^^^^^
+
+tests/test_token_budget_head.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'Choose the relevant function.', 'criteria': {'a': 'word word word word word word w... word word word word word word word word word word word word word word word word word word word word ', 'b': 'Short.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+__________________________ test_first_option_cap[49] ___________________________
+
+length = 49
+
+    @pytest.mark.parametrize('length',[47,48,49])
+    def test_first_option_cap(length):
+        tok=tokenizer();q=dict(BASE,criteria={'a':description_at(tok,length),'b':'Short.'})
+>       r=inspect(q); o=r['measurement']['options'][0]
+          ^^^^^^^^^^
+
+tests/test_token_budget_head.py:19: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'Choose the relevant function.', 'criteria': {'a': 'word word word word word word w... word word word word word word word word word word word word word word word word word word word word ', 'b': 'Short.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+______________________ test_shared_head_span_boundary[22] ______________________
+
+length = 22
+
+    @pytest.mark.parametrize('length',[22,23,24])
+    def test_shared_head_span_boundary(length):
+        tok=tokenizer();desc=description_at(tok,length)
+>       r=inspect(dict(BASE,criteria={'a':desc,'b':desc}),head=64)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'Choose the relevant function.', 'criteria': {'a': 'word word word word word word w...d word word ', 'b': 'word word word word word word word word word word word word word word word word word word word '}}
+head = 64
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+______________________ test_shared_head_span_boundary[23] ______________________
+
+length = 23
+
+    @pytest.mark.parametrize('length',[22,23,24])
+    def test_shared_head_span_boundary(length):
+        tok=tokenizer();desc=description_at(tok,length)
+>       r=inspect(dict(BASE,criteria={'a':desc,'b':desc}),head=64)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'Choose the relevant function.', 'criteria': {'a': 'word word word word word word w...d word ', 'b': 'word word word word word word word word word word word word word word word word word word word word '}}
+head = 64
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+______________________ test_shared_head_span_boundary[24] ______________________
+
+length = 24
+
+    @pytest.mark.parametrize('length',[22,23,24])
+    def test_shared_head_span_boundary(length):
+        tok=tokenizer();desc=description_at(tok,length)
+>       r=inspect(dict(BASE,criteria={'a':desc,'b':desc}),head=64)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:31: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'Choose the relevant function.', 'criteria': {'a': 'word word word word word word w...d ', 'b': 'word word word word word word word word word word word word word word word word word word word word word '}}
+head = 64
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+______________________ test_instruction_boundary[-1-192] _______________________
+
+head = 192, delta = -1
+
+    @pytest.mark.parametrize('head',[192,256])
+    @pytest.mark.parametrize('delta',[-1,0,1])
+    def test_instruction_boundary(head,delta):
+        tok=tokenizer();parts=api.encode_question(tok,BASE)
+        limit=head-sum(1+len(x) for x in parts['option_ids'])
+        q=next(dict(BASE,instructions='word '*n) for n in range(400) if len(tok.encode('choice question: '+'word '*n))==limit+delta)
+>       r=inspect(q,head)
+          ^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'word word word word word word word word word word word word word word word word wo...word word word word word word word word word word word word ', 'criteria': {'yes': 'Relevant.', 'no': 'Not relevant.'}}
+head = 192
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+______________________ test_instruction_boundary[-1-256] _______________________
+
+head = 256, delta = -1
+
+    @pytest.mark.parametrize('head',[192,256])
+    @pytest.mark.parametrize('delta',[-1,0,1])
+    def test_instruction_boundary(head,delta):
+        tok=tokenizer();parts=api.encode_question(tok,BASE)
+        limit=head-sum(1+len(x) for x in parts['option_ids'])
+        q=next(dict(BASE,instructions='word '*n) for n in range(400) if len(tok.encode('choice question: '+'word '*n))==limit+delta)
+>       r=inspect(q,head)
+          ^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'word word word word word word word word word word word word word word word word wo...word word word word word word word word word word word word ', 'criteria': {'yes': 'Relevant.', 'no': 'Not relevant.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+_______________________ test_instruction_boundary[0-192] _______________________
+
+head = 192, delta = 0
+
+    @pytest.mark.parametrize('head',[192,256])
+    @pytest.mark.parametrize('delta',[-1,0,1])
+    def test_instruction_boundary(head,delta):
+        tok=tokenizer();parts=api.encode_question(tok,BASE)
+        limit=head-sum(1+len(x) for x in parts['option_ids'])
+        q=next(dict(BASE,instructions='word '*n) for n in range(400) if len(tok.encode('choice question: '+'word '*n))==limit+delta)
+>       r=inspect(q,head)
+          ^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'word word word word word word word word word word word word word word word word wo...word word word word word word word word word word word word ', 'criteria': {'yes': 'Relevant.', 'no': 'Not relevant.'}}
+head = 192
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+_______________________ test_instruction_boundary[0-256] _______________________
+
+head = 256, delta = 0
+
+    @pytest.mark.parametrize('head',[192,256])
+    @pytest.mark.parametrize('delta',[-1,0,1])
+    def test_instruction_boundary(head,delta):
+        tok=tokenizer();parts=api.encode_question(tok,BASE)
+        limit=head-sum(1+len(x) for x in parts['option_ids'])
+        q=next(dict(BASE,instructions='word '*n) for n in range(400) if len(tok.encode('choice question: '+'word '*n))==limit+delta)
+>       r=inspect(q,head)
+          ^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'word word word word word word word word word word word word word word word word wo...word word word word word word word word word word word word ', 'criteria': {'yes': 'Relevant.', 'no': 'Not relevant.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+_______________________ test_instruction_boundary[1-192] _______________________
+
+head = 192, delta = 1
+
+    @pytest.mark.parametrize('head',[192,256])
+    @pytest.mark.parametrize('delta',[-1,0,1])
+    def test_instruction_boundary(head,delta):
+        tok=tokenizer();parts=api.encode_question(tok,BASE)
+        limit=head-sum(1+len(x) for x in parts['option_ids'])
+        q=next(dict(BASE,instructions='word '*n) for n in range(400) if len(tok.encode('choice question: '+'word '*n))==limit+delta)
+>       r=inspect(q,head)
+          ^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'word word word word word word word word word word word word word word word word wo...word word word word word word word word word word word word ', 'criteria': {'yes': 'Relevant.', 'no': 'Not relevant.'}}
+head = 192
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+_______________________ test_instruction_boundary[1-256] _______________________
+
+head = 256, delta = 1
+
+    @pytest.mark.parametrize('head',[192,256])
+    @pytest.mark.parametrize('delta',[-1,0,1])
+    def test_instruction_boundary(head,delta):
+        tok=tokenizer();parts=api.encode_question(tok,BASE)
+        limit=head-sum(1+len(x) for x in parts['option_ids'])
+        q=next(dict(BASE,instructions='word '*n) for n in range(400) if len(tok.encode('choice question: '+'word '*n))==limit+delta)
+>       r=inspect(q,head)
+          ^^^^^^^^^^^^^^^
+
+tests/test_token_budget_head.py:45: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'word word word word word word word word word word word word word word word word wo...word word word word word word word word word word word word ', 'criteria': {'yes': 'Relevant.', 'no': 'Not relevant.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+____________ test_long_option_tiny_full_request_and_no_double_count ____________
+
+    def test_long_option_tiny_full_request_and_no_double_count():
+        q=dict(BASE,criteria={'first':'Description '*80,'second':'Short.'})
+>       r=inspect(q)
+          ^^^^^^^^^^
+
+tests/test_token_budget_head.py:52: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'Choose the relevant function.', 'criteria': {'first': 'Description Description Des...Description Description Description Description Description Description Description Description ', 'second': 'Short.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+____ test_assembled_head_may_exceed_allocation_without_artificial_violation ____
+
+    def test_assembled_head_may_exceed_allocation_without_artificial_violation():
+        tok=tokenizer();q=dict(BASE,instructions='word '*500)
+>       r=inspect(q)
+          ^^^^^^^^^^
+
+tests/test_token_budget_head.py:69: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+q = {'type': 'choice', 'instructions': 'word word word word word word word word word word word word word word word word wo...word word word word word word word word word word word word ', 'criteria': {'yes': 'Relevant.', 'no': 'Not relevant.'}}
+head = 256
+
+    def inspect(q, head=256):
+>       assert hasattr(api,'inspect_head'), 'missing head accounting capability'
+E       AssertionError: missing head accounting capability
+E       assert False
+E        +  where False = hasattr(api, 'inspect_head')
+
+tests/test_token_budget_head.py:8: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_token_budget_head.py::test_first_option_cap[47] - Assertion...
+FAILED tests/test_token_budget_head.py::test_first_option_cap[48] - Assertion...
+FAILED tests/test_token_budget_head.py::test_first_option_cap[49] - Assertion...
+FAILED tests/test_token_budget_head.py::test_shared_head_span_boundary[22] - ...
+FAILED tests/test_token_budget_head.py::test_shared_head_span_boundary[23] - ...
+FAILED tests/test_token_budget_head.py::test_shared_head_span_boundary[24] - ...
+FAILED tests/test_token_budget_head.py::test_instruction_boundary[-1-192] - A...
+FAILED tests/test_token_budget_head.py::test_instruction_boundary[-1-256] - A...
+FAILED tests/test_token_budget_head.py::test_instruction_boundary[0-192] - As...
+FAILED tests/test_token_budget_head.py::test_instruction_boundary[0-256] - As...
+FAILED tests/test_token_budget_head.py::test_instruction_boundary[1-192] - As...
+FAILED tests/test_token_budget_head.py::test_instruction_boundary[1-256] - As...
+FAILED tests/test_token_budget_head.py::test_long_option_tiny_full_request_and_no_double_count
+FAILED tests/test_token_budget_head.py::test_assembled_head_may_exceed_allocation_without_artificial_violation
+14 failed in 1.66s

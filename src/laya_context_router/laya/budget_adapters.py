@@ -100,21 +100,49 @@ def encode_question(tok, definition):
 
 def assemble_sequence(tok, state, question, *, max_len, head_max_len):
     """Reproduce the pinned builder for parity; callers never send this cut input."""
-    parts = encode_question(tok, question)
-    options = [[tok.mask_token_id] + ids[:48] for ids in parts['option_ids']]
-    allowance = head_max_len - sum(map(len, options))
-    if allowance < 16:
-        span_cap = max(4, (head_max_len - 16) // max(1, len(options)))
-        options = [span[:span_cap] for span in options]
-        allowance = head_max_len - sum(map(len, options))
-    head = [tok.cls_token_id] + parts['instruction_ids'][:max(8, allowance)] + [tok.sep_token_id]
-    markers = []
-    for option in options:
-        markers.append(len(head))
-        head.extend(option)
-    head.append(tok.sep_token_id)
+    inspected = inspect_head(tok, question, head_max_len=head_max_len)
+    head, markers = inspected['ids'], inspected['markers']
     state_ids = encode_state(tok, state)
     room = max(0, max_len - len(head) - 1)
     kept = state_ids[max(0, len(state_ids) - room):] if isinstance(state, list) else state_ids[:room]
     return {'ids': (head + kept + [tok.sep_token_id])[:max_len],
             'markers': [p for p in markers if p < max_len]}
+
+
+def violation(boundary, question_id, incoming, limit, retained, *, stage, unit='tokens', option_key=None, option_index=None):
+    return {'boundary': boundary, 'question_id': question_id, 'option_key': option_key,
+            'option_index': option_index, 'incoming': incoming, 'required': incoming,
+            'limit': limit, 'retained': retained, 'unit': unit, 'stage': stage}
+
+
+def inspect_head(tok, question, *, head_max_len, question_id=None):
+    """Keep stage-local loss separate from final content retention."""
+    parts = encode_question(tok, question)
+    raw = parts['option_ids']
+    initial = [[tok.mask_token_id] + ids[:48] for ids in raw]
+    allowance = head_max_len - sum(map(len, initial))
+    span_cap = max(4, (head_max_len - 16) // max(1, len(initial))) if allowance < 16 else None
+    spans = [span[:span_cap] if span_cap is not None else span[:] for span in initial]
+    instruction_limit = max(8, head_max_len - sum(map(len, spans)))
+    instructions = parts['instruction_ids'][:instruction_limit]
+    ids = [tok.cls_token_id] + instructions + [tok.sep_token_id]
+    markers, violations, options = [], [], []
+    for key, index, original, capped, span in zip(parts['option_keys'], parts['option_indices'], raw, initial, spans):
+        markers.append(len(ids)); ids.extend(span)
+        options.append({'key': key, 'index': index, 'required_text_tokens': len(original),
+                        'after_initial_cap_text_tokens': len(capped)-1,
+                        'shared_head_span_limit': span_cap,
+                        'after_shared_head_text_tokens': len(span)-1})
+        if len(original) > 48:
+            violations.append(violation('option_text', question_id, len(original), 48, len(capped)-1,
+                                        stage='initial_option_cap', unit='option_text_tokens', option_key=key, option_index=index))
+        if len(span) < len(capped):
+            violations.append(violation('shared_head_option', question_id, len(capped), span_cap, len(span),
+                                        stage='head_redistribution', unit='marker_inclusive_tokens', option_key=key, option_index=index))
+    ids.append(tok.sep_token_id)
+    if len(instructions) < len(parts['instruction_ids']):
+        violations.append(violation('instructions', question_id, len(parts['instruction_ids']), instruction_limit, len(instructions), stage='instruction_allowance'))
+    return {'ids': ids, 'markers': markers, 'violations': violations,
+            'measurement': {'instructions': {'required_tokens': len(parts['instruction_ids']), 'limit': instruction_limit, 'retained_tokens': len(instructions)},
+                            'options': options, 'assembled_head_tokens': len(ids),
+                            'untrimmed_head_tokens': 3 + len(parts['instruction_ids']) + sum(1 + len(o) for o in raw)}}
