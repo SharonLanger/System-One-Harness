@@ -79,8 +79,8 @@ are counted separately. Coverage uses planned authorized cases, while accuracy a
 accepted/actionable errors use only settled labels. Source evidence stays sealed.
 
 Synthetic validation on Linux: 35,000 records, 70 partitions of 500, including one
-1MB raw field; source inference bytes 27,892,316 and export bytes 19,630,423;
-conversion 8.146 seconds, peak process RSS 73,460 KiB including fixture creation.
+1MB raw field; source inference bytes 27,892,316 and export bytes 19,660,318;
+conversion 8.416 seconds, peak process RSS 72,720 KiB including fixture creation.
 These fixture measurements are not estimates of Sharon's actual run. Exporter and
 analyzer checks additionally cover long small-fixture responses, payload/choice
 order conflicts, errors, partial evidence, role boundaries and native-rule parity.
