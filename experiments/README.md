@@ -1,5 +1,36 @@
 # Experiments
 
+## First V2 ticket block — obvious questions and permissive rule overrides
+
+Run with IDE Play (no arguments) or:
+
+```bash
+python experiments/block_v2_ticket_defaults.py
+python experiments/block_v2_ticket_defaults.py --temperature 0.2
+```
+
+This calls `ticket_triage_v2.block.run` once with the shared department/churn questions.
+The input explicitly asks for BILLING help and says the customer is staying.
+It overrides both default rules by name using experiment-only JSON files under
+`experiments/fixtures/v2_ticket_rules/rules/`: choice gap >= 0 and noul distance >= 0.
+These deliberately permissive rules accept any structurally valid response;
+they demonstrate rule loading/evaluation, not model accuracy or production thresholds.
+Production defaults are unchanged. No Node build is needed; real Laya requires your Mac SDK environment.
+
+The terminal prints the exact questions and loaded override rules BEFORE inference.
+Then it prints the raw answers, actual runtime enrichment captured from logs, applied
+rule configuration and decisions. No second inference or report-only enrichment is performed.
+Reports: `experiments/results/block_v2_ticket_defaults/YYYY-MM-DD_HH-MM-SS/`
+contains `summary.md`, `details.json` and this run's PID-filtered `trace.jsonl`.
+Missing logging evidence is shown as missing, not invented.
+
+Edit `inputs/block_v2_ticket_defaults.json` for prompt/config; edit the two demo rule
+files for thresholds. Optional `--input PATH` and `--model MODEL_ID` are supported.
+A rule type mismatch produces an error before inference. Failures are saved and
+return a nonzero exit code. The summary helper ending in `_summary.py` is imported,
+not a runnable experiment. No automatic mock fallback.
+
+
 ## Copy a command and run it
 
 Run these commands **from the repository root**, with your usual Python
@@ -418,4 +449,3 @@ server, new flow context, or change to selection rules. Entries can contain full
 prompts, model responses and source code; `logs/` is ignored by Git. Delete the
 file whenever desired. Logging is best effort: a file-write failure must not
 change the flow result, and logging writes nothing to hook stdout.
-
