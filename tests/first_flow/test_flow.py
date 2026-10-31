@@ -2,7 +2,6 @@
 from copy import deepcopy
 from dataclasses import replace
 import builtins
-from pathlib import Path
 import pytest
 
 from conftest import FIXTURES, METHOD, PROMPT, SELECTED
@@ -24,6 +23,11 @@ def test_S01_S02_project_is_read_only_and_experiments_unavailable(h, monkeypatch
         assert not name.startswith('experiments')
         return original(name, *args, **kwargs)
     monkeypatch.setattr(builtins, '__import__', no_experiment)
+    real_open = builtins.open
+    def no_experiment_file(file, *args, **kwargs):
+        assert 'experiments' not in str(file).split('/')
+        return real_open(file, *args, **kwargs)
+    monkeypatch.setattr(builtins, 'open', no_experiment_file)
     assert h.run() == Context(golden)
     assert h.run('Explain an algorithm') == Noop('no_file')
     assert project == snapshot(h.root)
@@ -32,8 +36,6 @@ def test_S01_S02_project_is_read_only_and_experiments_unavailable(h, monkeypatch
 
 def test_S03_unmocked_public_block_hits_tripwire(h, monkeypatch):
     # This explicit harness check proves a missing block replacement is detected.
-    from laya_context_router.block_runtime import BlockExecutionError
-    original = action.run.__func__ if hasattr(action.run, '__func__') else action.run
     from importlib import reload
     real = reload(action).run
     from laya_context_router.laya.registry import AgentRegistry
@@ -151,6 +153,15 @@ def test_P09_resolver_outcome_is_authoritative(h, kind):
     assert not h.calls
 
 
+@pytest.mark.parametrize('status', ['inaccessible', 'not_file', 'invalid_resolution_mode', 'unknown', 'resolved'])
+def test_P09_resolution_errors_and_contract_failures_are_failures(h, monkeypatch, status):
+    from laya_context_router.building_blocks.resolve_file import Resolution
+    monkeypatch.setattr(flow, 'resolve_file', lambda *args, **kwargs: Resolution(status))
+    expected = status if status in {'inaccessible', 'not_file', 'invalid_resolution_mode'} else 'invalid_resolution_result'
+    assert h.run() == Failure(expected, 'resolution')
+    assert not h.calls
+
+
 @pytest.mark.parametrize('kind', ['absolute', 'traversal', 'symlink'])
 def test_P10_outside_root_is_never_extracted(h, tmp_path, kind):
     outside = tmp_path / 'outside.ts'; outside.write_text('function outside() {}')
@@ -261,18 +272,25 @@ def test_N04_no_project_callees_keeps_method(h):
 
 
 def test_N05_partial_preserves_real_navigation_entries(h, monkeypatch):
+    h.path.write_text(h.path.read_text().replace(
+        '  const base = calculateInvoiceTotal(invoice);',
+        '  unresolved();\n  const base = calculateInvoiceTotal(invoice);'))
+    h.choose(METHOD)
     real = ts.get_called_method_locations
+    reported = []
     def partial(*args, **kwargs):
         result = real(*args, **kwargs)
-        result['status'] = 'partial'
-        result['diagnostics'] = [{'code': 'unresolved_reference', 'message': 'INTERNAL_DIAGNOSTIC'}]
+        reported.append(deepcopy(result))
         return result
     monkeypatch.setattr(ts, 'get_called_method_locations', partial)
     result = h.run()
     assert isinstance(result, Context)
+    assert reported[0]['status'] == 'partial'
+    assert any(d['code'] == 'unresolved_target' for d in reported[0]['diagnostics'])
+    assert 'calculateInvoiceTotal(invoice: Invoice)' in result.text
     assert 'roundToCents(value: number)' in result.text
     assert 'Call list is partial; some targets could not be resolved.' in result.text
-    assert 'INTERNAL_DIAGNOSTIC' not in result.text
+    assert all(d['message'] not in result.text for d in reported[0]['diagnostics'])
 
 
 @pytest.mark.parametrize('kind', ['exception', 'error_result', 'timeout'])

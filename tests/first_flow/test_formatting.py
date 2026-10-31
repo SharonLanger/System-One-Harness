@@ -1,7 +1,7 @@
 """Literal presentation oracles and complete-candidate UTF-16 budget checks."""
 import pytest
 from laya_context_router.flows import first_method_context as flow
-from laya_context_router.hooks.contracts import Context, Failure, Noop
+from laya_context_router.hooks.contracts import Context, Noop
 
 
 def test_O01_R01_N01_literal_source_and_direct_locations(h, golden):
@@ -33,6 +33,17 @@ def test_O03_visible_metadata_controls_preserve_source():
     assert 'Method: x\\n\\t\\u0000\\u2028 | Lines:' in header
     assert code in header
     assert flow._metadata('function x(\r\ny:\tstring)\x7f') == r'function x(\r\ny:\tstring)\u007f'
+
+
+def test_O03_real_multiline_navigation_signature_stays_one_line(h):
+    h.path.write_text('function target(\n\tvalue: string\n): string { return value; }\n'
+                      'export function chosen() { return target("x"); }')
+    h.choose('chosen')
+    result = h.run()
+    assert isinstance(result, Context)
+    assert h.path.read_text().splitlines()[-1] in result.text
+    rows = [line for line in result.text.splitlines() if ' | function target(' in line]
+    assert rows == ['src/billing/invoice-service.ts | function target(\\n\\tvalue: string\\n): string | Lines: 1–3']
 
 
 @pytest.mark.parametrize('size', [7999, 8000, 8001])
@@ -97,3 +108,21 @@ def test_O09_configured_limit_can_only_lower_cap(h, golden, limit):
         assert result == Noop('output_budget_exceeded')
     else:
         pytest.fail(repr(result))
+
+
+def test_O09_config_cannot_raise_hard_cap_for_large_method(h):
+    h.path.write_text('export function chosen() { /*' + 'x' * 8100 + '*/ return 1; }')
+    h.choose('chosen')
+    assert h.run(max_context_chars=10000) == Noop('output_budget_exceeded')
+
+
+def test_O09_invalid_unicode_is_formatting_failure(h, monkeypatch):
+    real = flow.typescript.extract_callable
+    def corrupt(*args, **kwargs):
+        result = real(*args, **kwargs)
+        result['code'] = '\ud800'
+        return result
+    monkeypatch.setattr(flow.typescript, 'extract_callable', corrupt)
+    result = h.run()
+    assert result.code == 'formatting_error' and result.stage == 'formatting'
+    assert not h.prepared()
