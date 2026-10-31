@@ -1,0 +1,26 @@
+{
+  "models": {
+    "typed": {
+      "model": "aac6fef/laya-typed-decisions-mlx",
+      "revision": "f9e501c2080cc57c13d6887820329758f5351125"
+    },
+    "code": {
+      "model": "tindang/laya-code",
+      "revision": "f3d6bd2344e4750dd917f95d40ceacfa81bb81db"
+    }
+  },
+  "files": {
+    "typed/tokenizer_config.json": "08d4cf3ac4dca381759441b85b91a6d40e688471dcd33d15d6649eb0a9a854d1",
+    "typed/rl_agent_config.json": "d99c800b818cb1a60734adba961c27abeaff2d142bb9fc473edb34b7de32fde9",
+    "typed/LICENSE": "a6cba85bc92e0cff7a450b1d873c0eaa2e9fc96bf472df0247a26bec77bf3ff9",
+    "typed/NOTICE": "f23ae8ae701f5a43e186182e387aeef00b666daed18a946fc7c9ea827b00a8fa",
+    "code/tokenizer_config.json": "50044de60daaa73df97d262e15a40d4faf0160e7d742df64b377877a1320dd12",
+    "code/rl_agent_config.json": "41a92ccbc83c2d508413db1ef51640c99aae491c1a1388545b0c3a2c023453e1",
+    "code/LICENSE": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "code/NOTICE": "c0be808d595795d95dd96e63f5c57e8c572c61802b23162ab26502c8c93dc33e"
+  },
+  "tokenizer": {
+    "sha256": "6c8aaa9a542084f2457eab775d4eeb51f92a70c0fd9de28d5edb0ddec3c08d30",
+    "url": "https://huggingface.co/aac6fef/laya-typed-decisions-mlx/resolve/f9e501c2080cc57c13d6887820329758f5351125/tokenizer/tokenizer.json"
+  }
+}

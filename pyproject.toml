@@ -12,7 +12,7 @@ description = "Reusable mock-first Laya decisions and bounded TypeScript context
 laya-context-router = "laya_context_router.cli:main"
 
 [project.optional-dependencies]
-test = ["pytest>=8,<10"]
+test = ["pytest>=8,<10", "tokenizers==0.23.3", "numpy==2.5.4"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
