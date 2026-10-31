@@ -1,7 +1,9 @@
 # Runner V2 — reusable experiment matrix and reporting plan
 
 Date: 2026-10-31  
-Status: design only. This PR changes this document; implementation and live inference remain future work.
+Status: design only. This PR contains the plan, README and input-authoring guide; implementation and live inference remain future work.
+
+Documentation: [Run and inspect an experiment](README.md) · [Create cases and suite files](input-authoring.md). The authoring guide provides complete matching JSON examples and an annotation workflow.
 
 ## 1. Scope and decisions
 
@@ -36,6 +38,8 @@ The file contains `schema_version`, `dataset_id`, `dataset_version` and `cases`.
 - `tags`: a list of unique, nonempty lowercase tag strings; an empty list is allowed. Each exact tag is one group. No substring matching or inferred tagging.
 - Optional `source_family_id` linking clean and altered inputs, `split` (`development`, `calibration`, `held_out`), `desired_abstention` and `notes`. Missing family defaults to case ID; missing split is recorded as `unspecified`, never silently treated as held out.
 
+The dataset author/reviewer sets label_status before execution; the collector uses it for scoring eligibility. Settled means an agreed expected answer, not an easy input or a guarantee that any model will answer correctly. A Claude/LAYA disagreement is a review signal, not automatic evidence of an ambiguous label. Resolve the disagreement against the task definition; retain settled if the answer is justified. Use taxonomy_pending only when class definitions or priority genuinely remain unresolved, insufficient_context for missing facts, and out_of_scope only when the task offers no valid class for that input. A defined catch-all class such as other remains an ordinary settled label. The authoring guide gives examples and explains optional review-disagreement tags. All statuses remain in operational reports; only eligible settled cases enter correctness metrics.
+
 Suggested tags: `simple`, `misleading`, `negation`, `mixed-intent`, `missing-context`, `typos`, `irrelevant-text`. Additional language tags such as `language-en` and `language-he` can be useful. Do not require all these categories initially. Misleading text may be perfectly clean, so `misleading` remains a tag rather than a noise level. Annotation decisions are made before execution and never derived from correctness.
 
 Only `input` reaches input preparation/the model. Expected labels, noise level, tags, split and notes never enter the model request. Random or generated input is allowed but must be materialized in cases.json before running; preserve a generation seed in notes if useful. Freeze the actual cases, not merely a recipe for regenerating them.
@@ -51,7 +55,7 @@ The file contains:
 - `questions`: named complete definitions with `id`, `variant_kind` (`baseline`, `wording`, `choice-description`) and `definition`. The generic definition uses the existing question syntax (`name`, `type`, `instructions`, and type-appropriate criteria). All variants retain the same question name.
 - `rules`: named entries with `id` and `definition`, using existing rule syntax and field/op/value conditions; validate compatibility with question type. Adapt names through the existing catalog without rewriting condition semantics.
 - `configurations`: named entries with `id`, `model`, `temperature`, `lang`. These are the existing RunConfig settings; unknown future settings are rejected rather than silently ignored. A configuration is a complete settings object, not another independent temperature array.
-- `baseline`: IDs for one question, one rule and one configuration, all present in their respective arrays.
+- `baseline`: an object with `question_id`, `rule_id` and `config_id`, all present in their respective arrays.
 - Optional `exclusions`: exact question/rule/configuration triples omitted from execution, each with a reason. Preserve excluded combinations in planning/coverage reports; do not count them as model outcomes.
 
 Null temperature means SDK default, not zero. Freeze requested and observable effective settings separately. The current adapter omits language forwarding with null temperature, so reject null temperature with non-en language until the production adapter demonstrably supports it. No automatic model download, model fallback, unsupported-setting substitution or hidden retries.
