@@ -307,3 +307,5 @@ export {listCalledCallables, getCalledMethodLocations} from './calls';
 export {getCallingMethodLocations} from './incoming';
 
 export {detectReferences, resolveReference} from './files';
+
+export {listMethods, getMethodImplementation, listCalledMethods, listCallingMethods} from './named';
