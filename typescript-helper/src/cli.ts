@@ -1,8 +1,14 @@
+import {listMethods, getMethodImplementation, listCalledMethods, listCallingMethods} from './named';
 import {readFileSync} from 'node:fs';
 import {outline, extractCallable, collectLocalContext, collectProjectContext, listCalledCallables, getCalledMethodLocations, getCallingMethodLocations, detectReferences, resolveReference} from './index';
 try {
   const request: unknown = JSON.parse(readFileSync(0, 'utf8'));
-  if (request && typeof request === 'object' && !Array.isArray(request) && 'action' in request &&
+  if (request && typeof request === 'object' && 'action' in request && ['list_methods','get_method_implementation','list_called_methods','list_calling_methods'].includes(String(request.action))) {
+    const r=request as Record<string, unknown>;
+    const options={projectRoot:r.project_root as string,tsconfigPath:r.tsconfig_path as string};
+    const result=r.action==='list_methods'?listMethods(r.file as string,options):r.action==='get_method_implementation'?getMethodImplementation(r.file as string,r.method_name as string,options):r.action==='list_called_methods'?listCalledMethods(r.file as string,r.method_name as string,options):listCallingMethods(r.file as string,r.method_name as string,options);
+    process.stdout.write(JSON.stringify(result)+'\n');
+  } else if (request && typeof request === 'object' && !Array.isArray(request) && 'action' in request &&
       (request.action === 'detect_references' || request.action === 'resolve_reference')) {
     const r = request as Record<string, unknown>;
     const result = request.action === 'detect_references'

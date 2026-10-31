@@ -256,3 +256,63 @@ callers means none were proven within that scope. The old
 `list_called_callables` action keeps its exact existing response fields.
 See `docs/call-navigation-plan.md` and `docs/call-navigation-test-plan.md` for
 coverage and remaining acceptance cases.
+
+## Name-based Python utilities
+
+These additive APIs use exact method names and files relative to the analyzed
+project root. The existing ID-based APIs remain available with unchanged schemas.
+Build the helper first with `npm --prefix typescript-helper run build`.
+
+```python
+from laya_context_router.building_blocks.typescript_methods import (
+    list_methods, get_method_implementation, list_called_methods, list_calling_methods,
+)
+root = "/absolute/path/to/analyzed-project"
+methods = list_methods("src/service.ts", project_root=root)
+implementation = get_method_implementation("src/service.ts", "calculate", project_root=root)
+called = list_called_methods("src/service.ts", "calculate", project_root=root)
+callers = list_calling_methods("src/service.ts", "calculate", project_root=root,
+                               tsconfig_path="tsconfig.json")
+```
+
+`list_methods` returns `data.methods`. Extraction returns `data.method` and exact
+`data.code`. Outgoing returns `data.methods`; incoming returns `data.callers` and
+`data.scope`. Every method has `file`, `name`, `signature`, `start_line` and
+`end_line`. Navigation adds `call_sites` with `file`, `start_line`, `start_column`,
+`end_line`, `end_column`. Definition end lines are inclusive; site ends are
+exclusive and columns count UTF-16 units. Paths use the explicit project root,
+independent of cwd. Absolute file/config arguments and root escapes are rejected.
+Transport options `node`, `helper`, and `timeout` follow the existing bridge.
+
+Signatures preserve declared types; inferred types are not added. IDs and hashes
+are internal. To fetch code for a navigation result, call
+`get_method_implementation(item["file"], item["name"], project_root=root)` in a loop.
+Duplicate names in the same file are `ambiguous`, even across different classes
+or signatures; no candidate or guessed implementation is returned. Listing may
+show duplicate names because it makes no selection. Qualified names are not an
+alternate selector. Overloads follow the existing single implementation outline.
+
+All new APIs return `{status, data, diagnostics}`. `ok` carries data; `uncertain`,
+`ambiguous` and `error` carry null data and concise diagnostics. Every reported
+partial navigation outcome becomes `uncertain` and withholds the whole list,
+including project-wide warnings unrelated to the returned calls. Non-addressable
+or duplicate-named related methods also withhold navigation. Expected transport
+and schema failures return `error`; raw exceptions/stack traces are not returned.
+Keep a successful selected implementation even when navigation is skipped. These
+utilities are not wired to a flow/hook and perform no model calls.
+
+Accepted gaps: reassigned receivers or overwritten object methods may still yield
+the original declaration with `ok`; directly passed callback methods may be missed
+without a warning. Static declarations are context hints, not proven runtime
+execution. Calls inside callbacks are scanned, although another reported gap may
+make the new facade withhold navigation. Injected receivers, dynamic calls,
+call/apply/bind, module/anonymous callers and existing syntax/project limitations
+remain unsupported or uncertain. No new data-flow, resource-limit or source-change
+analysis is introduced. Empty incoming data means no explicit callers found in
+its reported scope, never proof of global non-use.
+
+TypeScript exports are `listMethods`, `getMethodImplementation`,
+`listCalledMethods`, `listCallingMethods`; options use `projectRoot` and optional
+`tsconfigPath`. CLI actions are `list_methods`, `get_method_implementation`,
+`list_called_methods`, `list_calling_methods`; requests use `file`, `method_name`
+(except listing), `project_root`, and `tsconfig_path` for incoming lookup.
