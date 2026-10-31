@@ -17,6 +17,7 @@ from laya_context_router import log_utils
 log_utils.LOG_PATH=HERE/'checks/output/runtime.jsonl'
 from schema import load, validate, hash_value
 from run_paths import allocate
+from worker_logging import worker_errors, POLICY as LOGGING_POLICY
 
 def now(): return datetime.now(timezone.utc).isoformat()
 def save(path,value):
@@ -118,14 +119,17 @@ def row_base(manifest,q,r,c,case,iid):
     return {**deepcopy(case),'case_id':case['id'],'experiment_id':manifest['suite']['experiment_id'],'run_id':manifest['run_id'],'question_id':q['id'],'rule_id':r['id'],'config_id':c['id'],'inference_id':iid,'inference_shared':manifest['rule_mode']=='replay','dataset_version':manifest['cases']['dataset_version'],'input_hash':hash_value(case['input']),'evaluation_kind':'rule-replay' if manifest['rule_mode']=='replay' and r['id']!=manifest['suite']['baseline']['rule_id'] else 'direct','question_hash':hash_value(q),'rule_hash':hash_value(r),'config_hash':hash_value(c),'_labels':manifest['suite']['labels']}
 
 def worker(root,config_id):
-    from laya_context_router import log_utils
+    with worker_errors(Path(root)/f'worker-{config_id}.jsonl') as diagnostics:
+        return _worker(root, config_id, diagnostics)
+
+def _worker(root,config_id,diagnostics):
     from laya_context_router.laya.config import RunConfig
     from laya_context_router.laya.registry import AgentRegistry
     from laya_context_router.answers.interpret import extract_answer
     from laya_context_router.answers.enrich import enrich_prediction
     root=Path(root); m=load(root/'manifest.json'); suite=m['suite']; cfg=next(c for c in suite['configurations'] if c['id']==config_id)
     config=RunConfig.from_dict({k:v for k,v in cfg.items() if k!='id'})
-    log_utils.LOG_PATH=root/f'worker-{config_id}.jsonl'
+    diagnostics.context={'config_id':config_id}
     baseline=next(r for r in suite['rules'] if r['id']==suite['baseline']['rule_id'])
     fixture=load(HERE/'examples/generic-choice/responses.json') if m['mode']=='fixture' else None
     def loader(model,**kwargs):
@@ -136,15 +140,8 @@ def worker(root,config_id):
         try:
             registry=AgentRegistry(loader=loader); start=time.monotonic(); agent=registry.get_agent(config); load_seconds=time.monotonic()-start
         except Exception as exc:
+            diagnostics('ERROR','worker','configuration_failed',error=exc)
             save(root/f'worker-{config_id}-status.json',{'status':'configuration_error','error':str(exc)}); return
-    trace_cursor=0
-    def logs():
-        nonlocal trace_cursor
-        p=log_utils.LOG_PATH
-        if not p.exists(): return []
-        with p.open() as f:
-            f.seek(trace_cursor); lines=f.readlines(); trace_cursor=f.tell()
-        return [json.loads(l) for l in lines if l.strip()]
     for q in suite['questions']:
         selected=[r for qq,r,c in vectors(suite) if qq['id']==q['id'] and c['id']==config_id]
         for case in m['cases']['cases']:
@@ -152,6 +149,7 @@ def worker(root,config_id):
                 dest=case_path(root,q,rule,cfg,case)
                 if dest.exists(): continue
                 iid=inference_id(q,rule,cfg,case,m['rule_mode']); ip=root/'inferences'/f'{iid}.json'
+                diagnostics.context={'config_id':config_id,'question_id':q['id'],'rule_id':rule['id'],'case_id':case['id'],'inference_id':iid}
                 start_rule=time.monotonic(); row=row_base(m,q,rule,cfg,case,iid)
                 try:
                     if not ip.exists():
@@ -170,7 +168,7 @@ def worker(root,config_id):
                         result=None; error=None
                         try: result=execute(case['input'],q,actual,suite,config,boundary)
                         except Exception as exc: error={'type':type(exc).__name__,'message':str(exc)}
-                        record={'id':iid,'status':'error' if error else 'completed','error':error,'raw_response':boundary.raw,'payload':boundary.payload,'inference_seconds':boundary.seconds,'baseline_rule_seconds':max(0,time.monotonic()-start_rule-(boundary.seconds or 0)),'load_seconds':load_seconds,'baseline_result':asdict(result) if result else None,'logs':logs(),'requested_config':cfg,'effective_temperature':None,'availability':{'effective_temperature':'not exposed at the SDK boundary','tokens':'not exposed','checkpoint_revision':'local fingerprint in manifest','precision':'not exposed'},'created_utc':now()}
+                        record={'id':iid,'status':'error' if error else 'completed','error':error,'raw_response':boundary.raw,'payload':boundary.payload,'inference_seconds':boundary.seconds,'baseline_rule_seconds':max(0,time.monotonic()-start_rule-(boundary.seconds or 0)),'load_seconds':load_seconds,'baseline_result':asdict(result) if result else None,'logs':[],'requested_config':cfg,'effective_temperature':None,'availability':{'effective_temperature':'not exposed at the SDK boundary','tokens':'not exposed','checkpoint_revision':'local fingerprint in manifest','precision':'not exposed'},'created_utc':now()}
                         # Preserve malformed non-JSON SDK values without hiding a technical error.
                         try: json.dumps(record,allow_nan=False)
                         except (ValueError,TypeError): record['raw_response']={'unserializable_repr':repr(boundary.raw)}
@@ -186,6 +184,7 @@ def worker(root,config_id):
                     decision=output['decisions'].get(name,{})
                     row.update(status=output['status'],raw_label=extract_answer(answer),final_label=decision.get('answer'),accepted=decision.get('decided'),reason=decision.get('reason',output['reason']),enriched=enrich_prediction(answer),block_result=output,inference_seconds=record['inference_seconds'],rule_seconds=rule_seconds,rule_definition=rule['definition'])
                 except Exception as exc:
+                    diagnostics('ERROR','worker','case_failed',error=exc)
                     row.update(status='error',error={'type':type(exc).__name__,'message':str(exc)},raw_label=None,final_label=None,accepted=None)
                 save(dest,row)
                 save(root/f'heartbeat-{config_id}.json',{'completed_utc':now(),'last_case':case['id']})
@@ -200,6 +199,7 @@ def create(cases,suite,mode,rule_mode,limits):
     try: mf=model_fingerprint(suite,mode); model_error=None
     except Exception as exc: mf=None; model_error=str(exc)
     m={'schema_version':1,'run_id':rid,'cases':deepcopy(cases),'suite':deepcopy(suite),'cases_hash':hash_value(cases),'suite_hash':hash_value(suite),'mode':mode,'rule_mode':rule_mode,'limits':limits,'source_hash':source_fingerprint(),'adapter_hash':adapter_fingerprint(),'runtime_versions':versions(),'python':platform.python_version(),'model_fingerprint':mf,'model_error':model_error,'parity_revision':'rv2-offline-contracts-v1','source_revision':load(HERE/'source-snapshot.json'),'device':platform.machine(),'precision':None,'availability':{'precision':'not exposed by loader','effective_settings':'requested settings are not proof of effective settings'},'started_utc':now(),'started_local':datetime.now(ZoneInfo('Asia/Jerusalem')).isoformat(),'status':'created'}
+    m['logging_policy']=deepcopy(LOGGING_POLICY)
     m['execution_hash']=hash_value({'mode':mode,'rule_mode':rule_mode,'limits':limits})
     vs=vectors(suite); n=len(cases['cases'])
     m['planned_counts']={'vectors':len(vs),'cases':n,'logical_outcomes':len(vs)*n,'inference_calls':len({(q['id'],c['id']) for q,r,c in vs})*n if rule_mode=='replay' else len(vs)*n}
