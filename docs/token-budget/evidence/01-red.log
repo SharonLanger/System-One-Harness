@@ -1,0 +1,28 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_____________________________ test_report_contract _____________________________
+
+    def test_report_contract():
+>       assert importlib.util.find_spec('laya_context_router.laya.budget') is not None, 'missing report capability'
+E       AssertionError: missing report capability
+E       assert None is not None
+E        +  where None = <function find_spec at 0x7febf1041440>('laya_context_router.laya.budget')
+E        +    where <function find_spec at 0x7febf1041440> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+tests/test_token_budget_report.py:6: AssertionError
+_____________________ test_report_refuses_non_json_values ______________________
+
+    def test_report_refuses_non_json_values():
+>       assert importlib.util.find_spec('laya_context_router.laya.budget') is not None, 'missing report capability'
+E       AssertionError: missing report capability
+E       assert None is not None
+E        +  where None = <function find_spec at 0x7febf1041440>('laya_context_router.laya.budget')
+E        +    where <function find_spec at 0x7febf1041440> = <module 'importlib.util' (frozen)>.find_spec
+E        +      where <module 'importlib.util' (frozen)> = importlib.util
+
+tests/test_token_budget_report.py:26: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_token_budget_report.py::test_report_contract - AssertionErr...
+FAILED tests/test_token_budget_report.py::test_report_refuses_non_json_values
+2 failed in 0.03s

@@ -1,0 +1,9 @@
+# Astra D001 — exact-base and generated-build setup recovery
+
+Astra agent `/root/sol_implementation/astra_setup_recovery` classified setup as source-snapshot/environment provenance mismatch, not product/test-contract failure. No product, test, assertion, limit or fixture changes authorized.
+
+Incidents: an oversized shell argument request and an rm-style command were rejected before execution; neither supplies test evidence. Safe copytree preserved baseline. Copied local handoff design/verification differed from canonical PR blobs only in research link/ending newline; ordinary git add omitted ten ignored tracked paths. Copytree dereferenced ignored build/typescript/node_modules symlink, and documented npm build exited1 with `Unexpected build/typescript/node_modules; inspect it before rebuilding`.
+
+Decision: preserve incidents, differing docs and old local snapshot; restore exact assigned commit docs; reconstruct exact441-path manifest index with force-add only enumerated paths; verify blobs/modes/no extras and independent commit-tree equality; preserve/move generated dependency directory outside repo, rerun unchanged build script and verify its symlink; require clean untouched base and fresh complete npm and pytest suites before coding. No feature ledger amendment needed. Further unexpected failures return to Astra.
+
+Recovery: original local snapshot7c1e0ed preserved. Corrected local snapshot1faa2f387685a1c346364c7ea8c23bb827507cdc is an exact tree reconstruction, not remote ancestry. All441 blobs/modes/index entries verified. Local tree06a2bdad5c9d8650334f7589caf41197f9b4a79c equals tree independently fetched from remote assigned commita3dd68f3d110799883203a681e933f4fb0a17d57. Existing build script recreated symlink resolving to implementation/typescript-helper/node_modules. Build passed; fresh suites pending.
