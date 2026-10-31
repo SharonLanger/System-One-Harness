@@ -67,6 +67,8 @@ Open `report.html` locally for interactive vector/group filtering, or `compariso
 
 The folder also includes `manifest.json`, `inferences/` and detailed case checkpoints under `batches/<question-id>__<rule-id>/<config-id>/cases/`. The manifest freezes the exact input definitions/settings. Inference records preserve the raw model evidence; case records preserve the rule decision.
 
+Worker logs contain errors only, capped at 1 MiB per file with two backups. Debug traces are not copied into inference records. See [Results and errors](RESULTS-AND-ERRORS.md) for what is saved, how to inspect a stopped run, and the requested-action development report.
+
 The main table compares vectors. Selecting one vector shows the same metrics for all inputs, each noise level, and each tag. Correct/wrong final answers and abstentions are separate; abstentions are split into correct answers rejected and wrong answers filtered. Read scored and unscored counts alongside accuracy. Noise levels partition the dataset; tags may overlap and must not be summed.
 
 ## Resume and regenerate reports
