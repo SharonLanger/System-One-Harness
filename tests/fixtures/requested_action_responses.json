@@ -9,7 +9,8 @@
           "probabilities": {
             "explain": 0.8,
             "generate_tests": 0.15,
-            "modify_code": 0.05
+            "modify_code": 0.05,
+            "unclear": 0
           },
           "answer_confidence": 0.8
         }
@@ -23,7 +24,8 @@
           "probabilities": {
             "generate_tests": 0.8,
             "explain": 0.15,
-            "modify_code": 0.05
+            "modify_code": 0.05,
+            "unclear": 0
           },
           "answer_confidence": 0.8
         }
@@ -37,7 +39,8 @@
           "probabilities": {
             "modify_code": 0.8,
             "explain": 0.15,
-            "generate_tests": 0.05
+            "generate_tests": 0.05,
+            "unclear": 0
           },
           "answer_confidence": 0.8
         }

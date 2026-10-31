@@ -92,7 +92,7 @@ npm --prefix typescript-helper test
 python -m pytest -q
 ```
 
-- [Requested-action block](src/laya_context_router/building_blocks/questions/requested_action/README.md): prompt-only action classification, overrides and evaluation limits.
+- [Requested-action block](src/laya_context_router/building_blocks/questions/requested_action/README.md): C1 short choices, temperature 1.0 by default, and gap ≥ 0.10. See the [500-case results and selected profile](docs/requested-action/requested-action-500-results.md).
 - [TypeScript utility contracts](typescript-helper/README.md): detection, path resolution,
   signature-only outlines, exact extraction, called-callable navigation and context collection.
 - [Supporting utility implementation evidence](docs/supporting-utilities-results.md): test-first changes and validation.
@@ -133,3 +133,4 @@ Context returns one `hookSpecificOutput` JSON object. Normal no-op returns zero 
 See [manual plugin setup](plugins/hook-laya/README.md) for Sharon's preferred copy-to-`.claude/my-plugins` and `env.CLAUDE_CODE_PLUGIN_DIRS` recipe, plus alternative loading. No installer script, automatic copying, settings edits or activation is provided.
 
 For each hook, the gateway reads Claude's process environment `CLAUDE_PROJECT_DIR` and adds a nullable `derived.project_dir` to the internal envelope. Original event cwd and explicit feature source root remain separate. See [project-context verification](docs/verification/plugin-project-context.md) for the user-run two-session test and worktree limitations.
+
