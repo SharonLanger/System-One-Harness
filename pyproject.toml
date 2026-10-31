@@ -16,4 +16,4 @@ pythonpath = ["src"]
 testpaths = ["tests"]
 
 [tool.setuptools.package-data]
-laya_context_router = ["building_blocks/questions/*/*.json", "building_blocks/questions/*/*.md"]
+laya_context_router = ["building_blocks/questions/*/*.json", "building_blocks/questions/*/*.md", "block_runtime/*.md", "defaults/*.md", "defaults/rules/*.json", "defaults/questions/*.json"]

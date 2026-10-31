@@ -1,0 +1,11 @@
+{
+  "name": "multiple_methods_default",
+  "question_type": "noul",
+  "conditions": [
+    {
+      "field": "answer_confidence",
+      "op": "gte",
+      "value": 0.5
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "name": "churn_risk",
+  "type": "noul",
+  "instructions": "Is the customer at risk of churning (cancelling or leaving)?"
+}

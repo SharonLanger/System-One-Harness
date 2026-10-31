@@ -1,0 +1,10 @@
+{
+  "name": "department",
+  "type": "choice",
+  "instructions": "Which department should handle this?",
+  "criteria": {
+    "billing": "invoices, charges, refunds, cancellations",
+    "technical": "bugs, outages, login issues",
+    "sales": "upgrades, pricing, new accounts"
+  }
+}
