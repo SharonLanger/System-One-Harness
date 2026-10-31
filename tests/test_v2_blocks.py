@@ -162,11 +162,11 @@ def test_G04_G05_G06_real_outline_selection_extraction(tmp_path):
     label = next(k for k, v in questions['method']['criteria'].items() if v == chosen['signature'])
     events = ['outline']
     for multiple, confidence in [(0.1, 0.95), (0.9, 0.95), (0.1, 0.1), (0.5, 0.95)]:
+        response = raw_for(questions, label, multiple, confidence)
+        if multiple == 0.5:
+            response['answers']['multiple_relevant']['answer_confidence'] = 0.1
         result = method({'text': 'Explain sum', 'source_outline': data}, config=RunConfig(),
-                        registry=registry({**raw_for(questions, label, multiple, confidence),
-                            'answers': {**raw_for(questions, label, multiple, confidence)['answers'],
-                                'multiple_relevant': {'type': 'noul', 'noul': multiple,
-                                    'answer_confidence': 0.1 if multiple == 0.5 else 0.95}}}, [], questions))
+                        registry=registry(response, [], questions))
         events.append('selection')
         if result.status == 'completed' and result.data['selected_id'] is not None:
             extracted = extract_callable(path, result.data['selected_id'])

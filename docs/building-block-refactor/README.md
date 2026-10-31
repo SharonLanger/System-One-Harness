@@ -134,3 +134,28 @@ low-cost independent verifier for final coverage review, as requested previously
 - All required test-plan cases have evidence, including packaging and flow composition.
 - README explains how to add and use one block without reading runtime internals.
 - No automatic retries, live model calls, hidden rule selection or hook changes.
+
+## Reviewed migration clarification: abbreviated method outlines
+
+Characterization exposed two historical input forms at the public
+`method_selection.block.run` boundary: full compiler outlines and unversioned
+abbreviated dictionaries containing path, source_hash and callable records with
+opaque IDs. V2 deliberately validates the complete compiler-outline contract.
+Passing every historical input directly into V2 would therefore break existing
+callers; inventing compiler ranges or rewriting opaque identities would be worse.
+
+Phase 5 uses a narrow compatibility exception: full versioned outlines route
+through V2, while unversioned abbreviated outlines keep the explicit
+`run_legacy` implementation and original dictionary result. The adapter must not
+catch V2 validation failures and retry legacy execution. An explicitly supplied
+unsupported or invalid schema version must fail validation rather than silently
+selecting the legacy path. Preserve characterized public argument errors where
+needed. This is partial migration of the historical input surface, not a claim
+that all inputs use the new runtime. No new abbreviated-outline interface is
+added to V2, and no TypeScript validation or source identity rules are relaxed.
+
+Required evidence before completion: a valid full outline demonstrably reaches
+V2; an abbreviated opaque-ID outline retains exact legacy payload, decisions,
+maps, reasons and budget behavior; malformed versioned outlines fail before
+model loading; existing flow parity remains green. The retained legacy path is
+intentional compatibility debt and is not scheduled for deletion in this work.
