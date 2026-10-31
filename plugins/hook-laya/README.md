@@ -1,6 +1,6 @@
 # hook-laya
 
-Current version: **1.2.0** (declared in `.claude-plugin/plugin.json`).
+Current version: **1.3.0** (declared in `.claude-plugin/plugin.json`).
 
 Connects Claude Code hooks to Laya Context Router through the existing CLI gateway and dispatcher.
 
@@ -19,6 +19,12 @@ Use semantic versioning: increment the patch for fixes or documentation, the min
 
 ## Changelog
 
+### 1.3.0
+
+- Adopt Method Selection V2's Q0 / combined-strict profile: confidence ≥ 0.70, probability gap ≥ 0.25, default temperature 0.5.
+- Retain the experiment's multiple-method guard and explicit caller overrides.
+- Add the [method-selection-200 research report](../../src/laya_context_router/building_blocks/questions/method_selection_v2/research/method-selection-200-results.md), with five-profile comparisons, noise/difficulty breakdowns and committed development evidence.
+
 ### 1.2.0
 
 - Adopt requested-action combination #3: C1 short choices, block-default temperature 1.0, and probability gap ≥ 0.10.
@@ -34,4 +40,5 @@ Use semantic versioning: increment the patch for fixes or documentation, the min
 ### 1.0.0
 
 - Initial UserPromptSubmit plugin integration.
+
 
