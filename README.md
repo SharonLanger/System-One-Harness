@@ -1,6 +1,6 @@
-# Laya Context Router
+# System One Harness
 
-A Python prototype that asks a local Laya model structured questions, applies named
+SOH is a Python prototype that asks a local LAYA model structured questions, applies named
 rules, and selects TypeScript method context for a narrowly defined Claude Code
 `UserPromptSubmit` hook. The TypeScript parser is a separate Node helper. This
 repository is under active experimentation; real Laya runs happen on an Apple
@@ -31,6 +31,8 @@ need this file: without it, they return `extractor_error`. Build once per fresh
 checkout and rebuild after changes to `typescript-helper/src/`; you do not need
 to build before every experiment. If you already have its npm dependencies,
 run just `npm --prefix typescript-helper run build`.
+
+The canonical CLI is `system-one-harness` or `python -m cli`. The transitional `laya-context-router` executable alias remains in the new distribution for existing hook settings. A fresh environment should install only `system-one-harness`; when upgrading an existing environment, record the old interpreter and revision first, uninstall the old distribution, then install this revision with that same interpreter. Both distributions must not own the alias simultaneously. `LAYA_CONTEXT_ROUTER_CLI` remains the plugin setting and may point to either executable from the new distribution. See [plugin setup](plugins/README.md).
 
 To try the offline example (mock Laya, real TypeScript parsing):
 
@@ -92,7 +94,7 @@ npm --prefix typescript-helper test
 python -m pytest -q
 ```
 
-- [Requested-action block](src/laya_context_router/building_blocks/questions/requested_action/README.md): C1 short choices, temperature 1.0 by default, and gap ≥ 0.10. See the [500-case results and selected profile](docs/requested-action/requested-action-500-results.md).
+- [Requested-action block](src/building_blocks/questions/requested_action/README.md): C1 short choices, temperature 1.0 by default, and gap ≥ 0.10. See the [500-case results and selected profile](docs/requested-action/requested-action-500-results.md).
 - [TypeScript utility contracts](typescript-helper/README.md): detection, path resolution,
   signature-only outlines, exact extraction, called-callable navigation and context collection.
 - [Supporting utility implementation evidence](docs/supporting-utilities-results.md): test-first changes and validation.
@@ -103,12 +105,12 @@ python -m pytest -q
   policy JSON formats.
 - [Implementation plan](docs/implementation-plan.md) and
   [progress](docs/progress.md): phases, scope, and current evidence.
-- [Method selection block](src/laya_context_router/building_blocks/questions/method_selection/README.md):
+- [Method selection block](src/building_blocks/questions/method_selection/README.md):
   dynamic choices and acceptance rules.
 - [Previous README](docs/README-backup.md): full earlier technical description,
   retained verbatim for review.
 
-For source-level details, start with `src/laya_context_router/` (Python flow,
+For source-level details, start with `src/` (Python flow,
 questions, rules, logging), `typescript-helper/` (TypeScript AST helper),
 `experiments/` (manual real-model entry points), and `hooks/` (Claude hook
 adapter).
@@ -116,12 +118,12 @@ adapter).
 
 ## Shared hook gateway
 
-The public entry is `python -m laya_context_router.hooks.gateway --hook UserPromptSubmit`. The gateway and shared contracts live together in `src/laya_context_router/hooks/` as `gateway.py` and `contracts.py`. This replaces the earlier `laya_context_router.hook_gateway` package command; the outer script remains compatible. It reads one JSON event from stdin and validates the supplied event name against `--hook`. Common ingestion calls the UserPromptSubmit dispatcher, which calls the prompt-context enrichment handler. Unsupported events return empty stdout without model work.
+The public entry is `python -m hooks.gateway --hook UserPromptSubmit`. The gateway and shared contracts live together in `src/hooks/` as `gateway.py` and `contracts.py`. It reads one JSON event from stdin and validates the supplied event name against `--hook`. Common ingestion calls the UserPromptSubmit dispatcher, which calls the prompt-context enrichment handler. Unsupported events return empty stdout without model work.
 
 For an installed development checkout, replay a saved event explicitly:
 
 ```bash
-python -m laya_context_router.hooks.gateway --hook UserPromptSubmit --repository-root /absolute/project --config /absolute/run-config.json --real < event.json
+python -m hooks.gateway --hook UserPromptSubmit --repository-root /absolute/project --config /absolute/run-config.json --real < event.json
 ```
 
 Project root comes from the existing explicit configuration option. Event cwd is retained as metadata; root mode resolves source references and displays paths relative to the configured root. No root is guessed from cwd. `--real` is required to enable the model.

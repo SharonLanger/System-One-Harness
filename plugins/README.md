@@ -1,12 +1,12 @@
 # Hook Laya plugin
 
-Connect Laya Context Router to Claude Code. The plugin runs the
-`laya-context-router hook` command when you submit a prompt.
+Connect System One Harness to Claude Code. The plugin runs the
+`system-one-harness hook` command when you submit a prompt.
 
 ## Prerequisites
 
 - macOS/Linux and a Python 3.11+ environment with pip.
-- A checkout of Laya Context Router that includes its CLI.
+- A checkout of System One Harness that includes its CLI.
 - Claude Code 2.1.280+ for the plugin-directory setting shown below.
 - For enrichment: the Laya/MLX runtime and model weights in your chosen Python
   environment, plus the built TypeScript helper. See the [project setup](../README.md#requirements).
@@ -15,19 +15,19 @@ Connect Laya Context Router to Claude Code. The plugin runs the
 
 ## 1. Install the CLI
 
-Use the Python interpreter you want Laya to run with. Replace the example paths
+Use the Python interpreter you want LAYA to run with. Replace the example paths
 with your own; your environment can live anywhere and need not be called `.venv`.
 
 ```bash
 "/path/to/environment/bin/python" -m pip install -e "/path/to/laya-context-router"
-"/path/to/environment/bin/python" -m laya_context_router.cli doctor
+"/path/to/environment/bin/python" -m cli doctor
 ```
 
 `doctor` prints the interpreter, **CLI install location**, log file location,
 and basic local checks. Copy the printed CLI path and verify it runs:
 
 ```bash
-"/path/to/environment/bin/laya-context-router" doctor
+"/path/to/environment/bin/system-one-harness" doctor
 ```
 
 The installed command uses the interpreter selected during installation. It does
@@ -53,7 +53,7 @@ absolute paths, with no `~` or extra quote characters inside the values:
 ```json
 {
   "env": {
-    "LAYA_CONTEXT_ROUTER_CLI": "/path/to/environment/bin/laya-context-router",
+    "LAYA_CONTEXT_ROUTER_CLI": "/path/to/environment/bin/system-one-harness",
     "CLAUDE_CODE_PLUGIN_DIRS": "/Users/example/.claude/sl-plugins/hook-laya"
   }
 }
@@ -64,7 +64,7 @@ paths with `:`, for example `/path/to/hook-logger:/path/to/hook-laya`.
 Alternatively, use `claude --plugin-dir /absolute/path/to/hook-laya` and keep only
 the CLI variable from the example. Register this plugin once.
 
-`LAYA_CONTEXT_ROUTER_CLI` points to the **installed executable**, not a repository
+`LAYA_CONTEXT_ROUTER_CLI` is the retained compatibility key and points to the **installed SOH executable**, not a repository
 folder or Python interpreter. It replaces `LAYA_CONTEXT_ROUTER_PROJECT_DIR` for
 this hook. You may export it before launching Claude instead of using settings.
 Settings environment values are available to the hook, not to your terminal.
@@ -82,7 +82,7 @@ Exit Claude and start it again in your project. Use `/hooks` to check that
 `UserPromptSubmit` is registered, then submit a short prompt. Read recent logs:
 
 ```bash
-"/path/to/environment/bin/laya-context-router" logs --last 5
+"/path/to/environment/bin/system-one-harness" logs --last 5
 ```
 
 Look for `hook_observed` with `dispatcher_invoked: false` and `gateway_finished`
@@ -106,7 +106,7 @@ Optional gateway configuration can be passed with `--config /absolute/path/to/co
 
 ## Everyday use and troubleshooting
 
-- **Recent logs:** `laya-context-router logs` shows the last five lines;
+- **Recent logs:** `system-one-harness logs` shows the last five lines;
   `logs --last 20` shows more. Use the full CLI path if it is not on your terminal's PATH.
 - **Missing executable or bad interpreter:** run the configured CLI path directly.
   Reinstall with your chosen Python if the environment was moved or removed,
