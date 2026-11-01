@@ -1,4 +1,5 @@
 """Explicit offline mock example; this synthetic response is not a live result."""
+from _plumbing_inspection import plumbing_provider
 import json
 from laya_context_router.laya.predict import predict
 
@@ -11,4 +12,4 @@ class MockAgent:
         return RAW
 
 if __name__ == '__main__':
-    print(json.dumps(predict('I ate an apple.', QUESTION, loader=lambda model: MockAgent())))
+    print(json.dumps(predict('I ate an apple.', QUESTION, inspection_provider=plumbing_provider, loader=lambda model: MockAgent())))

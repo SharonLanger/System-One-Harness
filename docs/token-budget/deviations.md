@@ -1,0 +1,41 @@
+# Astra D001 — exact-base and generated-build setup recovery
+
+> Historical record. The latest user instruction supersedes the real-tokenizer/SDK fixture requirements: current unit tests use mocks only, and do not establish actual tokenizer or SDK parity. The fixture bundle, preparation script, and raw execution evidence were removed from the working tree. See [testing.md](testing.md).
+
+Astra agent `/root/sol_implementation/astra_setup_recovery` classified setup as source-snapshot/environment provenance mismatch, not product/test-contract failure. No product, test, assertion, limit or fixture changes authorized.
+
+Incidents: an oversized shell argument request and an rm-style command were rejected before execution; neither supplies test evidence. Safe copytree preserved baseline. Copied local handoff design/verification differed from canonical PR blobs only in research link/ending newline; ordinary git add omitted ten ignored tracked paths. Copytree dereferenced ignored build/typescript/node_modules symlink, and documented npm build exited1 with `Unexpected build/typescript/node_modules; inspect it before rebuilding`.
+
+Decision: preserve incidents, differing docs and old local snapshot; restore exact assigned commit docs; reconstruct exact441-path manifest index with force-add only enumerated paths; verify blobs/modes/no extras and independent commit-tree equality; preserve/move generated dependency directory outside repo, rerun unchanged build script and verify its symlink; require clean untouched base and fresh complete npm and pytest suites before coding. No feature ledger amendment needed. Further unexpected failures return to Astra.
+
+Recovery: original local snapshot7c1e0ed preserved. Corrected local snapshot1faa2f387685a1c346364c7ea8c23bb827507cdc is an exact tree reconstruction, not remote ancestry. All441 blobs/modes/index entries verified. Local tree06a2bdad5c9d8650334f7589caf41197f9b4a79c equals tree independently fetched from remote assigned commita3dd68f3d110799883203a681e933f4fb0a17d57. Existing build script recreated symlink resolving to implementation/typescript-helper/node_modules. Build passed; fresh suites pending.
+
+## D002 — local checkpoint identity representation (Astra, before increment 8)
+
+Inspection found the existing local-only experiment loaders call the SDK with a cached directory. The pinned SDK sets `model_id` from that loader argument, `model_dir` from resolution and `revision` from the resolved snapshot. Requiring raw model_id equality with the requested canonical ID incorrectly refuses this valid representation. No existing test failed; this is an unsupported-assumption recovery.
+
+Astra `/root/sol_implementation/astra_identity_recovery` approved a narrow 7a commit after the completed registry increment: select only the requested canonical profile, then accept either observed canonical ID or an existing local directory resolving strictly to the same actual observed model_dir (including same-target symlinks). Derive evidence only from agent fields, preserve raw observed ID separately, and still require the actual pinned revision and every existing runtime/tokenizer/config/limit/hook check. Missing paths, files, different directories, arbitrary unequal IDs without binding, missing/wrong revision remain refused. No loader rewrite, new arbitrary-path profile, network lookup, weight-provenance claim, or code-model activation.
+
+Required tests: canonical success; absolute/relative/symlink same-directory binding; different/missing/file paths; absent proof; wrong/missing revision and each existing metadata mismatch on local path; requested vs observed identity separation and no agent mutation; unknown/candidate refusal. Rechecks: profiles; all token-budget tests + predict/live-check; full Python regression. All prior assertions preserved. No TypeScript change or new product decision required.
+
+## D004 — incomplete verification process
+
+The first 7a full-suite log ends after 592 cases without a summary or a directly captured pytest exit status. It is preserved as `07a-green.log` and is not passing evidence. Astra classified this as incomplete verification of unknown termination, not a product failure, and required a focused diagnostic then one full verbose run with direct exit capture. No source/test changes were made during either run. The hook module following the interrupted position passed all 24 tests in 1.43s; the full diagnostic passed 1,316 tests with 3 existing skips in 246.63s. Both captured exit files contain 0. Cgroup OOM and OOM-kill counters remained zero. No speculative product correction or bypass was made.
+
+## D003 — fixture-edit preview validation
+
+An initial scratch-only provider-wiring generator produced invalid syntax by inserting a keyword before positional arguments. No repository file was written. Astra required inserting before the first existing keyword, respecting UTF-8 AST byte offsets, skipping preexisting provider keywords, and parsing every proposed file before writing any. The corrected generator verified the entire AST and all assertions were unchanged after removing only the newly injected provider keywords/import. All 23 proposals passed this preservation check before application. This is increment 8 preparation recovery, not a product/test weakening.
+
+## D005 — isolate batch verification from development artifacts
+
+The extra batch checks stayed in their repository snapshot test while reading the populated development checkout. That existing test snapshots all non-experiment files and requires no root logs directory; generated dependencies and concurrent regression logging violate its prerequisites. Astra classified the run as unsuitable verification environment, not product failure. Preserved partial `08-batch.log`; interrupted only its session (exit 130), leaving the main regression running. A separate attempted signal to the observed host PID returned ProcessLookupError without sending a signal.
+
+Copied the current contents of every tracked file plus the three new implementation source/test files into an isolated directory; the 500-path SHA256 manifest is `evidence/08-batch-source-manifest.json`. Verified imports resolve to isolated src/examples, disabled bytecode and pytest cache writes, and put evidence outside that directory. Unchanged batch checks passed 17 tests in 0.34s, captured exit 0. All 500 source hashes remained unchanged; the no-logs assertion passed and no logs directory existed afterward. Existing snapshot/assertion contracts were preserved. Batch-v2 checks independently passed 16 tests and 24 subtests. No extra feature commit was required.
+
+## D006 — cached capability mutation checks (increment 9)
+
+Astra approved completing increment 9's existing immutable-configuration scenario: initial verification can become stale after sequential mutation of the same tokenizer backend/special-token fields or agent methods. Capture serialized backend semantics and all eight special-token fields, check them under the existing SDK tokenizer lock, and preserve cfg/tokenizer/hook/padding/truncation checks. Snapshot stable callable receiver/function identities for predict, predict_batch, _encode_state, _to_internal and _check_question; continue refusing instance overrides. Check integrity before invoking the SDK validator. Detected mutation is InspectionUnavailable with unknown counts, one boundary report and no dispatch. No per-request file/source rehashing or new concurrent-external-mutation guarantee. Required red/green coverage includes actual backend normalizer/vocabulary mutation, special strings/IDs, all method overrides never executed, unchanged reuse, lock release and boundary logging. Existing assertions remain unchanged.
+
+## Latest user override — mock-only cleanup
+
+The user explicitly removed the prior requirement for real-tokenizer/SDK unit fixtures. Removed those fixtures and raw evidence, retained production loaded-tokenizer behavior, and replaced parity assertions with mocked boundary/accounting tests. Earlier Astra real-fixture instructions do not override this new scope. No experiment edits/runs or unpublished increment-11 publication are included. Current limitations are recorded in testing.md and implementation-progress.md.

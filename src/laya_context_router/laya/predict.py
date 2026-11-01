@@ -1,4 +1,4 @@
-"""Small lazy SDK boundary; live compatibility awaits Phase 20."""
+"""Lazy strict SDK boundary. See docs/token-budget-migration.md for failures."""
 from copy import deepcopy
 import json
 import math
@@ -80,26 +80,110 @@ def validate_response(raw, questions):
     return raw
 
 
-def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None):
-    """Return copied raw JSON, reusing agents only in the provided registry."""
+def _inspect_or_raise(registry, config, state, questions):
+    """Fail closed around inspection only; loader and input errors keep their types."""
+    from .budget import InputBudgetError, InspectionUnavailable, InspectionFailed, InputTokenBudgetExceeded, make_report
+    report = make_report(config.model)
+    try:
+        factory = getattr(registry, 'get_inspector', None)
+        if not callable(factory):
+            raise InspectionUnavailable(report, 'Registry has no inspection capability')
+        inspector = factory(config)
+    except InputBudgetError as exc:
+        evidence = dict(exc.report, request_id=report['request_id'])
+        evidence['model']['requested_id'] = config.model
+        raise type(exc)(evidence, exc.report['message']) from exc
+    except TimeoutError:
+        raise
+    except Exception as exc:
+        raise InspectionFailed(report, 'Inspection capability initialization failed') from exc
+    # The verified SDK validator preserves existing malformed-input exceptions.
+    validator = getattr(inspector, 'validate_request', None)
+    if callable(validator):
+        try:
+            validator(state, questions)
+        except InputBudgetError as exc:
+            evidence = dict(exc.report, request_id=report['request_id'])
+            evidence['model']['requested_id'] = config.model
+            raise type(exc)(evidence, exc.report['message']) from exc
+        except (ValueError, TypeError, TimeoutError):
+            raise
+        except Exception as exc:
+            raise InspectionFailed(report, 'Verified input validation could not complete') from exc
+    try:
+        measured = inspector.inspect(state, questions, request_id=report['request_id'])
+        if (not isinstance(measured, dict) or measured.get('inspection_status') != 'complete'
+                or measured.get('request_inference_started') is not False
+                or measured.get('request_id') != report['request_id']
+                or measured.get('model', {}).get('requested_id') != config.model
+                or not isinstance(measured.get('violations'), list)
+                or not isinstance(measured.get('questions'), list)
+                or [q.get('question_id') for q in measured['questions']] != list(questions)):
+            raise ValueError('Incomplete inspection report')
+        measured = json.loads(json.dumps(measured, allow_nan=False))
+        if measured['violations']:
+            first = measured['violations'][0]
+            message = (f"Question {first['question_id']!r}, boundary {first['boundary']}: "
+                       f"requires {first['required']} {first['unit']}, limit {first['limit']}")
+            if first.get('option_key') is not None:
+                message += f" (option {first['option_key']!r})"
+            raise InputTokenBudgetExceeded(measured, message)
+    except InputBudgetError as exc:
+        evidence = dict(exc.report, request_id=report['request_id'])
+        evidence['model']['requested_id'] = config.model
+        raise type(exc)(evidence, exc.report['message']) from exc
+    except TimeoutError:
+        raise
+    except Exception as exc:
+        raise InspectionFailed(report, 'Exact input inspection failed; request was not sent') from exc
+    return measured
+
+
+def _predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None, strict=False):
+    """Inspect the final private request, then return copied validated raw JSON."""
     from .config import RunConfig
     from .registry import AgentRegistry
+    from .budget import InputBudgetError
     validate_questions(questions)
+    state_snapshot, question_snapshot = deepcopy(text), deepcopy(questions)
+    response_questions = deepcopy(question_snapshot)
     if config is None:
         config = RunConfig(model=model)
     if registry is None:
-        registry = AgentRegistry(loader=loader, real=real)
-    elif loader is not None or real:
-        raise ValueError('registry owns loader and mode')
-    log("DEBUG", "laya", "prediction_started", text=text, questions=questions,
+        registry = AgentRegistry(loader=loader, real=real, inspection_provider=inspection_provider)
+    elif loader is not None or real or inspection_provider is not None:
+        raise ValueError('registry owns loader, mode and inspection provider')
+    log("DEBUG", "laya", "prediction_started", text=state_snapshot, questions=question_snapshot,
         model=config.model, temperature=config.temperature, lang=config.lang)
     try:
-        raw = registry.get_agent(config).predict(text, deepcopy(questions), **config.predict_kwargs())
+        agent = registry.get_agent(config)
+        if strict:
+            _inspect_or_raise(registry, config, state_snapshot, question_snapshot)
+        raw = agent.predict(state_snapshot, question_snapshot, **config.predict_kwargs())
         log("DEBUG", "laya", "response_received", response=raw)
-        result = deepcopy(validate_response(raw, questions))
+        result = deepcopy(validate_response(raw, response_questions))
+    except InputBudgetError as exc:
+        try:
+            log("ERROR", "laya", "input_budget_rejected", error=exc, code=exc.code, report=exc.report)
+        except TimeoutError:
+            raise
+        except Exception:
+            pass  # Best-effort diagnostics cannot replace refusal or permit inference.
+        raise
     except Exception as exc:
         log("ERROR", "laya", "prediction_failed", error=exc)
         raise
     log("INFO", "laya", "response_validated")
     return result
 
+
+def predict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None):
+    """Backward-compatible prediction; no token inspection or fitting claim."""
+    return _predict(text, questions, model=model, loader=loader, real=real, config=config,
+                    registry=registry, inspection_provider=inspection_provider)
+
+
+def predict_strict(text, questions, *, model=DEFAULT_MODEL, loader=None, real=False, config=None, registry=None, inspection_provider=None):
+    """Inspect the exact payload and refuse before inference when unsafe."""
+    return _predict(text, questions, model=model, loader=loader, real=real, config=config,
+                    registry=registry, inspection_provider=inspection_provider, strict=True)

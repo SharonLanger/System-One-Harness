@@ -44,7 +44,7 @@ def validate_output(value):
 
 
 def run(input_data, *, config, registry, rule_overrides=None, question_overrides=None,
-        prepare_input=None, catalog=None):
+        prepare_input=None, catalog=None, strict=False):
     """Use the selected block temperature unless the caller explicitly supplies one."""
     effective_config = replace(config, temperature=DEFAULT_TEMPERATURE) if config.temperature is None else config
     block = Block(BLOCK_DIR / 'block.json', validate_input=validate_input,
@@ -52,5 +52,5 @@ def run(input_data, *, config, registry, rule_overrides=None, question_overrides
                   validate_prepared=validate_prepared, catalog=catalog)
     return block.run(input_data, config=effective_config, registry=registry,
                      rule_overrides=rule_overrides, question_overrides=question_overrides,
-                     prepare_input=prepare_input)
+                     prepare_input=prepare_input, strict=strict)
 

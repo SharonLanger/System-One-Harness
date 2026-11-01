@@ -1,4 +1,5 @@
 """Disposable Bash/Python hook scenario; fake SDK only, no Claude activation."""
+from _plumbing_inspection import INSTALL_TEST_PROVIDER_SOURCE
 import json
 import os
 from pathlib import Path
@@ -33,7 +34,7 @@ def main():
                        'probabilities': {selected: .95, 'none_or_unclear': .05}},
             'multiple_relevant': {'type': 'noul', 'noul': .1, 'answer_confidence': .95}}}}))
         # This child-only module replaces exactly the external SDK boundary.
-        (root/'sitecustomize.py').write_text('''import json, os, sys, types
+        (root/'sitecustomize.py').write_text(INSTALL_TEST_PROVIDER_SOURCE+'''import json, os, sys, types
 spec=json.load(open(os.environ['LAYA_SCENARIO_SPEC']))
 class Agent:
     def predict(self,text,questions,**kwargs):

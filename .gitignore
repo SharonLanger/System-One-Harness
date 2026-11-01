@@ -11,4 +11,3 @@ typescript-helper/dist/
 .idea
 # Local diagnostic logs (may contain prompts and source code).
 logs/
-

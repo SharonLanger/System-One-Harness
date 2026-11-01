@@ -1,5 +1,6 @@
 """Offline source-to-context example. Only Laya SDK calls are controlled mocks."""
 from copy import deepcopy
+from _plumbing_inspection import plumbing_provider
 import json
 from pathlib import Path
 
@@ -29,5 +30,5 @@ class MockAgent:
 
 result = run('Explain `tests/fixtures/typescript/basic.ts`: how does greet work?',
              cwd=root, repository_root=root, config=RunConfig(),
-             registry=AgentRegistry(loader=lambda model: MockAgent()))
+             registry=AgentRegistry(inspection_provider=plumbing_provider, loader=lambda model: MockAgent()))
 print(json.dumps(result, ensure_ascii=False, indent=2))

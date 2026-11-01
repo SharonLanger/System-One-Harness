@@ -168,7 +168,7 @@ def test_A09_unicode_character_budget_exact_boundary_and_overflow():
 
 
 def test_A10_public_signatures_and_plain_dictionary_contract():
-    assert str(inspect.signature(ticket.run)) == '(text, *, config, registry)'
+    assert str(inspect.signature(ticket.run)) == '(text, *, config, registry, strict=False)'
     assert str(inspect.signature(method.run)) == '(text, source_outline, *, config, registry, max_candidates=64, max_input_chars=16000)'
     result = execute()
     assert type(result) is dict

@@ -17,6 +17,7 @@ from .flows.file_method_context import run as run_flow
 from .laya.config import RunConfig
 from .laya.predict import predict, real_loader
 from .laya.registry import AgentRegistry
+from .laya.budget_profiles import verified_provider
 
 QUESTIONS = {
     'fruit': {'type': 'choice', 'instructions': 'Which fruit is mentioned?',
@@ -71,7 +72,7 @@ def check_processing(raw, enriched, decisions, rejected):
         require(rejected[name] == {'answer': 'undecided', 'decided': False, 'reason': 'field_missing:readiness_missing_field'})
 
 
-def run_check(*, loader, model=RunConfig().model, second_model=None, temperatures=()):
+def run_check(*, loader, inspection_provider=None, model=RunConfig().model, second_model=None, temperatures=()):
     """Run with an explicit boundary. CLI supplies the real loader only after opt-in."""
     temperatures = list(temperatures)
     if second_model == model:
@@ -117,7 +118,9 @@ def run_check(*, loader, model=RunConfig().model, second_model=None, temperature
     def capture_loader(checkpoint, **kwargs):
         config = next(c for c in configs if c.model == checkpoint and c.load_kwargs() == kwargs)
         return CapturingAgent(loader(checkpoint, **kwargs), config)
-    registry = AgentRegistry(loader=capture_loader)
+    def capture_provider(wrapped, config):
+        return (inspection_provider or verified_provider)(wrapped.agent, config)
+    registry = AgentRegistry(loader=capture_loader, inspection_provider=capture_provider)
     policies = {name: RulesConfig(name, conditions=[]) for name in QUESTIONS}
     rejecting = {name: RulesConfig(name, conditions=[{'field': 'readiness_missing_field', 'op': 'gte', 'value': 0}]) for name in QUESTIONS}
     def call(config, active_registry):
@@ -135,7 +138,7 @@ def run_check(*, loader, model=RunConfig().model, second_model=None, temperature
                 report['reuse'][str(config.to_dict())] = agent is first_agents[config]
             first_agents[config] = agent
             call(config, registry)
-        fresh = AgentRegistry(loader=capture_loader)
+        fresh = AgentRegistry(loader=capture_loader, inspection_provider=capture_provider)
         report['reuse']['fresh_registry_new_object'] = fresh.get_agent(base).agent is not registry.get_agent(base).agent
         call(base, fresh)
         with TemporaryDirectory(prefix='laya-readiness-') as directory:
