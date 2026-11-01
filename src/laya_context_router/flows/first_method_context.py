@@ -19,9 +19,6 @@ from .first_method_context_utils import SelectedMethod, EnrichmentDecision, buil
 
 _FLOW_ID = 'first_method_context'
 _CAP = 8000
-_EMPTY = 'No project methods were reported.'
-_PARTIAL = 'Call list is partial; some targets could not be resolved.'
-_UNAVAILABLE = 'Call list unavailable.'
 
 
 def _log(logger, event, **details):
@@ -75,32 +72,23 @@ def _method_header(path, candidate, code):
     separator = '\n' if code.endswith(('\n', '\u2028', '\u2029')) else '\n\n'
     return ('Enriched Prompt for System 1\n'
             f'File: {_metadata(path)} | Method: {_metadata(candidate["name"])} | Lines: {first}–{last}\n'
-            + code + separator + f'Methods called by {_metadata(candidate["name"])}:\n')
+            + code + separator)
 
 
-def _render(header, rows, status, included):
-    notes = []
-    if not rows and status != 'unavailable':
-        notes.append(_EMPTY)
-    if status == 'partial':
-        notes.append(_PARTIAL)
-    elif status == 'unavailable':
-        notes.append(_UNAVAILABLE)
-    omitted = len(rows) - included
-    if omitted:
-        notes.append(f'{omitted} additional reported methods omitted to fit the context budget.')
-    return (header + '\n'.join([*rows[:included], *notes])
-            + '\n\nContext scope: selected method only.')
+def _render(header, rows, method_name):
+    section = (f'Methods called by {_metadata(method_name)}:\n' + '\n'.join(rows) + '\n') if rows else ''
+    return header + section + ('\n' if rows else '') + 'Context scope: selected method only.'
 
 
-def _pack(header, rows, status, limit):
-    # An omission notice can be longer than all rows, so inspect every prefix.
-    best = None
-    for included in range(len(rows) + 1):
-        text = _render(header, rows, status, included)
-        if _units(text) <= limit:
-            best = (text, included)
-    return best
+def _pack(header, rows, method_name, limit):
+    method_only = _render(header, [], method_name)
+    if _units(method_only) > limit:
+        return None
+    if rows:
+        complete = _render(header, rows, method_name)
+        if _units(complete) <= limit:
+            return complete, len(rows)
+    return method_only, 0
 
 
 def _block_data(result):
@@ -264,7 +252,7 @@ def run(prompt, *, project_root, config, registry, logger, max_context_chars=_CA
         stage = 'formatting'
         header = _method_header(relative, candidate, extracted['code'])
         # This is a strict lower bound, without any call-list row/status text.
-        if _units(header + '\n\nContext scope: selected method only.') > limit:
+        if _pack(header, [], candidate['name'], limit) is None:
             return finish(Noop('output_budget_exceeded'))
         stage = 'navigation'
         rows, seen, status = [], set(), 'unavailable'
@@ -291,10 +279,15 @@ def run(prompt, *, project_root, config, registry, logger, max_context_chars=_CA
         if typescript.outline(path)['source_hash'] != source['source_hash']:
             return finish(Failure('source_changed', stage))
         stage = 'formatting'
-        packed = _pack(header, rows, status, limit)
+        packed = _pack(header, rows, candidate['name'], limit)
         if packed is None:
             return finish(Noop('output_budget_exceeded'))
         text, included = packed
+        reason = ('included' if included else 'context_budget' if rows else
+                  'navigation_unavailable' if status == 'unavailable' else 'no_resolved_targets')
+        _log(logger, 'call_navigation_prepared', path=relative, method=candidate['name'],
+             navigation_status=status, resolved_methods=len(rows), included_methods=included,
+             reason=reason)
         context = Context(text)
         if finalize_enrichment is not None:
             try:

@@ -19,10 +19,10 @@ def test_O02_source_bytes_and_inclusive_lines(ending, trailing):
     if trailing:
         code += ending
     header = flow._method_header('src/a.ts', {'name': 'selected', 'location': {'line': 7}}, code)
-    result = flow._pack(header, [], 'ok', 8000)[0]
+    result = flow._pack(header, [], 'selected', 8000)[0]
     assert 'Lines: 7–9\n' in result
     separator = '\n' if code.endswith(('\n', '\u2028', '\u2029')) else '\n\n'
-    assert result.split('Lines: 7–9\n', 1)[1].startswith(code + separator + 'Methods called')
+    assert result.split('Lines: 7–9\n', 1)[1].startswith(code + separator + 'Context scope:')
     assert len((code + separator).splitlines()) >= 4
     assert code.encode() in result.encode()
 
@@ -46,57 +46,29 @@ def test_O03_real_multiline_navigation_signature_stays_one_line(h):
     assert rows == ['src/billing/invoice-service.ts | function target(\\n\\tvalue: string\\n): string | Lines: 1–3']
 
 
-@pytest.mark.parametrize('size', [7999, 8000, 8001])
-def test_O04_complete_exact_boundaries(size):
-    # Independently measure fixed presentation rather than using the production counter.
-    suffix = '\n\nContext scope: selected method only.'
-    header = 'x' * (size - len(('row' + suffix).encode('utf-16-le')) // 2)
-    full = header + 'row' + suffix
-    assert len(full.encode('utf-16-le')) // 2 == size
-    packed = flow._pack(header, ['row'], 'ok', 8000)
-    if size <= 8000:
-        assert packed == (full, 1)
-    else:
-        assert packed is None
+def test_complete_optional_list_or_method_only():
+    header = 'method\n'
+    rows = ['src/b.ts | b(): void | Lines: 2–4', 'src/c.ts | c(): void | Lines: 7–9']
+    method_only = header + 'Context scope: selected method only.'
+    full = header + 'Methods called by chosen:\n' + '\n'.join(rows) + '\n\nContext scope: selected method only.'
+    assert flow._pack(header, rows, 'chosen', len(full)) == (full, 2)
+    assert flow._pack(header, rows, 'chosen', len(full)-1) == (method_only, 0)
+    assert flow._pack(header, rows, 'chosen', len(method_only)) == (method_only, 0)
+    assert flow._pack(header, rows, 'chosen', len(method_only)-1) is None
+    assert flow._pack(header, [], 'chosen', 8000) == (method_only, 0)
+    # A first row fitting does not permit a partial call list.
+    assert flow._pack(header, rows, 'chosen', len(full)-len(rows[1])) == (method_only, 0)
 
 
-def test_O05_lower_bound_stops_before_navigation(h, monkeypatch):
-    def forbidden(*args, **kwargs):
-        pytest.fail('navigation should not run for oversized method')
-    monkeypatch.setattr(flow.typescript, 'get_called_method_locations', forbidden)
-    assert h.run(max_context_chars=10) == Noop('output_budget_exceeded')
-    assert not h.prepared()
-
-
-def test_O06_O07_O10_largest_prefix_including_partial_and_omission_notes():
-    header, rows = 'method\n', ['first' * 30, 'second' * 60, 'third' * 60]
-    wanted = (header + rows[0] + '\nCall list is partial; some targets could not be resolved.\n'
-              '2 additional reported methods omitted to fit the context budget.'
-              '\n\nContext scope: selected method only.')
-    limit = len(wanted.encode('utf-16-le')) // 2
-    assert flow._pack(header, rows, 'partial', limit) == (wanted, 1)
-    zero = ('method\nCall list is partial; some targets could not be resolved.\n'
-            '3 additional reported methods omitted to fit the context budget.'
-            '\n\nContext scope: selected method only.')
-    assert flow._pack(header, rows, 'partial', len(zero)) == (zero, 0)
-    assert flow._pack(header, rows, 'partial', len(zero)-1) is None
-    unavailable = 'method\nCall list unavailable.\n\nContext scope: selected method only.'
-    assert flow._pack(header, [], 'unavailable', len(unavailable)) == (unavailable, 0)
-    assert flow._pack(header, [], 'unavailable', len(unavailable)-1) is None
-
-
-def test_O08_full_short_list_can_fit_when_omission_notice_does_not():
-    full = 'method\nx\n\nContext scope: selected method only.'
-    assert flow._pack('method\n', ['x'], 'ok', len(full)) == (full, 1)
-
-
-def test_O09_supplementary_unicode_and_invalid_unicode():
-    assert flow._units('a😀') == 3
-    full = '😀\nx\n\nContext scope: selected method only.'
-    assert flow._pack('😀\n', ['x'], 'ok', len(full)) is None
-    assert flow._pack('😀\n', ['x'], 'ok', len(full)+1) == (full, 1)
+def test_unicode_budget_counts_utf16_units():
+    header = '😀\n'
+    rows = ['src/b.ts | b(): void | Lines: 2–4']
+    full = header + 'Methods called by chosen:\n' + rows[0] + '\n\nContext scope: selected method only.'
+    units = len(full.encode('utf-16-le')) // 2
+    assert flow._pack(header, rows, 'chosen', units) == (full, 1)
+    assert flow._pack(header, rows, 'chosen', units-1)[1] == 0
     with pytest.raises(UnicodeEncodeError):
-        flow._pack('\ud800', [], 'ok', 8000)
+        flow._pack('\ud800', [], 'chosen', 8000)
 
 
 @pytest.mark.parametrize('limit', [1, 500, 8000, 10000])

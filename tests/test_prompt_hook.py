@@ -34,7 +34,9 @@ def hook_case(tmp_path, text='function greet() { return "😀"; }'):
                                   "json.load(open(os.environ['HOOK_TEST_SPEC']))")
     (shim / 'sitecustomize.py').write_text(bootstrap)
     env = {**os.environ, 'PYTHONPATH': os.pathsep.join([str(shim), str(ROOT / 'src')]),
-           'HOOK_TEST_SPEC': str(spec), 'FIRST_FLOW_CALLS': str(calls), 'FIRST_FLOW_LOG': str(trace)}
+           'HOOK_TEST_SPEC': str(spec), 'FIRST_FLOW_CALLS': str(calls), 'FIRST_FLOW_LOG': str(trace),
+           'FIRST_FLOW_STATE_ROOT': str(tmp_path / 'state'),
+           'FIRST_FLOW_HELPER': str(ROOT / 'build/typescript/session-state-cli.js')}
     args = ['--repository-root', str(repo), '--config', str(config), '--real']
     return {'repo': repo, 'path': path, 'event': event, 'data': data, 'env': env,
             'args': args, 'log': calls, 'spec': spec, 'code': text}
@@ -58,13 +60,9 @@ def expected_context(case):
     first = selected['location']['line']
     last = first + len(re.findall(r'\r\n|[\r\n\u2028\u2029]', code))
     path = case['path'].relative_to(Path(case['args'][1])).as_posix()
-    note = 'No project methods were reported.'
-    if case.get('partial'):
-        note += '\nCall list is partial; some targets could not be resolved.'
     return ('Enriched Prompt for System 1\n'
             f'File: {path} | Method: {selected["name"]} | Lines: {first}–{last}\n'
-            + code + f'\n\nMethods called by {selected["name"]}:\n' + note
-            + '\n\nContext scope: selected method only.')
+            + code + '\n\nContext scope: selected method only.')
 
 
 def hook_trace(case):

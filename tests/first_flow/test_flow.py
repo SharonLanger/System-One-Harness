@@ -276,7 +276,7 @@ def test_N04_no_project_callees_keeps_method(h):
     result = h.run()
     assert isinstance(result, Context)
     assert 'return 3;' in result.text
-    assert 'No project methods were reported.' in result.text
+    assert 'Methods called by' not in result.text
 
 
 def test_N05_partial_preserves_real_navigation_entries(h, monkeypatch):
@@ -297,7 +297,7 @@ def test_N05_partial_preserves_real_navigation_entries(h, monkeypatch):
     assert any(d['code'] == 'unresolved_target' for d in reported[0]['diagnostics'])
     assert 'calculateInvoiceTotal(invoice: Invoice)' in result.text
     assert 'roundToCents(value: number)' in result.text
-    assert 'Call list is partial; some targets could not be resolved.' in result.text
+    assert 'Call list is partial' not in result.text
     assert all(d['message'] not in result.text for d in reported[0]['diagnostics'])
 
 
@@ -314,7 +314,7 @@ def test_N06_navigation_failure_keeps_only_method_except_deadline(h, monkeypatch
     else:
         result = h.run()
         assert isinstance(result, Context)
-        assert 'Call list unavailable.' in result.text
+        assert 'Methods called by' not in result.text
         assert 'RAW_ERROR' not in result.text
         assert 'roundToCents(value: number)' not in result.text
 

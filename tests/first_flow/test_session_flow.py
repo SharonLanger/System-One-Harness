@@ -118,4 +118,4 @@ def test_navigation_fallback_still_finalizes(h,monkeypatch):
     def finalize(s): calls.append(s); return EnrichmentDecision(True,'no_history')
     result=h.run(finalize_enrichment=finalize)
     assert isinstance(result,Context) and len(calls)==1
-    assert 'Call list unavailable.' in result.text
+    assert 'Methods called by' not in result.text
