@@ -1,0 +1,9 @@
+{
+  "name": "task_completion",
+  "questions": {
+    "task_completion": {
+      "question_ref": "task_completion",
+      "rule_ref": "task_completion_default"
+    }
+  }
+}
