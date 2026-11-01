@@ -4,8 +4,8 @@ from pathlib import Path
 from time import monotonic
 import multiprocessing as mp
 import pytest
-from laya_context_router.hooks import session_state as state
-from laya_context_router.flows.first_method_context_utils import SelectedMethod, build_enrichment_event, decide_enrichment
+from hooks import session_state as state
+from flows.first_method_context_utils import SelectedMethod, build_enrichment_event, decide_enrichment
 
 S = SelectedMethod('/project/orders.ts', 'calculate', 'calculate(): number', 20, 45)
 C = {'source': {'kind': 'hook', 'name': 'PostCompact'}, 'type': 'PostCompact', 'payload': {}}
@@ -55,7 +55,7 @@ def test_callback_failure_and_skip_never_write(tmp_path):
     def fail(history): raise ValueError('callback')
     with pytest.raises(ValueError): transact(tmp_path, callback=fail)
     assert not (tmp_path/'session-state/s.jsonl').exists()
-    from laya_context_router.flows.first_method_context_utils import EnrichmentDecision
+    from flows.first_method_context_utils import EnrichmentDecision
     assert not transact(tmp_path, callback=lambda _: (EnrichmentDecision(False,'test'), None)).allow
     assert not (tmp_path/'session-state/s.jsonl').exists()
     assert transact(tmp_path).allow

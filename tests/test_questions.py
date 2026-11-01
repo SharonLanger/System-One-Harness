@@ -1,9 +1,9 @@
 import copy
 import json
 import pytest
-from laya_context_router.questions.models import Question, ChoiceQuestion, NoulQuestion, ScoreQuestion
-from laya_context_router.questions.load import load_questions
-from laya_context_router.laya.predict import predict
+from questions.models import Question, ChoiceQuestion, NoulQuestion, ScoreQuestion
+from questions.load import load_questions
+from laya.predict import predict
 from test_predict import Agent, REQUEST, RAW
 
 DEFINITIONS=[

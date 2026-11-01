@@ -13,10 +13,10 @@ REPO_SRC = HERE.parent / "src"
 if str(REPO_SRC) not in sys.path:
     sys.path.insert(0, str(REPO_SRC))
 
-from laya_context_router.answers.enrich import enrich_response
-from laya_context_router.building_blocks.questions.method_selection.block import run as run_block
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from answers.enrich import enrich_response
+from building_blocks.questions.method_selection.block import run as run_block
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 from support import allocate_result_dir, json_safe, start_record, write_report
 from block_method_selection_summary import render_summary
 

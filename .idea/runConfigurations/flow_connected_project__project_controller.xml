@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="flow_connected_project: project_controller" type="PythonConfigurationType" factoryName="Python">
-    <module name="laya-context-router" />
+    <module name="system-one-harness" />
     <option name="ENV_FILES" value="" />
     <option name="INTERPRETER_OPTIONS" value="" />
     <option name="PARENT_ENVS" value="true" />

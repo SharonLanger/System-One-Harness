@@ -7,8 +7,8 @@ import time
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT / "src"))
-from laya_context_router.flows.file_method_context import run
-from laya_context_router.laya.config import RunConfig
+from flows.file_method_context import run
+from laya.config import RunConfig
 from support import allocate_result_dir, start_record, write_report
 
 

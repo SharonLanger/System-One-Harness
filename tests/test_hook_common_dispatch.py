@@ -2,8 +2,8 @@ from copy import deepcopy
 from dataclasses import replace
 from types import SimpleNamespace
 import pytest
-from laya_context_router.hooks.contracts import Context,Noop,Failure
-from laya_context_router.hooks.dispatcher import dispatch_hook,enrich_envelope
+from hooks.contracts import Context,Noop,Failure
+from hooks.dispatcher import dispatch_hook,enrich_envelope
 
 ARGS=SimpleNamespace(hook='UserPromptSubmit')
 def payload():

@@ -3,7 +3,7 @@ import json
 import sys
 from pathlib import Path
 import pytest
-from laya_context_router.building_blocks import typescript_methods as api
+from building_blocks import typescript_methods as api
 
 @pytest.fixture
 def project(tmp_path):

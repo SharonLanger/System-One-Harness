@@ -1,15 +1,15 @@
 # hook-laya
 
-Current version: **1.3.0** (declared in `.claude-plugin/plugin.json`).
+Current version: **1.3.1** (declared in `.claude-plugin/plugin.json`).
 
-Connects Claude Code hooks to Laya Context Router through the existing CLI gateway and dispatcher.
+Connects Claude Code hooks to System One Harness through the existing CLI gateway and dispatcher.
 
 ## Hooks
 
 - `UserPromptSubmit`: runs the existing prompt-context flow.
 - `PostCompact`: runs `hook --hook PostCompact --log-state` after manual or automatic compaction, appending a `PostCompact` event and timestamp to the same session's JSONL log.
 
-Build the TypeScript helper with `npm --prefix typescript-helper run build`, ensure Node is on PATH, and configure `LAYA_CONTEXT_ROUTER_CLI` to point to the installed LCR executable. Session logs live under the LCR installation's `logs/session-state/`. See `../../docs/post-compact/README.md` for logging behavior and the manual smoke check.
+Build the TypeScript helper with `npm --prefix typescript-helper run build`, ensure Node is on PATH, and configure `LAYA_CONTEXT_ROUTER_CLI` to point to the installed SOH executable. Session logs live under the SOH checkout's `logs/session-state/`. See `../../docs/post-compact/README.md` for logging behavior and the manual smoke check.
 
 ## Required versioning rule
 
@@ -19,11 +19,15 @@ Use semantic versioning: increment the patch for fixes or documentation, the min
 
 ## Changelog
 
+### 1.3.1
+
+- Document System One Harness naming and the retained `LAYA_CONTEXT_ROUTER_CLI` setting. The hook command and protocol are unchanged.
+
 ### 1.3.0
 
 - Adopt Method Selection V2's Q0 / combined-strict profile: confidence ≥ 0.70, probability gap ≥ 0.25, default temperature 0.5.
 - Retain the experiment's multiple-method guard and explicit caller overrides.
-- Add the [method-selection-200 research report](../../src/laya_context_router/building_blocks/questions/method_selection_v2/research/method-selection-200-results.md), with five-profile comparisons, noise/difficulty breakdowns and committed development evidence.
+- Add the [method-selection-200 research report](../../src/building_blocks/questions/method_selection_v2/research/method-selection-200-results.md), with five-profile comparisons, noise/difficulty breakdowns and committed development evidence.
 
 ### 1.2.0
 

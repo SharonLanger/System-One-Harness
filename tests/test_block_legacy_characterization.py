@@ -8,10 +8,10 @@ import json
 
 import pytest
 
-from laya_context_router.building_blocks.questions.method_selection import block as method
-from laya_context_router.building_blocks.questions.ticket_triage import block as ticket
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from building_blocks.questions.method_selection import block as method
+from building_blocks.questions.ticket_triage import block as ticket
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 from test_interpret import REQUEST, RAW
 
 

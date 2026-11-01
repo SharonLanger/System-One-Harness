@@ -4,12 +4,12 @@ import json
 
 import pytest
 
-from laya_context_router.building_blocks.questions.ticket_triage_v2.block import run as ticket
-from laya_context_router.building_blocks.questions.method_selection_v2.block import run as method
-from laya_context_router.building_blocks.questions.ticket_triage.block import run_legacy as old_ticket
-from laya_context_router.building_blocks.questions.method_selection.block import run_legacy as old_method
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from building_blocks.questions.ticket_triage_v2.block import run as ticket
+from building_blocks.questions.method_selection_v2.block import run as method
+from building_blocks.questions.ticket_triage.block import run_legacy as old_ticket
+from building_blocks.questions.method_selection.block import run_legacy as old_method
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 from test_interpret import REQUEST, RAW
 from test_method_selection import raw_for, questions_for
 
@@ -118,8 +118,8 @@ def test_A09_D15_unicode_exact_character_budget():
 
 
 def test_D04_D05_D10_custom_preparation_copies_and_mapping_guard():
-    from laya_context_router.block_runtime import PreparedInput
-    from laya_context_router.building_blocks.questions.method_selection_v2.block import prepare
+    from block_runtime import PreparedInput
+    from building_blocks.questions.method_selection_v2.block import prepare
     data = source(); before = deepcopy(data); calls = []; prepared_calls = []
     def custom(value, questions):
         prepared_calls.append(deepcopy(value))
@@ -152,7 +152,7 @@ def test_D14_ticket_preserves_blank_and_unicode_text(text):
 
 
 def test_G04_G05_G06_real_outline_selection_extraction(tmp_path):
-    from laya_context_router.building_blocks.typescript import outline, extract_callable
+    from building_blocks.typescript import outline, extract_callable
     path = tmp_path / 'methods.ts'
     code = 'function alpha() { return 1; }\nclass Beta { static sum(x: number) { return x + 1; } }'
     path.write_text(code)
@@ -184,9 +184,9 @@ def test_D15_invalid_candidate_limits(limit):
 
 
 def test_G10_G14_compatibility_adapter_routes_full_outline_through_v2(monkeypatch):
-    from laya_context_router.building_blocks.questions.method_selection import block as adapter
-    from laya_context_router.building_blocks.questions.method_selection_v2 import block as implementation
-    from laya_context_router.block_runtime import BlockResult
+    from building_blocks.questions.method_selection import block as adapter
+    from building_blocks.questions.method_selection_v2 import block as implementation
+    from block_runtime import BlockResult
     seen = []
     def fake(value, **kwargs):
         seen.append(value)
@@ -201,7 +201,7 @@ def test_G10_G14_compatibility_adapter_routes_full_outline_through_v2(monkeypatc
 
 def test_G09_G14_abbreviated_legacy_outline_retains_explicit_old_entrypoint():
     from test_block_legacy_characterization import SOURCE, response, fake_registry
-    from laya_context_router.building_blocks.questions.method_selection import block as adapter
+    from building_blocks.questions.method_selection import block as adapter
     expected = adapter.run_legacy('Explain alpha', SOURCE, config=RunConfig(), registry=fake_registry(response(), []))
     actual = adapter.run('Explain alpha', SOURCE, config=RunConfig(), registry=fake_registry(response(), []))
     assert actual == expected
@@ -209,7 +209,7 @@ def test_G09_G14_abbreviated_legacy_outline_retains_explicit_old_entrypoint():
 
 @pytest.mark.parametrize('version', [0, 2, '1', None, True])
 def test_D02_G10_versioned_malformed_outline_never_downgrades(version):
-    from laya_context_router.building_blocks.questions.method_selection import block as adapter
+    from building_blocks.questions.method_selection import block as adapter
     data = source(); data['schema_version'] = version; calls = []
     with pytest.raises(ValueError):
         adapter.run('x', data, config=RunConfig(), registry=registry({}, calls))
@@ -217,8 +217,8 @@ def test_D02_G10_versioned_malformed_outline_never_downgrades(version):
 
 
 def test_D04_D15_custom_preparation_cannot_bypass_character_budget():
-    from laya_context_router.block_runtime import PreparedInput
-    from laya_context_router.building_blocks.questions.method_selection_v2.block import prepare
+    from block_runtime import PreparedInput
+    from building_blocks.questions.method_selection_v2.block import prepare
     calls = []
     def custom(value, questions):
         result = prepare(value, questions)
@@ -246,8 +246,8 @@ def test_D11_sdk_question_mutation_does_not_leak_to_next_run():
 
 
 def test_D07_custom_preparer_calls_real_outline_exactly_once(tmp_path, monkeypatch):
-    from laya_context_router.building_blocks import typescript
-    from laya_context_router.building_blocks.questions.method_selection_v2.block import prepare
+    from building_blocks import typescript
+    from building_blocks.questions.method_selection_v2.block import prepare
     path = tmp_path / 'prepared.ts'
     path.write_text('function calculate() { return 7; }')
     original_outline = typescript.outline
@@ -275,7 +275,7 @@ def test_D07_custom_preparer_calls_real_outline_exactly_once(tmp_path, monkeypat
 
 @pytest.mark.parametrize('change', ['unknown_id', 'unmapped_id', 'missing_field', 'wrong_shape', 'selected_with_reason'])
 def test_D12_method_output_validator_rejects_invalid_domain_result(change):
-    from laya_context_router.building_blocks.questions.method_selection_v2.block import validate_output
+    from building_blocks.questions.method_selection_v2.block import validate_output
     candidate = source()['callables'][0]
     value = {'selected_id': candidate['id'], 'reason': None,
              'candidate_map': {candidate['id']: deepcopy(candidate)}, 'label_map': {'sum': candidate['id']}}

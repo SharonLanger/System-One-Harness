@@ -58,14 +58,14 @@ def _replace_aliases(old, new):
     # Production modules use `from log_utils import log`; cover modules imported
     # both before and during the scope, without patching any production files.
     for name, module in list(sys.modules.items()):
-        if name.startswith('laya_context_router.') and module is not None:
+        if name.startswith('') and module is not None:
             if getattr(module, 'log', None) is old:
                 module.log = new
 
 
 @contextmanager
 def worker_errors(path):
-    from laya_context_router import log_utils
+    import log_utils
     original = log_utils.log
     sink = ErrorLog(path)
     _replace_aliases(original, sink)

@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from laya_context_router.blocks import QuestionBlock
-from laya_context_router.building_blocks.questions.method_selection.block import run, BLOCK_DIR
-from laya_context_router.building_blocks.typescript import outline, extract_callable
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.laya.predict import ResponseError
+from blocks import QuestionBlock
+from building_blocks.questions.method_selection.block import run, BLOCK_DIR
+from building_blocks.typescript import outline, extract_callable
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from laya.predict import ResponseError
 
 METHOD = "Select exactly one callable that the request asks to explain. Choose none_or_unclear when no single callable is appropriate."
 MULTIPLE = "Does the request require explaining more than one candidate callable?"

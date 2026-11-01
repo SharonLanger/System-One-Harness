@@ -10,11 +10,11 @@ import time
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / 'src'))
-from laya_context_router.block_runtime.catalog import Catalog, TypedRule
-from laya_context_router.building_blocks.questions.ticket_triage_v2.block import run as run_block
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.log_utils import LOG_PATH
+from block_runtime.catalog import Catalog, TypedRule
+from building_blocks.questions.ticket_triage_v2.block import run as run_block
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from log_utils import LOG_PATH
 from block_method_selection import CapturingRegistry
 from support import allocate_result_dir, start_record, write_report
 from block_v2_ticket_defaults_summary import render_summary

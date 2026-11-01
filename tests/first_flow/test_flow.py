@@ -6,11 +6,11 @@ import json
 import pytest
 
 from .conftest import FIXTURES, METHOD, PROMPT, SELECTED
-from laya_context_router.block_runtime import BlockResult
-from laya_context_router.building_blocks import typescript as ts
-from laya_context_router.building_blocks.questions.requested_action import block as action
-from laya_context_router.flows import first_method_context as flow
-from laya_context_router.hooks.contracts import Context, Failure, Noop
+from block_runtime import BlockResult
+from building_blocks import typescript as ts
+from building_blocks.questions.requested_action import block as action
+from flows import first_method_context as flow
+from hooks.contracts import Context, Failure, Noop
 
 
 def snapshot(root):
@@ -39,7 +39,7 @@ def test_S03_unmocked_public_block_hits_tripwire(h, monkeypatch):
     # This explicit harness check proves a missing block replacement is detected.
     from importlib import reload
     real = reload(action).run
-    from laya_context_router.laya.registry import AgentRegistry
+    from laya.registry import AgentRegistry
     with pytest.raises(AssertionError, match='real model/tokenizer'):
         real({'prompt': 'Explain work'}, config=h.config, registry=AgentRegistry(real=True))
     monkeypatch.setattr(action, 'run', h.action)
@@ -92,7 +92,7 @@ def test_P02_process_and_event_cwd_do_not_choose_source(h, monkeypatch, tmp_path
 @pytest.mark.parametrize('kind', ['absent', 'relative', 'missing', 'file'])
 def test_P03_invalid_root_fails_before_config_source_or_blocks(h, monkeypatch, tmp_path, kind):
     root = {'absent': None, 'relative': 'relative', 'missing': str(tmp_path / 'missing'), 'file': str(h.path)}[kind]
-    from laya_context_router.laya import config
+    from laya import config
     def forbidden(*args, **kwargs):
         pytest.fail('invalid root must prevent setup and source reads')
     monkeypatch.setattr(config, 'load_config', forbidden)
@@ -157,7 +157,7 @@ def test_P09_resolver_outcome_is_authoritative(h, kind):
 
 @pytest.mark.parametrize('status', ['inaccessible', 'not_file', 'invalid_resolution_mode', 'unknown', 'resolved'])
 def test_P09_resolution_errors_and_contract_failures_are_failures(h, monkeypatch, status):
-    from laya_context_router.building_blocks.resolve_file import Resolution
+    from building_blocks.resolve_file import Resolution
     monkeypatch.setattr(flow, 'resolve_file', lambda *args, **kwargs: Resolution(status))
     expected = status if status in {'inaccessible', 'not_file', 'invalid_resolution_mode'} else 'invalid_resolution_result'
     assert h.run() == Failure(expected, 'resolution')
@@ -327,7 +327,7 @@ def test_N07_stale_or_missing_selected_snapshot_never_emits(h, monkeypatch, mome
             result = real(*args, **kwargs)
             h.path.write_text(h.path.read_text() + '\n// concurrent edit')
             return result
-        from laya_context_router.building_blocks.questions.method_selection_v2 import block
+        from building_blocks.questions.method_selection_v2 import block
         monkeypatch.setattr(block, 'run', changing)
     else:
         real = ts.get_called_method_locations

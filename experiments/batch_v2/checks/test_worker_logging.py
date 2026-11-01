@@ -15,11 +15,11 @@ from worker_logging import ErrorLog, worker_errors
 
 class WorkerLoggingTests(unittest.TestCase):
     def test_filters_traces_and_restores_imported_aliases(self):
-        from laya_context_router import log_utils
-        from laya_context_router.laya import predict
+        import log_utils
+        from laya import predict
         original = log_utils.log
         alias = predict.log
-        name = 'laya_context_router._logging_test'
+        name = '_logging_test'
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'worker.jsonl'
             with patch.dict(sys.modules):

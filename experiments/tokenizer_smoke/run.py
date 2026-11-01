@@ -69,10 +69,10 @@ def main(default_case=None):
         parser.error("--model-path must be an existing checkpoint directory")
 
     # These imports and model loading happen only on an explicit run, not --help.
-    from laya_context_router.laya.config import RunConfig
-    from laya_context_router.laya.registry import AgentRegistry
-    from laya_context_router.laya.budget import InputBudgetError, InputTokenBudgetExceeded
-    from laya_context_router.building_blocks.questions.ticket_triage_v2.block import run
+    from laya.config import RunConfig
+    from laya.registry import AgentRegistry
+    from laya.budget import InputBudgetError, InputTokenBudgetExceeded
+    from building_blocks.questions.ticket_triage_v2.block import run
 
     def loader(model, **kwargs):
         import laya_mlx

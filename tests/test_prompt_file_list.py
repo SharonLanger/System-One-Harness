@@ -1,7 +1,7 @@
 """Configured detector preserves complete filenames independently of flow eligibility."""
 import pytest
 
-from laya_context_router.building_blocks.file_reference_utils import detect_configured_references
+from building_blocks.file_reference_utils import detect_configured_references
 
 
 @pytest.mark.parametrize("prompt,expected", [

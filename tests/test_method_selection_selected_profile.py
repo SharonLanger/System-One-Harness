@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from laya_context_router.block_runtime import Catalog
-from laya_context_router.building_blocks.questions.method_selection_v2 import block
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from block_runtime import Catalog
+from building_blocks.questions.method_selection_v2 import block
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 from test_method_selection import questions_for, raw_for
 from test_v2_blocks import source
 

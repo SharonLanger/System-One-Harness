@@ -1,4 +1,4 @@
-from laya_context_router.block_runtime import Block, Catalog, PreparedInput
+from block_runtime import Block, Catalog, PreparedInput
 
 
 def test_packaged_defaults_match_existing_policies():
@@ -12,11 +12,11 @@ import json
 from copy import deepcopy
 from pathlib import Path
 import pytest
-from laya_context_router.block_runtime import (BlockConfigurationError, BlockInputError,
+from block_runtime import (BlockConfigurationError, BlockInputError,
     BlockExecutionError, SkipBlock)
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.laya.predict import ResponseError
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from laya.predict import ResponseError
 
 
 def catalog_at(tmp_path, rules=None, questions=None):
@@ -143,7 +143,7 @@ def test_invalid_raw_preserves_response_error(tmp_path,response):
 
 
 def test_enrichment_once_each_and_raw_is_unchanged(tmp_path,monkeypatch):
-    import laya_context_router.block_runtime.runtime as runtime
+    import block_runtime.runtime as runtime
     original=runtime.enrich_prediction
     observed=[]
     def spy(prediction):
@@ -200,7 +200,7 @@ def test_two_question_binding_partial_override_and_independence(tmp_path):
 
 def test_question_override_shared_and_inline_payloads(tmp_path):
     block=make_block(tmp_path)
-    block.catalog._questions['shared']=__import__('laya_context_router.questions.models',fromlist=['Question']).Question.from_dict({'name':'shared',**question()})
+    block.catalog._questions['shared']=__import__('questions.models',fromlist=['Question']).Question.from_dict({'name':'shared',**question()})
     _,calls=execute(block,question_overrides={'local':'shared'})
     custom={**question(),'instructions':'Different request'}
     _,changed=execute(block,question_overrides={'local':custom})
@@ -256,7 +256,7 @@ def test_load_failure_not_cached_and_prediction_failure_not_retried(tmp_path):
 
 
 def test_mismatch_logs_structured_fields_and_no_preparation(tmp_path,monkeypatch):
-    import laya_context_router.block_runtime.runtime as runtime
+    import block_runtime.runtime as runtime
     logs=[]; monkeypatch.setattr(runtime,'log',lambda *args,**kwargs:logs.append((args,kwargs)))
     block=make_block(tmp_path,rules=[rule(),rule('noul',name='wrong')])
     block.prepare_input=lambda *_:pytest.fail('preparation must not execute')
@@ -326,7 +326,7 @@ def test_two_and_conditions_fail_in_order(tmp_path):
 
 
 def test_missing_question_logs_reference_without_preparation(tmp_path,monkeypatch):
-    import laya_context_router.block_runtime.runtime as runtime
+    import block_runtime.runtime as runtime
     logs=[];monkeypatch.setattr(runtime,'log',lambda *args,**kwargs:logs.append(kwargs))
     block=make_block(tmp_path)
     block.prepare_input=lambda *_:pytest.fail('must fail before preparation')
@@ -338,7 +338,7 @@ def test_missing_question_logs_reference_without_preparation(tmp_path,monkeypatc
 
 @pytest.mark.parametrize('expected,actual',[(a,b) for a in ['choice','noul','score'] for b in ['choice','noul','score'] if a!=b])
 def test_all_wrong_pairings_log_and_stop_before_preparation_or_load(tmp_path,monkeypatch,expected,actual):
-    import laya_context_router.block_runtime.runtime as runtime
+    import block_runtime.runtime as runtime
     events=[];monkeypatch.setattr(runtime,'log',lambda *args,**kwargs:events.append(kwargs))
     block=make_block(tmp_path,expected,rules=[rule(expected),rule(actual,name='wrong')])
     block.prepare_input=lambda *_:pytest.fail('prepared')
@@ -365,7 +365,7 @@ def test_all_shipped_policy_conditions_are_exact():
 
 
 def test_complete_debug_log_events_and_independent_metrics(tmp_path,monkeypatch):
-    import laya_context_router.log_utils as logging
+    import log_utils as logging
     logfile=tmp_path/'events.jsonl';monkeypatch.setattr(logging,'LOG_PATH',logfile)
     block=make_block(tmp_path)
     execute(block)

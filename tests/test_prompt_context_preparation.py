@@ -1,10 +1,10 @@
 from types import SimpleNamespace
 import sys
 import pytest
-from laya_context_router.hooks.contracts import Failure
-from laya_context_router.hooks.dispatcher import ingest_common
-from laya_context_router.hooks.user_prompt_submit.dispatcher import PromptRequest
-from laya_context_router.hooks.user_prompt_submit.prompt_context_enrichment import _prepare_feature_config
+from hooks.contracts import Failure
+from hooks.dispatcher import ingest_common
+from hooks.user_prompt_submit.dispatcher import PromptRequest
+from hooks.user_prompt_submit.prompt_context_enrichment import _prepare_feature_config
 
 
 def request(root,**options):
@@ -29,7 +29,7 @@ def test_root_provenance_and_cwd_preserved(tmp_path):
     assert 'laya_mlx' not in sys.modules
 
 def test_disabled_does_not_load_config_or_sdk(tmp_path,monkeypatch):
-    import laya_context_router.laya.config as config
+    import laya.config as config
     monkeypatch.setattr(config,'load_config',lambda *a:pytest.fail('must not load config'))
     r=request(tmp_path);r.config.real=False;r.config.config='does-not-exist'
     assert _prepare_feature_config(r).code=='model_disabled'
@@ -46,8 +46,8 @@ def test_real_gateway_disabled_or_no_reference_never_loads_model(tmp_path,real):
     from pathlib import Path
     root=Path(__file__).resolve().parents[1]
     script='''import json,sys
-from laya_context_router.hooks.gateway import main
-from laya_context_router.laya.registry import AgentRegistry
+from hooks.gateway import main
+from laya.registry import AgentRegistry
 def forbidden(*a,**k):raise AssertionError('unexpected model access')
 AgentRegistry.get_agent=forbidden
 records=[]
@@ -68,7 +68,7 @@ open(LOG,'w').write(json.dumps(records))
 @pytest.mark.parametrize('stage', ['root', 'config'])
 def test_preparation_timeouts_propagate_without_later_work(stage, tmp_path, monkeypatch):
     from pathlib import Path
-    from laya_context_router.laya import config
+    from laya import config
     def timeout(*args, **kwargs):
         raise TimeoutError('planned')
     def forbidden(*args, **kwargs):

@@ -3,12 +3,12 @@ import json
 import subprocess
 import sys
 import pytest
-from laya_context_router.building_blocks.resolve_file import resolve_file
+from building_blocks.resolve_file import resolve_file
 from test_prompt_hook import hook_case, ROOT, expected_context, hook_trace
 
 @pytest.mark.parametrize('value',[None,0,1,'true',[],{}])
 def test_invalid_root_mode_fails_before_helper_or_model(value,tmp_path,monkeypatch):
-    import laya_context_router.building_blocks.resolve_file as facade
+    import building_blocks.resolve_file as facade
     monkeypatch.setattr(facade.typescript,'resolve_reference',lambda *a,**k:pytest.fail('helper ran'))
     with pytest.raises(ValueError,match='boolean'):
         resolve_file('a.ts',cwd=tmp_path,repository_root=tmp_path,resolve_from_project_root=value)
@@ -23,7 +23,7 @@ def test_legacy_and_root_search_bases_differ(tmp_path):
                         resolve_from_project_root=True).selected_path==root
 
 def invoke_gateway(case,*,process_cwd=ROOT):
-    return subprocess.run([sys.executable,'-m','laya_context_router.hooks.gateway','--hook','UserPromptSubmit',*case['args']],
+    return subprocess.run([sys.executable,'-m','hooks.gateway','--hook','UserPromptSubmit',*case['args']],
         input=json.dumps(case['event']),text=True,capture_output=True,timeout=15,env=case['env'],cwd=process_cwd)
 
 @pytest.mark.parametrize('location',['nested','root','unrelated'])

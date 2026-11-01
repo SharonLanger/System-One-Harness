@@ -7,9 +7,9 @@ import time
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT / "src"))
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.predict import predict
-from laya_context_router.laya.registry import AgentRegistry
+from laya.config import RunConfig
+from laya.predict import predict
+from laya.registry import AgentRegistry
 from support import ObservingRegistry, allocate_result_dir, json_safe, start_record, write_report
 MAX_RUNS = 5
 

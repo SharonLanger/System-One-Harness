@@ -65,16 +65,16 @@ class EngineTests(unittest.TestCase):
             start=time.monotonic();self.assertEqual(engine.run(r),1);self.assertLess(time.monotonic()-start,5)
         self.assertEqual(load(r/'worker-sdk-default-status.json')['status'],'timeout')
     def test_block_adapters_and_metadata_isolation(self):
-        from laya_context_router.laya.config import RunConfig
+        from laya.config import RunConfig
         for adapter,module,key,expected in [('requested-action','requested_action','action','explain'),('context-scope','context_scope','scope','method_only')]:
-            q=load(engine.ROOT/'src/laya_context_router/defaults/questions'/f'{module}.json'); s=deepcopy(self.suite);s['adapter']=adapter;s['question_type']='choice'
+            q=load(engine.ROOT/'src/defaults/questions'/f'{module}.json'); s=deepcopy(self.suite);s['adapter']=adapter;s['question_type']='choice'
             raw={'answers':{module:{'type':'choice','choice':expected,'probabilities':{l:(1 if l==expected else 0) for l in q['criteria']},'answer_confidence':1}}}
             boundary=engine.Boundary(engine.RecordedAgent(raw));result=engine.execute({'prompt':'Explain this method.'},{'id':'q','definition':q},self.suite['rules'][0],s,RunConfig(),boundary)
             self.assertEqual(result.data[key],expected)
             self.assertEqual(boundary.payload['text'],'Explain this method.')
             self.assertNotIn('expected',boundary.payload)
     def test_malformed_and_rounding_replay_parity(self):
-        from laya_context_router.laya.config import RunConfig
+        from laya.config import RunConfig
         q=self.suite['questions'][0];r=self.suite['rules'][0]
         for raw in [None,{'answers':{}},{'answers':{'subject':{'type':'choice','choice':'fruit','probabilities':{'fruit':.574999,'other':.425001}}}}]:
             def call():return engine.execute('apple',q,r,self.suite,RunConfig(),engine.Boundary(engine.RecordedAgent(raw)))
@@ -88,7 +88,7 @@ if __name__=='__main__':
 
 class ExtraPipelineChecks(unittest.TestCase):
     def test_generic_noul_accept_and_reject(self):
-        from laya_context_router.laya.config import RunConfig
+        from laya.config import RunConfig
         q={'id':'q','definition':{'name':'flag','type':'noul','instructions':'Is this an apple?'}}
         suite={'adapter':'generic-question','question_type':'noul'}
         raw={'answers':{'flag':{'type':'noul','noul':.7,'confidence':.9,'answer_confidence':.7}}}

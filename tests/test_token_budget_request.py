@@ -1,6 +1,6 @@
 import json
 import pytest
-from laya_context_router.laya import budget_adapters as api
+from laya import budget_adapters as api
 from token_budget_support import tokenizer
 from token_budget_support import BASE
 

@@ -4,7 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 import pytest
-from laya_context_router.laya.predict import predict, DEFAULT_MODEL, ResponseError
+from laya.predict import predict, DEFAULT_MODEL, ResponseError
 
 FIXTURES = Path(__file__).parent / 'fixtures/laya'
 REQUEST = json.loads((FIXTURES / 'choice-request.json').read_text())

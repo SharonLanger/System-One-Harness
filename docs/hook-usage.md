@@ -28,7 +28,7 @@ Install the package in the selected interpreter and build the pinned helper. Rep
         "hooks": [
           {
             "type": "command",
-            "command": "\"/absolute/laya-context-router/.venv/bin/python\" \"/absolute/laya-context-router/hooks/user_prompt_submit.py\" --repository-root \"$CLAUDE_PROJECT_DIR\" --config \"/absolute/run-config.json\" --real --deadline 10",
+            "command": "\"/absolute/system-one-harness/.venv/bin/python\" \"/absolute/system-one-harness/hooks/user_prompt_submit.py\" --repository-root \"$CLAUDE_PROJECT_DIR\" --config \"/absolute/run-config.json\" --real --deadline 10",
             "timeout": 15
           }
         ]
@@ -38,7 +38,7 @@ Install the package in the selected interpreter and build the pinned helper. Rep
 }
 ```
 
-Use a synchronous command hook. The earlier `hooks/user_prompt_submit.py` path remains a forwarding wrapper. New registrations can use `python -m laya_context_router.hooks.gateway --hook UserPromptSubmit` with the same operational arguments.
+Use a synchronous command hook. The earlier `hooks/user_prompt_submit.py` path remains a forwarding wrapper. New registrations can use `python -m hooks.gateway --hook UserPromptSubmit` with the same operational arguments.
 
 To disable it, remove this UserPromptSubmit entry while preserving unrelated settings. Omitting `--real` produces no enrichment without loading the model. Tests exercise the recipe with public block mocks, including opt-out behavior, without installing settings.
 

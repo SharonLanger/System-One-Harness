@@ -84,7 +84,7 @@ This addition has not been run against a live Claude Code session here.
 
 `hook_user_prompt_submit.py` replays a saved event through the subprocess
 `hooks/user_prompt_submit.py --real`. That hook invokes
-`src/laya_context_router/flows/file_method_context.py`: find the file, obtain
+`src/flows/file_method_context.py`: find the file, obtain
 its outline, ask Laya to select a method and assess whether multiple methods
 are required, apply acceptance rules, then collect context for an accepted
 selection. A declined selection produces no additional context. Technical
@@ -94,10 +94,10 @@ Without the actual result file, a particular no-op cannot be diagnosed.
 Where to edit each thing:
 
 - Simulated Claude event: `experiments/inputs/hook_user_prompt_submit.json`.
-- Question wording: `src/laya_context_router/building_blocks/questions/method_selection/questions.json`.
+- Question wording: `src/building_blocks/questions/method_selection/questions.json`.
 - Acceptance conditions: the neighboring `rules.json`.
 - Dynamic choices: neighboring `block.py` fills them from the file outline.
-- Flow sequencing: `src/laya_context_router/flows/file_method_context.py`.
+- Flow sequencing: `src/flows/file_method_context.py`.
 - Model configuration: the real hook accepts `--config` with a RunConfig JSON;
   the replay script forwards its optional `--config` argument to the real hook.
 

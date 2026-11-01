@@ -1,5 +1,5 @@
 {
   "name": "hook-laya",
-  "description": "Connects Laya Context Router to Claude CLI",
-  "version": "1.3.0"
+  "description": "Connects System One Harness to Claude CLI",
+  "version": "1.3.1"
 }

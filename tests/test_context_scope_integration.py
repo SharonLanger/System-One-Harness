@@ -8,12 +8,12 @@ import sys
 import zipfile
 import pytest
 from test_context_scope_block import LABELS, response, registry, run
-from laya_context_router.building_blocks.questions.context_scope import block
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from building_blocks.questions.context_scope import block
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 
 def test_C09_no_retrieval(monkeypatch):
-    import laya_context_router.building_blocks.typescript as ts
+    import building_blocks.typescript as ts
     def forbidden(*args,**kwargs):raise AssertionError('No retrieval allowed')
     for name in ('outline','extract_callable','collect_local_context','collect_project_context'):
         monkeypatch.setattr(ts,name,forbidden)
@@ -43,7 +43,7 @@ def test_C23_C36_failed_load_not_cached():
     assert len(attempts)==2
 
 def test_C28_C37_actual_logs(tmp_path,monkeypatch):
-    import laya_context_router.log_utils as logs
+    import log_utils as logs
     path=tmp_path/'logs.jsonl';monkeypatch.setattr(logs,'LOG_PATH',path)
     run({'prompt':'Where used?','requested_action':'explain'})
     with pytest.raises(ValueError):run(rule_overrides={'context_scope':'multiple_methods_default'})
@@ -81,20 +81,20 @@ def test_C40_installed_wheel_resources_and_execution(tmp_path):
     with zipfile.ZipFile(wheel) as archive:
         for path in ['defaults/questions/context_scope.json','defaults/rules/context_scope_default.json',
                      'building_blocks/questions/context_scope/block.json','building_blocks/questions/context_scope/README.md']:
-            assert archive.read('laya_context_router/'+path)==(root/'src/laya_context_router'/path).read_bytes()
+            assert archive.read(''+path)==(root/'src'/path).read_bytes()
     code='''
 import pathlib
-import laya_context_router
-from laya_context_router.building_blocks.questions.context_scope.block import run
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.laya.config import RunConfig
+import building_blocks
+from building_blocks.questions.context_scope.block import run
+from laya.registry import AgentRegistry
+from laya.config import RunConfig
 class Fake:
  def predict(self,text,questions,**kwargs):
   assert text=='Explain it' and set(questions)=={'context_scope'}
   return {'answers':{'context_scope':{'type':'choice','choice':'method_only','answer_confidence':.8,'probabilities':{'method_only':.8,'called_methods':.1,'calling_methods':.06,'both_directions':.04}}}}
 result=run({'prompt':'Explain it'},config=RunConfig(model='fake'),registry=AgentRegistry(loader=lambda *a,**k:Fake()))
 assert result.data=={'scope':'method_only'}
-assert 'site-packages' in str(pathlib.Path(laya_context_router.__file__))
+assert 'site-packages' in str(pathlib.Path(building_blocks.__file__))
 print('scope wheel passed')
 '''
     environment=tmp_path/'venv'

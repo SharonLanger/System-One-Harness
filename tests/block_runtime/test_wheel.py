@@ -13,14 +13,14 @@ def test_new_catalog_and_mocked_block_execute_from_isolated_wheel(tmp_path):
     wheel,=wheels.glob('*.whl');installed=tmp_path/'installed'
     with zipfile.ZipFile(wheel) as archive:
         for directory in ['defaults/rules','defaults/questions','block_runtime','building_blocks/questions/ticket_triage_v2','building_blocks/questions/method_selection_v2']:
-            for source in (root/'src/laya_context_router'/directory).iterdir():
+            for source in (root/'src'/directory).iterdir():
                 if source.suffix in {'.json','.py','.md'}:
-                    assert archive.read(f'laya_context_router/{directory}/{source.name}')==source.read_bytes()
+                    assert archive.read(f'{directory}/{source.name}')==source.read_bytes()
         archive.extractall(installed)
     code='''
-from laya_context_router.block_runtime import Catalog, Block, PreparedInput
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from block_runtime import Catalog, Block, PreparedInput
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 assert Catalog().rule('multiple_methods_default').question_type=='noul'
 class Agent:
  def predict(self,text,questions,**kwargs):

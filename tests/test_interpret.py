@@ -2,9 +2,9 @@ import copy
 import json
 from pathlib import Path
 import pytest
-from laya_context_router.answers.interpret import extract_answer, interpret
-from laya_context_router.answers.rules import RulesConfig
-from laya_context_router.laya.predict import predict, ResponseError
+from answers.interpret import extract_answer, interpret
+from answers.rules import RulesConfig
+from laya.predict import predict, ResponseError
 from test_predict import Agent
 
 ROOT=Path(__file__).parent/'fixtures/laya'

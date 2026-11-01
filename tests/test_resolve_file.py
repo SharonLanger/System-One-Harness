@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from laya_context_router.building_blocks.resolve_file import resolve_file
+from building_blocks.resolve_file import resolve_file
 
 
 def make(root, name, content="export function x() {}"):
@@ -128,7 +128,7 @@ def test_unicode_spaces_and_no_mutation(tmp_path):
 
 def test_helper_io_failure_maps_to_inaccessible(tmp_path, monkeypatch):
     # Filesystem failure injection belongs in the TS suite. This proves adapter mapping.
-    monkeypatch.setattr("laya_context_router.building_blocks.typescript.resolve_reference",
+    monkeypatch.setattr("building_blocks.typescript.resolve_reference",
         lambda *args, **kwargs: {"status": "error", "data": None,
             "diagnostics": [{"code": "io_error", "message": "controlled scan failure"}]})
     result = resolve_file("a.ts", cwd=tmp_path, repository_root=tmp_path)

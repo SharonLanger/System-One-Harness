@@ -1,7 +1,7 @@
 """Literal presentation oracles and complete-candidate UTF-16 budget checks."""
 import pytest
-from laya_context_router.flows import first_method_context as flow
-from laya_context_router.hooks.contracts import Context, Noop
+from flows import first_method_context as flow
+from hooks.contracts import Context, Noop
 
 
 def test_O01_R01_N01_literal_source_and_direct_locations(h, golden):

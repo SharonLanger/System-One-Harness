@@ -3,7 +3,7 @@ import sys
 
 import pytest
 
-from laya_context_router.building_blocks.typescript import (
+from building_blocks.typescript import (
     TypeScriptError, collect_local_context, outline,
 )
 

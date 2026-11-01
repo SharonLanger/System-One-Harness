@@ -7,9 +7,9 @@ import subprocess
 import sys
 import tempfile
 
-from laya_context_router.blocks import QuestionBlock
-from laya_context_router.building_blocks.questions.method_selection.block import BLOCK_DIR
-from laya_context_router.building_blocks.typescript import outline
+from blocks import QuestionBlock
+from building_blocks.questions.method_selection.block import BLOCK_DIR
+from building_blocks.typescript import outline
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -52,7 +52,7 @@ sys.modules['laya_mlx']=types.SimpleNamespace(load=load)
                  'permission_mode': 'default', 'hook_event_name': 'UserPromptSubmit',
                  'cwd': str(root), 'prompt': prompt}
         result = subprocess.run(['bash', '-c', 'exec "$@"', 'laya-hook', sys.executable,
-            '-m', 'laya_context_router.hooks.gateway', '--hook', 'UserPromptSubmit', '--repository-root', str(root),
+            '-m', 'hooks.gateway', '--hook', 'UserPromptSubmit', '--repository-root', str(root),
             '--config', str(config), '--real'], input=json.dumps(event), text=True,
             capture_output=True, timeout=15, env={**os.environ,
                 'PYTHONPATH': os.pathsep.join([str(root), str(ROOT/'src')]),

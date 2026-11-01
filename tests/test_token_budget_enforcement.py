@@ -4,14 +4,14 @@ from types import SimpleNamespace
 import importlib
 import json
 import pytest
-from laya_context_router.laya.budget import InputTokenBudgetExceeded, InspectionUnavailable, InspectionFailed, make_report
-from laya_context_router.laya.budget_adapters import inspect_request
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from laya.budget import InputTokenBudgetExceeded, InspectionUnavailable, InspectionFailed, make_report
+from laya.budget_adapters import inspect_request
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 from token_budget_support import tokenizer
 from test_predict import REQUEST, RAW
 from examples._plumbing_inspection import plumbing_provider
-api=importlib.import_module('laya_context_router.laya.predict')
+api=importlib.import_module('laya.predict')
 
 @pytest.fixture
 def calls(monkeypatch):
@@ -112,7 +112,7 @@ def test_existing_question_validation_precedes_load(calls):
 def test_provider_error_uses_current_request_correlation(calls,monkeypatch):
     events,forwards=calls
     source=InspectionUnavailable(make_report('fixture',request_id='old-request'),'unsupported')
-    monkeypatch.setattr('laya_context_router.laya.budget.uuid4',lambda:SimpleNamespace(hex='current-request'))
+    monkeypatch.setattr('laya.budget.uuid4',lambda:SimpleNamespace(hex='current-request'))
     def provider(*a):raise source
     with pytest.raises(InspectionUnavailable) as caught:api.predict_strict('hello',REQUEST['questions'],registry=boundary(forwards,provider))
     assert caught.value.report['request_id']=='current-request'

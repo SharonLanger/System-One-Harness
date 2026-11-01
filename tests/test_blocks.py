@@ -2,11 +2,11 @@ import copy
 import json
 from pathlib import Path
 import pytest
-from laya_context_router.blocks import QuestionBlock
-from laya_context_router.answers.rules import load_named_rules
-from laya_context_router.building_blocks.questions.ticket_triage.block import run, BLOCK_DIR
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from blocks import QuestionBlock
+from answers.rules import load_named_rules
+from building_blocks.questions.ticket_triage.block import run, BLOCK_DIR
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 from test_interpret import REQUEST, RAW
 
 
@@ -92,7 +92,7 @@ def test_policy_inner_name_not_binding_and_empty_block_rejected(tmp_path):
 
 
 def test_block_raw_validation_and_sdk_errors_propagate(tmp_path):
-    from laya_context_router.laya.predict import ResponseError
+    from laya.predict import ResponseError
     write_block(tmp_path)
     block=QuestionBlock(tmp_path)
     class Invalid:

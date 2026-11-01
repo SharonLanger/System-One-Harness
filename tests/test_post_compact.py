@@ -9,10 +9,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from laya_context_router.hooks.contracts import Failure, Noop
-from laya_context_router.hooks.dispatcher import dispatch_hook
-from laya_context_router.hooks.gateway import parse_args, parse_payload, POST_COMPACT_INPUT_CHARS
-from laya_context_router.hooks.session_state import ROOT, save_event
+from hooks.contracts import Failure, Noop
+from hooks.dispatcher import dispatch_hook
+from hooks.gateway import parse_args, parse_payload, POST_COMPACT_INPUT_CHARS
+from hooks.session_state import ROOT, save_event
 
 EVENT = {'source': {'kind': 'hook', 'name': 'PostCompact'}, 'type': 'PostCompact', 'payload': {}}
 
@@ -25,7 +25,7 @@ def payload(tmp_path, trigger='manual'):
 @pytest.mark.parametrize('trigger', ['manual', 'auto'])
 def test_dispatch_writes_exact_event(tmp_path, monkeypatch, trigger):
     calls=[]
-    monkeypatch.setattr('laya_context_router.hooks.post_compact.dispatcher.save_event',
+    monkeypatch.setattr('hooks.post_compact.dispatcher.save_event',
                         lambda *a, **kw: calls.append((a,kw)))
     args=parse_args(['--hook','PostCompact','--log-state']);args.deadline_at=monotonic()+10
     assert isinstance(dispatch_hook(payload(tmp_path,trigger),args,'id',lambda *a,**kw:None),Noop)
@@ -33,7 +33,7 @@ def test_dispatch_writes_exact_event(tmp_path, monkeypatch, trigger):
 
 
 def test_routing_and_invalid_input(tmp_path, monkeypatch):
-    monkeypatch.setattr('laya_context_router.hooks.post_compact.dispatcher.save_event',
+    monkeypatch.setattr('hooks.post_compact.dispatcher.save_event',
                         lambda *a,**kw: pytest.fail('must not write'))
     args=SimpleNamespace(hook='PostCompact',log_state=False)
     assert dispatch_hook(payload(tmp_path),args,'id',lambda *a,**kw:None).reason=='unsupported_action'
@@ -82,8 +82,8 @@ def test_adapter_errors_and_lock_deadline(tmp_path):
 
 def test_gateway_empty_stdout_no_summary_in_diagnostics(tmp_path):
     script='''import sys
-from laya_context_router.hooks.gateway import main
-from laya_context_router.hooks.contracts import Noop
+from hooks.gateway import main
+from hooks.contracts import Noop
 raise SystemExit(main(['--hook','PostCompact','--log-state'], dispatcher=lambda *a: Noop('session_state_logged'), logger=lambda *a,**kw: print(repr(kw),file=sys.stderr)))'''
     result=subprocess.run([sys.executable,'-c',script],input=json.dumps(payload(tmp_path)),
                           text=True,capture_output=True,env={**__import__('os').environ,'PYTHONPATH':str(ROOT/'src')})
@@ -110,12 +110,12 @@ def test_child_timeout_is_reaped_and_next_write_succeeds(tmp_path):
 def test_gateway_real_dispatch_and_store(tmp_path):
     script='''from pathlib import Path
 import sys
-import laya_context_router.hooks.session_state as state
-from laya_context_router.hooks.gateway import main
+import hooks.session_state as state
+from hooks.gateway import main
 state.ROOT = Path(sys.argv[1])
 # Resolve the built helper independently while redirecting only the log destination.
 original=state.save_event
-from laya_context_router.hooks.post_compact import dispatcher
+from hooks.post_compact import dispatcher
 dispatcher.save_event=lambda session,event,**kw: original(session,event,logs_root=Path(sys.argv[1]),helper=Path(sys.argv[2]),**kw)
 raise SystemExit(main(['--hook','PostCompact','--log-state'], logger=lambda *a,**kw: None))'''
     result=subprocess.run([sys.executable,'-c',script,str(tmp_path),str(ROOT/'build/typescript/session-state-cli.js')],

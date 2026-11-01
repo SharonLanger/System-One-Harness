@@ -1,6 +1,6 @@
 from pathlib import Path
 import pytest
-from laya_context_router.building_blocks import typescript as ts
+from building_blocks import typescript as ts
 
 
 def fixture(tmp_path):

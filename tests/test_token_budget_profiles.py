@@ -3,14 +3,14 @@ import json
 from dataclasses import FrozenInstanceError
 from types import SimpleNamespace
 import pytest
-from laya_context_router.laya.budget import InspectionUnavailable
-from laya_context_router.laya.config import RunConfig
+from laya.budget import InspectionUnavailable
+from laya.config import RunConfig
 from token_budget_support import tokenizer,mock_runtime
 
 
 def api():
-    assert importlib.util.find_spec('laya_context_router.laya.budget_profiles') is not None, 'missing verified profile capability'
-    from laya_context_router.laya import budget_profiles
+    assert importlib.util.find_spec('laya.budget_profiles') is not None, 'missing verified profile capability'
+    from laya import budget_profiles
     return budget_profiles
 
 

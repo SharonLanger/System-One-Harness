@@ -20,9 +20,9 @@ HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 sys.path.insert(0,str(ROOT/'src'))
 from reporting import save, comparison, diagnostics
-from laya_context_router.questions.models import Question
-from laya_context_router.answers.rules import RulesConfig
-from laya_context_router.laya.config import RunConfig
+from questions.models import Question
+from answers.rules import RulesConfig
+from laya.config import RunConfig
 
 
 def timestamp():
@@ -129,10 +129,10 @@ def real_local_loader(model, **kwargs):
 
 
 def execute_configuration(d,cfg,path,loader=None):
-    from laya_context_router import log_utils
-    from laya_context_router.laya.registry import AgentRegistry
-    from laya_context_router.laya.predict import predict
-    from laya_context_router.answers.interpret import interpret, extract_answer
+    import log_utils
+    from laya.registry import AgentRegistry
+    from laya.predict import predict
+    from answers.interpret import interpret, extract_answer
     path=Path(path); trace=path.with_suffix('.trace.tmp')
     old=log_utils.LOG_PATH; log_utils.LOG_PATH=trace
     r=fresh(d,cfg,'real' if loader is None else 'injected'); started=time.monotonic()

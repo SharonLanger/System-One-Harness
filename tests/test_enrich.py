@@ -2,7 +2,7 @@ import copy
 import json
 from pathlib import Path
 import pytest
-from laya_context_router.answers.enrich import enrich_prediction, enrich_response
+from answers.enrich import enrich_prediction, enrich_response
 
 @pytest.mark.parametrize('kind',['choice','score'])
 @pytest.mark.parametrize('probs,gap,entropy',[

@@ -5,14 +5,14 @@ from copy import deepcopy
 
 import pytest
 
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.live_check import run_check, main
+from laya.config import RunConfig
+from live_check import run_check, main
 
 
 @pytest.fixture(autouse=True)
 def isolate_retired_sandbox(monkeypatch):
     # Keep readiness/runtime checks without certifying the retired flow.
-    monkeypatch.setattr('laya_context_router.live_check.run_flow',
+    monkeypatch.setattr('live_check.run_flow',
                         lambda *args, **kwargs: {'status': 'noop', 'reason': 'no_single_match', 'context': None})
 
 
@@ -88,8 +88,8 @@ def test_invalid_matrix_fails_before_loading(kwargs):
 
 
 def test_cli_requires_explicit_real_and_supported_environment(tmp_path, capsys, monkeypatch):
-    monkeypatch.setattr('laya_context_router.live_check.platform.system', lambda: 'Linux')
-    monkeypatch.setattr('laya_context_router.live_check.real_loader', lambda *a, **k: pytest.fail('real loader touched'))
+    monkeypatch.setattr('live_check.platform.system', lambda: 'Linux')
+    monkeypatch.setattr('live_check.real_loader', lambda *a, **k: pytest.fail('real loader touched'))
     assert main(['--output', str(tmp_path / 'report.json')]) == 2
     assert not (tmp_path / 'report.json').exists()
     assert main(['--real', '--output', str(tmp_path / 'report.json')]) == 2
@@ -99,16 +99,16 @@ def test_cli_requires_explicit_real_and_supported_environment(tmp_path, capsys, 
 
 
 def test_helper_error_is_failed_probe(monkeypatch):
-    monkeypatch.setattr('laya_context_router.live_check.run_flow', lambda *a, **k: {'status': 'noop', 'reason': 'extractor_error', 'context': None})
+    monkeypatch.setattr('live_check.run_flow', lambda *a, **k: {'status': 'noop', 'reason': 'extractor_error', 'context': None})
     report = run_check(loader=lambda *a, **k: Agent())
     assert report['status'] == 'failed'
     assert 'extractor_error' in report['error']
 
 
 def test_cli_opt_in_writes_new_evidence_without_real_import(tmp_path, monkeypatch):
-    monkeypatch.setattr('laya_context_router.live_check.platform.system', lambda: 'Darwin')
-    monkeypatch.setattr('laya_context_router.live_check.platform.machine', lambda: 'arm64')
-    monkeypatch.setattr('laya_context_router.live_check.real_loader', lambda *a, **k: Agent())
+    monkeypatch.setattr('live_check.platform.system', lambda: 'Darwin')
+    monkeypatch.setattr('live_check.platform.machine', lambda: 'arm64')
+    monkeypatch.setattr('live_check.real_loader', lambda *a, **k: Agent())
     path = tmp_path / 'result.json'
     assert main(['--real', '--output', str(path)]) == 0
     assert json.loads(path.read_text())['status'] == 'passed_preparation_probe'
@@ -129,7 +129,7 @@ def test_non_json_raw_fails_with_serializable_bounded_diagnostic():
 
 
 def test_processing_checks_are_explicit_runtime_failures():
-    from laya_context_router.live_check import check_processing
+    from live_check import check_processing
     raw = Agent().predict('', {'mentioned': {'type': 'noul'}})
     with pytest.raises(ValueError, match='independently computed'):
         check_processing(raw, {'answers': {'mentioned': {'distance_from_boundary': 9}}}, {}, {})

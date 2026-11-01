@@ -1,5 +1,5 @@
 """Minimal flow consumer: expose diagnostics without automatic trimming or retries."""
-from laya_context_router.laya.budget import InputBudgetError
+from laya.budget import InputBudgetError
 
 
 def run_with_diagnostics(block_call, *args, **kwargs):

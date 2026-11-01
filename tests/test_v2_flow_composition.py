@@ -5,12 +5,12 @@ import json
 
 import pytest
 
-from laya_context_router.block_runtime import Block, Catalog, PreparedInput
-from laya_context_router.building_blocks.questions.method_selection_v2.block import run as select
-from laya_context_router.building_blocks.typescript import outline, extract_callable
-from laya_context_router.flows import first_method_context as flow
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from block_runtime import Block, Catalog, PreparedInput
+from building_blocks.questions.method_selection_v2.block import run as select
+from building_blocks.typescript import outline, extract_callable
+from flows import first_method_context as flow
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 from test_method_selection import questions_for, raw_for
 
 A = RunConfig("mock-A", 0.2, "fr")
@@ -116,9 +116,9 @@ def test_G12_imports_do_not_load_agents_or_run_flows(monkeypatch):
     def forbidden(*args, **kwargs): raise AssertionError('import triggered model or flow')
     monkeypatch.setattr(AgentRegistry,'get_agent',forbidden)
     monkeypatch.setattr(flow,'run',forbidden)
-    for module in ('laya_context_router.block_runtime.catalog',
-                   'laya_context_router.building_blocks.questions.ticket_triage_v2.block',
-                   'laya_context_router.building_blocks.questions.method_selection_v2.block'):
+    for module in ('block_runtime.catalog',
+                   'building_blocks.questions.ticket_triage_v2.block',
+                   'building_blocks.questions.method_selection_v2.block'):
         importlib.reload(importlib.import_module(module))
 
 

@@ -2,8 +2,8 @@
 
 import pytest
 
-from laya_context_router.answers.rules import RulesConfig
-from laya_context_router.laya.config import load_config
+from answers.rules import RulesConfig
+from laya.config import load_config
 
 
 # V1 relies on documented unique-key authoring for these two legacy loaders.

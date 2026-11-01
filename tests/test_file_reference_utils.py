@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from laya_context_router.building_blocks.file_reference_utils import detect_file_references
+from building_blocks.file_reference_utils import detect_file_references
 
 # Full quoted paths (including spaces), or whitespace-delimited unquoted paths.
 PATTERN = r'''(?:["'`](?P<path>[^"'`\r\n]+\.[A-Za-z0-9]+)["'`])'''
