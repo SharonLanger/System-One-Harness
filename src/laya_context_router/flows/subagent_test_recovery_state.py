@@ -82,3 +82,58 @@ def build_enrichment_event(assignment, *, agent_id):
     payload = _payload(assignment)
     payload.update(agentId=agent_id, blocker='private_method')
     return {'source': dict(SOURCE), 'type': ENRICHMENT, 'payload': payload}
+
+
+def _events(history, session_id):
+    _text(session_id)
+    if not isinstance(history, list):
+        raise RecoveryStateError('invalid_history')
+    for index, event in enumerate(history):
+        if not isinstance(event, dict):
+            raise RecoveryStateError('invalid_history_event')
+        if event.get('source') != SOURCE or event.get('type') not in (ASSIGNMENT, ENRICHMENT):
+            continue
+        payload = event.get('payload')
+        try:
+            if not isinstance(payload, dict) or type(payload.get('schemaVersion')) is not int or payload['schemaVersion'] != 1:
+                raise RecoveryStateError('invalid_schema')
+            target = payload['target']
+            if not isinstance(target, dict):
+                raise RecoveryStateError('invalid_target')
+            assignment = TrackedAssignment(payload['sessionId'], payload['toolUseId'], payload['agentId'],
+                RecoveryTarget(target['filePath'], target['ownerKind'], target['className'],
+                               target['methodName'], target['signature']))
+            if assignment.session_id != session_id:
+                raise RecoveryStateError('session_mismatch')
+            if event['type'] == ENRICHMENT:
+                _text(assignment.agent_id)
+                if payload.get('blocker') != 'private_method':
+                    raise RecoveryStateError('invalid_blocker')
+        except (KeyError, TypeError) as exc:
+            raise RecoveryStateError('invalid_recovery_event') from exc
+        yield index, event['type'], assignment
+
+
+def find_assignment(history, *, session_id, tool_use_id, agent_id):
+    _text(tool_use_id)
+    _text(agent_id)
+    found = None
+    for _, kind, stored in _events(history, session_id):
+        if kind != ASSIGNMENT or stored.tool_use_id != tool_use_id:
+            continue
+        if found is not None and found != stored:
+            raise RecoveryStateError('conflicting_assignment')
+        found = stored
+    if found is None:
+        return None
+    if found.agent_id is not None and found.agent_id != agent_id:
+        raise RecoveryStateError('conflicting_agent')
+    return TrackedAssignment(found.session_id, found.tool_use_id, agent_id, found.target)
+
+
+def has_enrichment(history, *, session_id, agent_id):
+    _text(agent_id)
+    # Exhaust validation even when an earlier matching event was found.
+    events = list(_events(history, session_id))
+    return any(kind == ENRICHMENT and assignment.agent_id == agent_id
+               for _, kind, assignment in events)

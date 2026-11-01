@@ -51,3 +51,57 @@ def test_conflicting_child_and_invalid_ids():
     with pytest.raises(RecoveryStateError): build_enrichment_event(assignment(agent='one'),agent_id='two')
     with pytest.raises(RecoveryStateError): assignment(tool='')
     with pytest.raises(RecoveryStateError): assignment(session=' ')
+
+from copy import deepcopy
+from laya_context_router.flows.subagent_test_recovery_state import find_assignment, has_enrichment
+
+
+def lookup(history, tool='tool-1', agent='child', session='session-1'):
+    return find_assignment(history,session_id=session,tool_use_id=tool,agent_id=agent)
+
+
+def test_lookup_binds_without_mutation_and_ignores_timestamps():
+    event=build_assignment_event(assignment()); history=[event,deepcopy(event)]
+    history[0]['timestamp']='later'; history[1]['timestamp']='earlier'
+    original=deepcopy(history)
+    assert lookup(history).agent_id=='child'
+    assert history==original
+    assert lookup(history,tool='other') is None
+
+
+@pytest.mark.parametrize('other', [assignment(agent='child'), assignment(name='other')])
+def test_conflicting_records(other):
+    with pytest.raises(RecoveryStateError): lookup([build_assignment_event(assignment()),build_assignment_event(other)])
+
+
+def test_child_conflict():
+    with pytest.raises(RecoveryStateError): lookup([build_assignment_event(assignment(agent='other'))])
+
+
+def test_independent_invocations_and_agents():
+    history=[build_assignment_event(assignment()),build_assignment_event(assignment(tool='tool-2'))]
+    assert lookup(history).tool_use_id=='tool-1'
+    assert lookup(history,tool='tool-2',agent='other').agent_id=='other'
+    history.append(build_enrichment_event(assignment(),agent_id='child'))
+    history.append({'source':{'kind':'hook','name':'PostCompact'},'type':'PostCompact','payload':{}})
+    assert has_enrichment(history,session_id='session-1',agent_id='child')
+    assert not has_enrichment(history,session_id='session-1',agent_id='other')
+
+
+@pytest.mark.parametrize('change', ['version','target','session','agent','blocker'])
+def test_malformed_recognized_history_rejected(change):
+    event=build_enrichment_event(assignment(tool='other'),agent_id='other')
+    if change=='version': event['payload']['schemaVersion']=True
+    elif change=='target': del event['payload']['target']['signature']
+    elif change=='session': event['payload']['sessionId']='other'
+    elif change=='agent': event['payload']['agentId']=None
+    else: event['payload']['blocker']='other'
+    with pytest.raises(RecoveryStateError): lookup([event])
+    with pytest.raises(RecoveryStateError): has_enrichment([event],session_id='session-1',agent_id='child')
+
+
+def test_unrelated_events_ignored_and_empty_history():
+    history=[{'source':{'kind':'hook','name':'PostCompact'},'type':'PostCompact'},
+             {'source':{'kind':'flow','name':'subagent_test_recovery'},'type':'future_event'}]
+    assert lookup(history) is None
+    assert not has_enrichment([],session_id='session-1',agent_id='child')
