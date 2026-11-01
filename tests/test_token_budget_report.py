@@ -3,8 +3,8 @@ import json
 
 
 def test_report_contract():
-    assert importlib.util.find_spec('laya_context_router.laya.budget') is not None, 'missing report capability'
-    from laya_context_router.laya.budget import InputBudgetError, InputTokenBudgetExceeded, InspectionUnavailable, InspectionFailed, make_report
+    assert importlib.util.find_spec('laya.budget') is not None, 'missing report capability'
+    from laya.budget import InputBudgetError, InputTokenBudgetExceeded, InspectionUnavailable, InspectionFailed, make_report
     report = make_report('model', request_id='r1')
     assert report['questions'] is None and report['limits'] is None
     assert report['request_inference_started'] is False
@@ -23,8 +23,8 @@ def test_report_contract():
 
 
 def test_report_refuses_non_json_values():
-    assert importlib.util.find_spec('laya_context_router.laya.budget') is not None, 'missing report capability'
-    from laya_context_router.laya.budget import InspectionFailed, make_report
+    assert importlib.util.find_spec('laya.budget') is not None, 'missing report capability'
+    from laya.budget import InspectionFailed, make_report
     import pytest
     for value in (float('nan'), object()):
         report = make_report('model')

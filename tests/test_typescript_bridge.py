@@ -5,7 +5,7 @@ import time
 
 import pytest
 
-from laya_context_router.building_blocks.typescript import TypeScriptError, outline
+from building_blocks.typescript import TypeScriptError, outline
 
 ROOT = Path(__file__).resolve().parents[1]
 

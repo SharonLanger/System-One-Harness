@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 
 from support import allocate_result_dir, start_record, write_report
-from laya_context_router.log_utils import log
+from log_utils import log
 
 HERE = Path(__file__).resolve().parent
 DEFAULT_CONFIG = HERE / "inputs/hook_prompt_probe.json"

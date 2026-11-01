@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from laya_context_router.building_blocks.typescript import TypeScriptError, outline, extract_callable
+from building_blocks.typescript import TypeScriptError, outline, extract_callable
 
 
 @pytest.mark.parametrize("newline", ["\n", "\r\n"])

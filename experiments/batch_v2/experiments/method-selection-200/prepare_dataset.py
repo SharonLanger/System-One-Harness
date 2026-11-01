@@ -4,7 +4,7 @@ from pathlib import Path
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[3]
 sys.path.insert(0,str(ROOT/'src'))
-from laya_context_router.building_blocks.typescript import outline
+from building_blocks.typescript import outline
 
 def write(path,value):
     path.parent.mkdir(parents=True,exist_ok=True)

@@ -5,14 +5,14 @@ import shutil
 from types import SimpleNamespace
 import pytest
 
-from laya_context_router.block_runtime import BlockResult
-from laya_context_router.building_blocks import typescript as ts
-from laya_context_router.building_blocks.questions.requested_action import block as action
-from laya_context_router.building_blocks.questions.method_selection_v2 import block as selection
-from laya_context_router.flows import first_method_context as flow
-from laya_context_router.hooks.dispatcher import ingest_common
-from laya_context_router.hooks.user_prompt_submit.dispatcher import PromptRequest
-from laya_context_router.laya.config import RunConfig
+from block_runtime import BlockResult
+from building_blocks import typescript as ts
+from building_blocks.questions.requested_action import block as action
+from building_blocks.questions.method_selection_v2 import block as selection
+from flows import first_method_context as flow
+from hooks.dispatcher import ingest_common
+from hooks.user_prompt_submit.dispatcher import PromptRequest
+from laya.config import RunConfig
 
 FIXTURES = Path(__file__).resolve().parents[1] / 'fixtures'
 SELECTED = 'src/billing/invoice-service.ts'
@@ -22,8 +22,8 @@ PROMPT = f'Explain `{SELECTED}`: {METHOD}'
 
 @pytest.fixture(autouse=True)
 def offline(monkeypatch, tmp_path):
-    from laya_context_router import log_utils
-    from laya_context_router.laya import predict, registry
+    import log_utils
+    from laya import predict, registry
     def forbidden(*args, **kwargs):
         raise AssertionError('real model/tokenizer boundary must not run')
     monkeypatch.setattr(log_utils, 'LOG_PATH', tmp_path / 'debug.jsonl')

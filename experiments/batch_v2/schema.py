@@ -179,9 +179,9 @@ def validate_runtime(cases, suite):
     source = Path(__file__).resolve().parents[2] / 'src'
     if str(source) not in sys.path:
         sys.path.insert(0, str(source))
-    from laya_context_router.questions.models import Question
-    from laya_context_router.block_runtime.catalog import TypedRule
-    from laya_context_router.laya.config import RunConfig
+    from questions.models import Question
+    from block_runtime.catalog import TypedRule
+    from laya.config import RunConfig
     for question in suite['questions']:
         Question.from_dict(question['definition'])
     for rule in suite['rules']:
@@ -189,7 +189,7 @@ def validate_runtime(cases, suite):
     for config in suite['configurations']:
         RunConfig.from_dict({k:v for k,v in config.items() if k != 'id'})
     if suite['adapter'] != 'generic-question':
-        module = importlib.import_module('laya_context_router.building_blocks.questions.' + suite['adapter'].replace('-', '_') + '.block')
+        module = importlib.import_module('building_blocks.questions.' + suite['adapter'].replace('-', '_') + '.block')
         expected_name = suite['adapter'].replace('-', '_')
         expected_labels = module.ACTIONS if suite['adapter'] == 'requested-action' else module.SCOPES
         _check(suite['question_type'] == 'choice' and set(suite['labels']) == set(expected_labels), 'block labels/type mismatch')

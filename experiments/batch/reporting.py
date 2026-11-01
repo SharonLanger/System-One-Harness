@@ -42,7 +42,7 @@ def effects(record):
 
 
 def diagnostics(enriched, conditions, expected, recommendation):
-    from laya_context_router.answers.conditions import resolve_field, OPS
+    from answers.conditions import resolve_field, OPS
     result = []
     for condition in conditions:
         value = resolve_field(enriched, condition['field'])

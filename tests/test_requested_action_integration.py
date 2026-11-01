@@ -8,11 +8,11 @@ import zipfile
 from unittest.mock import Mock
 import pytest
 from test_requested_action_block import Harness, response
-from laya_context_router.block_runtime import BlockInputError, BlockConfigurationError
+from block_runtime import BlockInputError, BlockConfigurationError
 
 
 def test_T41_T42_logs(tmp_path,monkeypatch):
-    from laya_context_router import log_utils
+    import log_utils
     path=tmp_path/'debug.jsonl';monkeypatch.setattr(log_utils,'LOG_PATH',path)
     h=Harness();h.run()
     events=[json.loads(l) for l in path.read_text().splitlines()]
@@ -34,7 +34,7 @@ def test_T41_T42_logs(tmp_path,monkeypatch):
 
 
 def test_T44_no_target_reads_or_utilities(tmp_path,monkeypatch):
-    from laya_context_router.building_blocks import typescript
+    from building_blocks import typescript
     for name in ('outline','extract_callable'):
         monkeypatch.setattr(typescript,name,Mock(side_effect=AssertionError('TypeScript called')))
     monkeypatch.setattr(subprocess,'run',Mock(side_effect=AssertionError('subprocess called')))
@@ -60,17 +60,17 @@ def test_T45_installed_wheel(tmp_path):
     wheel,=wheels.glob('*.whl');installed=tmp_path/'installed'
     with zipfile.ZipFile(wheel) as archive:
         for directory in ['defaults/questions','defaults/rules','building_blocks/questions/requested_action']:
-            for p in (root/'src/laya_context_router'/directory).iterdir():
-                if p.suffix in {'.json','.md','.py'}:assert archive.read(f'laya_context_router/{directory}/{p.name}')==p.read_bytes()
+            for p in (root/'src'/directory).iterdir():
+                if p.suffix in {'.json','.md','.py'}:assert archive.read(f'{directory}/{p.name}')==p.read_bytes()
         archive.extractall(installed)
     raw=json.dumps(response())
     code=f'''
-import laya_context_router
+import building_blocks
 from pathlib import Path
-assert Path(laya_context_router.__file__).is_relative_to({str(installed)!r})
-from laya_context_router.building_blocks.questions.requested_action.block import run
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+assert Path(building_blocks.__file__).is_relative_to({str(installed)!r})
+from building_blocks.questions.requested_action.block import run
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 class Fake:
  def predict(self,text,questions,**kwargs):
   assert text=='outside checkout'
@@ -99,15 +99,15 @@ def test_T08_T44_fresh_import_and_block_construction(tmp_path):
     code='''
 import subprocess
 from unittest.mock import Mock
-from laya_context_router.laya import predict as sdk
+from laya import predict as sdk
 sdk.real_loader=Mock(side_effect=AssertionError('model loaded at import/construction'))
 subprocess.run=Mock(side_effect=AssertionError('subprocess at import/construction'))
 subprocess.Popen=Mock(side_effect=AssertionError('subprocess at import/construction'))
-from laya_context_router.building_blocks import typescript
+from building_blocks import typescript
 for name in ('outline','extract_callable'):
  setattr(typescript,name,Mock(side_effect=AssertionError('TypeScript at import/construction')))
-from laya_context_router.building_blocks.questions.requested_action import block
-from laya_context_router.block_runtime import Block
+from building_blocks.questions.requested_action import block
+from block_runtime import Block
 b=Block(block.BLOCK_DIR/'block.json',validate_input=block.validate_input,
  prepare_input=block.prepare,reduce=block.reduce,validate_output=block.validate_output,
  validate_prepared=block.validate_prepared)

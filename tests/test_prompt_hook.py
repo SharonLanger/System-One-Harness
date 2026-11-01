@@ -7,7 +7,7 @@ import subprocess
 import sys
 import pytest
 
-from laya_context_router.building_blocks.typescript import outline
+from building_blocks.typescript import outline
 from first_flow.test_hook_integration import BOOTSTRAP
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +29,7 @@ def hook_case(tmp_path, text='function greet() { return "😀"; }'):
     calls = tmp_path / 'calls.jsonl'; trace = tmp_path / 'trace.jsonl'
     spec = tmp_path / 'spec.json'
     spec.write_text(json.dumps({'selected_id': data['callables'][0]['id']}))
-    bootstrap = BOOTSTRAP.split('\nfrom laya_context_router.hooks.gateway import main')[0]
+    bootstrap = BOOTSTRAP.split('\nfrom hooks.gateway import main')[0]
     bootstrap = bootstrap.replace("json.loads(os.environ['FIRST_FLOW_SPEC'])",
                                   "json.load(open(os.environ['HOOK_TEST_SPEC']))")
     (shim / 'sitecustomize.py').write_text(bootstrap)

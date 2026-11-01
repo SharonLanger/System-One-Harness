@@ -5,8 +5,8 @@ from pathlib import Path
 import subprocess
 import sys
 import pytest
-from laya_context_router.hooks.contracts import Context, Noop, Failure, ValidationError
-from laya_context_router.hooks.gateway import parse_args, parse_payload, serialize_response
+from hooks.contracts import Context, Noop, Failure, ValidationError
+from hooks.gateway import parse_args, parse_payload, serialize_response
 
 @pytest.mark.parametrize('argv', [[], ['--hook',''], ['--hook',' '],
     ['--hook','X','--hook','Y'], ['--hook=X','--hook=X'], ['--hook','X','--bad'],
@@ -41,8 +41,8 @@ ROOT=Path(__file__).resolve().parents[1]
 @pytest.mark.parametrize('mode', ['context','noop','failure','invalid','throw','timeout'])
 def test_process_noise_output_and_final_record(tmp_path,mode):
     script='''import json, os
-from laya_context_router.hooks.gateway import main
-from laya_context_router.hooks.contracts import Context, Noop, Failure
+from hooks.gateway import main
+from hooks.contracts import Context, Noop, Failure
 records=[]
 def dispatch(*args):
     args[-1]('INFO','common_input_validated',session_id='validated')
@@ -74,7 +74,7 @@ open(LOG,'w').write(json.dumps(records))
     assert final['outcome']==({'context':'context','noop':'noop'}.get(mode,'error'))
 
 def test_process_input_deadline():
-    p=subprocess.Popen([sys.executable,'-m','laya_context_router.hooks.gateway','--hook','X','--deadline','.1'],
+    p=subprocess.Popen([sys.executable,'-m','hooks.gateway','--hook','X','--deadline','.1'],
         stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,
         env={**os.environ,'PYTHONPATH':str(ROOT/'src')})
     try:
@@ -89,7 +89,7 @@ def test_process_input_deadline():
 def test_broken_pipe_never_records_success(monkeypatch):
     from contextlib import nullcontext
     import io
-    import laya_context_router.hooks.gateway as g
+    import hooks.gateway as g
     class Broken(io.StringIO):
         def write(self, text):raise BrokenPipeError('planned')
     records=[]
@@ -108,7 +108,7 @@ def test_broken_pipe_never_records_success(monkeypatch):
 
 def test_import_does_not_load_sdk():
     r=subprocess.run([sys.executable,'-c',
-        "import sys; import laya_context_router.hooks.gateway; assert 'laya_mlx' not in sys.modules"],
+        "import sys; import hooks.gateway; assert 'laya_mlx' not in sys.modules"],
         capture_output=True,env={**os.environ,'PYTHONPATH':str(ROOT/'src')},timeout=5)
     assert r.returncode==0 and r.stdout==b''
 
@@ -125,8 +125,8 @@ def test_mismatch_keeps_both_event_names():
 
 @pytest.mark.parametrize('mode',['context','noop','error'])
 def test_throwing_logger_never_changes_protocol(mode):
-    script="""from laya_context_router.hooks.gateway import main
-from laya_context_router.hooks.contracts import Context,Noop,Failure
+    script="""from hooks.gateway import main
+from hooks.contracts import Context,Noop,Failure
 def logger(*a,**k):raise OSError('planned')
 main(['--hook','X'],dispatcher=lambda *a:RESULT,logger=logger)
 """.replace('RESULT',{'context':"Context('known')",'noop':"Noop('no_match')",'error':"Failure('planned','feature')"}[mode])
@@ -138,7 +138,7 @@ main(['--hook','X'],dispatcher=lambda *a:RESULT,logger=logger)
 def test_concurrent_invocations_have_distinct_correlated_ids(tmp_path):
     from concurrent.futures import ThreadPoolExecutor
     script='''import json
-from laya_context_router.hooks.gateway import main
+from hooks.gateway import main
 records=[]
 main(['--hook','UserPromptSubmit','--repository-root',ROOT],logger=lambda l,e,**d:records.append({'event':e,**d}))
 open(LOG,'w').write(json.dumps(records))
@@ -159,8 +159,8 @@ open(LOG,'w').write(json.dumps(records))
 
 def test_closed_pipe_records_error_and_exits_zero(tmp_path):
     script='''import json
-from laya_context_router.hooks.gateway import main
-from laya_context_router.hooks.contracts import Context
+from hooks.gateway import main
+from hooks.contracts import Context
 records=[]
 main(['--hook','X'],dispatcher=lambda *a:Context('known'),logger=lambda l,e,**d:records.append({'event':e,**d}))
 open(LOG,'w').write(json.dumps(records))
@@ -179,7 +179,7 @@ open(LOG,'w').write(json.dumps(records))
 
 
 def test_duplicate_prompt_rejected_without_dispatch(tmp_path):
-    script="""from laya_context_router.hooks.gateway import main
+    script="""from hooks.gateway import main
 calls=[]
 def dispatch(*a):calls.append(1);raise AssertionError('dispatch ran')
 main(['--hook','X'],dispatcher=dispatch)

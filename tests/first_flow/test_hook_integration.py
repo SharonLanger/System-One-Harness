@@ -8,11 +8,11 @@ import sys
 import pytest
 
 from .conftest import PROMPT
-from laya_context_router.flows import first_method_context as flow
-from laya_context_router.hooks.contracts import Context, Failure, Noop
-from laya_context_router.hooks.dispatcher import dispatch_hook
-from laya_context_router.hooks.gateway import serialize_response
-from laya_context_router.hooks.user_prompt_submit.dispatcher import dispatch_user_prompt_submit
+from flows import first_method_context as flow
+from hooks.contracts import Context, Failure, Noop
+from hooks.dispatcher import dispatch_hook
+from hooks.gateway import serialize_response
+from hooks.user_prompt_submit.dispatcher import dispatch_user_prompt_submit
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -20,13 +20,13 @@ ROOT = Path(__file__).resolve().parents[2]
 # registry tripwires fail closed if either replacement is accidentally removed.
 BOOTSTRAP = r'''
 import json, os, sys
-from laya_context_router.block_runtime import BlockResult
-from laya_context_router.building_blocks.questions.requested_action import block as action
-from laya_context_router.building_blocks.questions.method_selection_v2 import block as selection
-from laya_context_router.laya import registry, predict
-from laya_context_router import log_utils
+from block_runtime import BlockResult
+from building_blocks.questions.requested_action import block as action
+from building_blocks.questions.method_selection_v2 import block as selection
+from laya import registry, predict
+import log_utils
 spec = json.loads(os.environ['FIRST_FLOW_SPEC'])
-from laya_context_router.hooks import session_state
+from hooks import session_state
 session_state.ROOT = __import__('pathlib').Path(os.environ['FIRST_FLOW_STATE_ROOT'])
 # Keep the compiled helper at the runtime root while isolating all persisted state.
 original_inspect = session_state.inspect_and_save_event
@@ -34,7 +34,7 @@ def isolated_inspect(*args, **kwargs):
     kwargs['logs_root'] = session_state.ROOT
     kwargs['helper'] = os.environ['FIRST_FLOW_HELPER']
     return original_inspect(*args, **kwargs)
-from laya_context_router.flows import first_method_context
+from flows import first_method_context
 first_method_context.inspect_and_save_event = isolated_inspect
 log_utils.LOG_PATH = __import__('pathlib').Path(os.environ['FIRST_FLOW_LOG'])
 def forbidden(*args, **kwargs):
@@ -71,7 +71,7 @@ if spec.get('timeout') == 'logging':
             raise TimeoutError('planned logging deadline')
         return original_log(level, component, event, **details)
     log_utils.log = logging
-from laya_context_router.hooks.gateway import main
+from hooks.gateway import main
 raise SystemExit(main(sys.argv[1:]))
 '''
 
@@ -105,7 +105,7 @@ def test_L01_adapter_log_matches_context_and_serializer(h, golden):
 
 
 def test_L02_jsonl_decoding_preserves_exact_source_bytes(h, tmp_path):
-    from laya_context_router import log_utils
+    import log_utils
     h.path.write_bytes(b'export function chosen() {\r\n\treturn "quotes \\\""; // '+ '😀'.encode() + b'\r\n}')
     h.choose('chosen')
     def logger(level, event, **details):

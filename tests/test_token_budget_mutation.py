@@ -5,9 +5,9 @@ import pytest
 from token_budget_support import tokenizer,mock_runtime
 from test_token_budget_profiles import observation
 from token_budget_support import BASE
-from laya_context_router.laya.budget_profiles import VerifiedInspector,TYPED
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.budget import InspectionUnavailable
+from laya.budget_profiles import VerifiedInspector,TYPED
+from laya.config import RunConfig
+from laya.budget import InspectionUnavailable
 
 @pytest.fixture
 def managed():
@@ -42,7 +42,7 @@ def test_cached_tokenizer_mutation_refused_and_lock_released(managed,mutation):
 def test_method_override_never_called_even_before_validation(managed,method,monkeypatch):
     agent,inspector,calls,_=managed;events=[]
     setattr(agent,method,lambda *a,**k:calls.append('replacement'))
-    api=importlib.import_module('laya_context_router.laya.predict')
+    api=importlib.import_module('laya.predict')
     monkeypatch.setattr(api,'log',lambda level,component,event,**kw:events.append((level,kw)))
     registry=SimpleNamespace(get_agent=lambda c:agent,get_inspector=lambda c:inspector)
     with pytest.raises(InspectionUnavailable) as caught:api.predict_strict('hello',{'q':BASE},registry=registry)

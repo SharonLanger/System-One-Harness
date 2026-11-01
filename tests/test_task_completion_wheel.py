@@ -20,14 +20,14 @@ def test_task_completion_installed_wheel(tmp_path):
                      'building_blocks/questions/task_completion/README.md',
                      'defaults/questions/task_completion.json',
                      'defaults/rules/task_completion_default.json'):
-            source = root / 'src/laya_context_router' / path
-            assert archive.read('laya_context_router/' + path) == source.read_bytes()
+            source = root / 'src' / path
+            assert archive.read('' + path) == source.read_bytes()
         archive.extractall(installed)
     code = '''
-from laya_context_router.block_runtime import Catalog
-from laya_context_router.building_blocks.questions.task_completion.block import run
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from block_runtime import Catalog
+from building_blocks.questions.task_completion.block import run
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 assert set(Catalog().question('task_completion')['criteria']) == {'yes', 'no'}
 class Agent:
  def predict(self,text,questions,**kwargs):

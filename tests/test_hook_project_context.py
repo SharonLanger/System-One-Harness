@@ -3,9 +3,9 @@ from copy import deepcopy
 from dataclasses import replace
 from types import SimpleNamespace
 import pytest
-from laya_context_router.hooks.contracts import Context, Noop
-from laya_context_router.hooks.dispatcher import ingest_common, dispatch_hook
-from laya_context_router.hooks.project_context import enrich_project_context
+from hooks.contracts import Context, Noop
+from hooks.dispatcher import ingest_common, dispatch_hook
+from hooks.project_context import enrich_project_context
 
 
 def envelope(cwd='/unrelated/subfolder'):
@@ -51,8 +51,8 @@ def test_bad_derived_value_is_rejected(value):
 
 
 def test_default_gateway_alternating_projects_and_missing_env(tmp_path,monkeypatch):
-    from laya_context_router.hooks import gateway,dispatcher
-    from laya_context_router.hooks.user_prompt_submit import dispatcher as prompt_dispatch
+    from hooks import gateway,dispatcher
+    from hooks.user_prompt_submit import dispatcher as prompt_dispatch
     a=tmp_path/'client1'/'app';b=tmp_path/'client2'/'app';a.mkdir(parents=True);b.mkdir(parents=True)
     seen=[];args=SimpleNamespace(hook='UserPromptSubmit',repository_root='/explicit/source')
     def handler(request,logger):seen.append(request);return Context('fixed')
@@ -70,8 +70,8 @@ def test_default_gateway_alternating_projects_and_missing_env(tmp_path,monkeypat
 
 
 def test_relationships_and_metadata_survive(tmp_path,monkeypatch):
-    from laya_context_router.hooks import gateway
-    from laya_context_router.hooks.user_prompt_submit import dispatcher as event_dispatch
+    from hooks import gateway
+    from hooks.user_prompt_submit import dispatcher as event_dispatch
     origin=tmp_path/'A';origin.mkdir();seen=[];records=[]
     monkeypatch.setenv('CLAUDE_PROJECT_DIR',str(origin))
     monkeypatch.setattr(event_dispatch,'_default_handler',lambda r,l:seen.append(r.envelope) or Context('x'))

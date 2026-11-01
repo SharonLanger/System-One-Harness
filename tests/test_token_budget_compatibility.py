@@ -2,8 +2,8 @@
 from copy import deepcopy
 from types import SimpleNamespace
 import pytest
-from laya_context_router.laya import predict as api
-from laya_context_router.laya.budget import InspectionUnavailable
+from laya import predict as api
+from laya.budget import InspectionUnavailable
 from test_predict import REQUEST,RAW
 from examples._plumbing_inspection import plumbing_provider
 
@@ -41,9 +41,9 @@ def test_both_paths_share_success_contract():
  ('ticket_triage', 'ticket'),('ticket_triage_v2',{'text':'ticket'}),('requested_action',{'prompt':'Explain it'}),('context_scope',{'prompt':'Explain it'})])
 def test_public_blocks_explicitly_select_strict(module_name,input_data):
     import importlib
-    module=importlib.import_module('laya_context_router.building_blocks.questions.'+module_name+'.block')
+    module=importlib.import_module('building_blocks.questions.'+module_name+'.block')
     registry=SimpleNamespace(get_agent=lambda c:SimpleNamespace(predict=lambda *a,**k:pytest.fail('predicted')))
-    from laya_context_router.laya.config import RunConfig
+    from laya.config import RunConfig
     with pytest.raises(InspectionUnavailable):module.run(input_data,config=RunConfig(),registry=registry,strict=True)
 
 
@@ -64,15 +64,15 @@ def test_saved_response_replay_needs_no_loader_or_tokenizer(monkeypatch):
 
 def test_method_selection_signatures_preserve_main_contract():
     import inspect
-    from laya_context_router.building_blocks.questions.method_selection.block import run as legacy
-    from laya_context_router.building_blocks.questions.method_selection_v2.block import run as modern
+    from building_blocks.questions.method_selection.block import run as legacy
+    from building_blocks.questions.method_selection_v2.block import run as modern
     assert 'strict' not in inspect.signature(legacy).parameters
     assert 'strict' not in inspect.signature(modern).parameters
 
 
 def test_requested_action_preserves_temperature_when_selecting_strict(monkeypatch):
-    from laya_context_router.building_blocks.questions.requested_action import block
-    from laya_context_router.laya.config import RunConfig
+    from building_blocks.questions.requested_action import block
+    from laya.config import RunConfig
     seen=[]
     monkeypatch.setattr(block.Block, 'run', lambda self, data, **kwargs: seen.append(kwargs))
     for temperature in (None, 0.25):

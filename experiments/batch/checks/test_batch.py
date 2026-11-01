@@ -82,7 +82,7 @@ class BatchChecks(unittest.TestCase):
 
     def test_raw_correct_final_processing_error(self):
         d=self.definition();d['cases']=d['cases'][:1]
-        with patch('laya_context_router.answers.interpret.interpret',side_effect=ValueError('rule failure')):
+        with patch('answers.interpret.interpret',side_effect=ValueError('rule failure')):
             r=self.execute(d,[.9])
         self.assertEqual(r['cases'][0]['recommendation_outcome'],'correct')
         self.assertEqual(r['cases'][0]['final_outcome'],'error')

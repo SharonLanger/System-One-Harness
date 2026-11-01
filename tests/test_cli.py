@@ -9,14 +9,13 @@ import venv
 
 import pytest
 
-from laya_context_router.cli import main
-from laya_context_router import log_utils
-
+from cli import main
+import log_utils
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_hook_forwards_arguments_streams_and_return_code(monkeypatch, capsys):
-    from laya_context_router.hooks import gateway
+    from hooks import gateway
     args = ['--hook', 'UserPromptSubmit', '--repository-root', '/project with spaces',
             '--real', '--config', '/config.json', '--deadline', '5', '--future-flag']
     stdin = io.StringIO('original stdin')
@@ -37,11 +36,11 @@ def test_subprocess_protocol_matches_existing_gateway(tmp_path, kind):
     script = '''
 import sys
 from pathlib import Path
-from laya_context_router import log_utils
+import log_utils
 log_utils.LOG_PATH = Path(sys.argv[2])
-from laya_context_router.hooks import gateway
-from laya_context_router.hooks.contracts import Context, Noop, Failure
-from laya_context_router.cli import main
+from hooks import gateway
+from hooks.contracts import Context, Noop, Failure
+from cli import main
 kind = sys.argv[3]
 result = {'context': Context('known context'), 'noop': Noop('no_match'),
           'failure': Failure('planned', 'test')}.get(kind, Noop('unused'))
@@ -126,7 +125,7 @@ def test_installed_console_command_uses_selected_environment(tmp_path):
     python = environment / 'bin/python'
     subprocess.run([str(python), '-m', 'pip', 'install', '--no-index', '--no-deps', str(wheel)],
                    check=True, capture_output=True)
-    launcher = environment / 'bin/laya-context-router'
+    launcher = environment / 'bin/system-one-harness'
     env = dict(os.environ)
     env.pop('PYTHONPATH', None)
     def run(*args, raw=None):
@@ -136,6 +135,29 @@ def test_installed_console_command_uses_selected_environment(tmp_path):
     assert result.returncode == 0, result.stderr
     assert str(python) in result.stdout and str(launcher) in result.stdout
     assert str(ROOT / 'src') not in result.stdout
+    alias = environment / 'bin/laya-context-router'
+    assert alias.is_file()
+    alias_help = subprocess.run([str(alias), '--help'], cwd=tmp_path, env=env,
+                                capture_output=True, text=True, check=True)
+    module_help = subprocess.run([str(python), '-m', 'cli', '--help'], cwd=tmp_path,
+                                 env=env, capture_output=True, text=True, check=True)
+    assert 'system-one-harness' in alias_help.stdout == module_help.stdout
+    installed_probe = subprocess.run([str(python), '-c', '''
+from pathlib import Path
+import answers, block_runtime, building_blocks, cli, defaults, flows, hooks, laya, questions
+import blocks, context_format, json_utils, live_check, log_utils
+from block_runtime import Catalog
+from hooks import gateway
+from building_blocks.questions.private_method_testing_blocker.block import BLOCK_DIR
+for module in (answers, block_runtime, building_blocks, cli, defaults, flows,
+               hooks, laya, questions, blocks, context_format, json_utils,
+               live_check, log_utils, gateway):
+    assert Path(module.__file__).is_relative_to(Path(cli.__file__).parent.parent)
+assert set(Catalog().question('private_method_testing_blocker')['criteria']) == {'yes', 'no'}
+assert (BLOCK_DIR / 'block.json').is_file()
+print(hooks.__file__)
+'''], cwd=tmp_path, env=env, capture_output=True, text=True, check=True)
+    assert 'site-packages/hooks/__init__.py' in installed_probe.stdout
     result = run('hook', '--hook', 'UserPromptSubmit', '--observe-only',
                  raw='{"hook_event_name":"UserPromptSubmit","prompt":"installed test"}')
     assert result.returncode == 0 and result.stdout == result.stderr == ''

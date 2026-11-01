@@ -4,9 +4,9 @@ import subprocess
 import sys
 import textwrap
 import pytest
-from laya_context_router.laya.config import RunConfig, load_config
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.laya.predict import predict, DEFAULT_MODEL
+from laya.config import RunConfig, load_config
+from laya.registry import AgentRegistry
+from laya.predict import predict, DEFAULT_MODEL
 from test_predict import Agent, REQUEST, RAW
 
 
@@ -53,8 +53,8 @@ def test_registry_starts_fresh_in_separate_processes():
         import sys
 
         sys.path.insert(0, sys.argv[1])
-        from laya_context_router.laya.config import RunConfig
-        from laya_context_router.laya.registry import AgentRegistry
+        from laya.config import RunConfig
+        from laya.registry import AgentRegistry
 
         class FakeAgent:
             pass

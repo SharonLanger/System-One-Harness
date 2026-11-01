@@ -3,12 +3,12 @@ from copy import deepcopy
 from unittest.mock import Mock
 import pytest
 from test_requested_action_block import Harness, response, LABELS
-from laya_context_router.block_runtime import Catalog, PreparedInput, SkipBlock, BlockInputError, BlockConfigurationError, BlockExecutionError
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.laya.predict import ResponseError
-from laya_context_router.questions.models import Question
-from laya_context_router.block_runtime.catalog import TypedRule
+from block_runtime import Catalog, PreparedInput, SkipBlock, BlockInputError, BlockConfigurationError, BlockExecutionError
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from laya.predict import ResponseError
+from questions.models import Question
+from block_runtime.catalog import TypedRule
 
 
 def test_T23_T24_rules_same_response():
@@ -69,7 +69,7 @@ def test_T34_skip_and_T10_reducer_validation(monkeypatch):
     r=h.run(prepare_input=skip)
     assert (r.status,r.reason,r.decisions,r.data)==('skipped','caller_skip',{}, {'action':'undecided'})
     assert not h.loads and not h.calls
-    from laya_context_router.building_blocks.questions.requested_action import block
+    from building_blocks.questions.requested_action import block
     monkeypatch.setattr(block,'reduce',lambda *_:{'action':'unexpected'})
     with pytest.raises(BlockExecutionError):h.run()
 

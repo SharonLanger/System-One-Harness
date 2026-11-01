@@ -1,7 +1,7 @@
 import json
 import pytest
-from laya_context_router.answers.conditions import OPS, resolve_field, evaluate_conditions
-from laya_context_router.answers.rules import RulesConfig, accepts
+from answers.conditions import OPS, resolve_field, evaluate_conditions
+from answers.rules import RulesConfig, accepts
 
 @pytest.mark.parametrize('op,value,expected',[
     ('gt',0.4,False),('gt',0.5,False),('gt',0.6,True),

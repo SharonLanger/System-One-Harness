@@ -4,20 +4,20 @@ import importlib
 import importlib.util
 from types import SimpleNamespace
 import pytest
-from laya_context_router.laya.budget import InputBudgetError,InputTokenBudgetExceeded,InspectionUnavailable,make_report
-from laya_context_router.laya.budget_adapters import inspect_request
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.blocks import QuestionBlock
-from laya_context_router.block_runtime import Block,PreparedInput
-from laya_context_router.building_blocks.questions.ticket_triage.block import BLOCK_DIR
+from laya.budget import InputBudgetError,InputTokenBudgetExceeded,InspectionUnavailable,make_report
+from laya.budget_adapters import inspect_request
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from blocks import QuestionBlock
+from block_runtime import Block,PreparedInput
+from building_blocks.questions.ticket_triage.block import BLOCK_DIR
 from token_budget_support import tokenizer
 from test_predict import RAW
 
 @pytest.fixture
 def instrumentation(monkeypatch):
     events=[];calls=[];tok=tokenizer()
-    api=importlib.import_module('laya_context_router.laya.predict')
+    api=importlib.import_module('laya.predict')
     monkeypatch.setattr(api,'log',lambda level,component,event,**kw:events.append((level,event,kw)))
     class Agent:
         def predict(self,*a,**kw):calls.append((a,kw));return deepcopy(RAW)
@@ -36,10 +36,10 @@ def modern(reduced):
 def test_both_blocks_propagate_identical_error_without_downstream_work(kind,instrumentation,monkeypatch):
     registry,calls,events=instrumentation;reduced=[]
     if kind=='legacy':
-        monkeypatch.setattr('laya_context_router.blocks.interpret',lambda *a,**k:pytest.fail('interpreted'))
+        monkeypatch.setattr('blocks.interpret',lambda *a,**k:pytest.fail('interpreted'))
         block=QuestionBlock(BLOCK_DIR);state='hello '*2000
     else:
-        monkeypatch.setattr('laya_context_router.block_runtime.runtime.enrich_prediction',lambda *a,**k:pytest.fail('enriched'))
+        monkeypatch.setattr('block_runtime.runtime.enrich_prediction',lambda *a,**k:pytest.fail('enriched'))
         block=modern(reduced);state='hello'
     with pytest.raises(InputTokenBudgetExceeded) as caught:block.run(state,config=RunConfig(),registry=registry,strict=True)
     errors=[e for e in events if e[0]=='ERROR']
@@ -65,9 +65,9 @@ def test_minimal_consumer_receives_full_report_without_retry(instrumentation):
 
 
 def test_validator_budget_error_rebound_but_malformed_error_unchanged(monkeypatch):
-    api=importlib.import_module('laya_context_router.laya.predict');events=[]
+    api=importlib.import_module('laya.predict');events=[]
     monkeypatch.setattr(api,'log',lambda level,component,event,**kw:events.append((level,kw)))
-    monkeypatch.setattr('laya_context_router.laya.budget.uuid4',lambda:SimpleNamespace(hex='current-validator-request'))
+    monkeypatch.setattr('laya.budget.uuid4',lambda:SimpleNamespace(hex='current-validator-request'))
     stale=InspectionUnavailable(make_report('old',request_id='stale-validator-request'),'changed methods')
     def validate(*a):raise stale
     inspector=SimpleNamespace(validate_request=validate,inspect=lambda *a,**k:pytest.fail('inspected'))

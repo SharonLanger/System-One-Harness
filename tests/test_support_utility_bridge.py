@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import pytest
-from laya_context_router.building_blocks import typescript as ts
+from building_blocks import typescript as ts
 
 
 def test_call_list_round_trip_with_extractable_target(tmp_path):

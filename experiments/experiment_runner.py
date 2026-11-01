@@ -14,9 +14,9 @@ REPO_SRC = HERE.parent / "src"
 if str(REPO_SRC) not in sys.path:
     sys.path.insert(0, str(REPO_SRC))
 
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.predict import predict
-from laya_context_router.laya.registry import AgentRegistry
+from laya.config import RunConfig
+from laya.predict import predict
+from laya.registry import AgentRegistry
 from support import ObservingRegistry, allocate_result_dir, json_safe, start_record, write_report
 from summary import render_summary
 
@@ -26,7 +26,7 @@ def execute(stem, label, input_path, *, loader=None, registry=None, model=None,
             printer=print, compare_model=None, compare_temperature=None,
             compare_temperature_set=False, compare_lang=None):
     started, stamp = time.monotonic(), datetime.now().astimezone()
-    record = start_record(f"{stem}.py", "laya_context_router.laya.predict.predict", "real" if loader is None and registry is None else "injected")
+    record = start_record(f"{stem}.py", "laya.predict.predict", "real" if loader is None and registry is None else "injected")
     details = {"run": record, "input": None, "questions": None,
                "model_config": {"requested": None, "observed": "not_exposed"},
                "raw_response": None, "processing": {"enrichment": "not_run", "rules": "not_run"},

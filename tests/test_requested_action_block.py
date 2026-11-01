@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 from unittest.mock import Mock
 import pytest
-from laya_context_router.block_runtime import Catalog, BlockInputError
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from block_runtime import Catalog, BlockInputError
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 
 LABELS = ('explain', 'generate_tests', 'modify_code')
 FIXTURES = Path(__file__).parent / 'fixtures'
@@ -32,7 +32,7 @@ class Harness:
         if isinstance(self.raw,Exception): raise self.raw
         return self.raw
     def run(self, value=None, **kwargs):
-        from laya_context_router.building_blocks.questions.requested_action.block import run
+        from building_blocks.questions.requested_action.block import run
         return run({'prompt':'Explain total'} if value is None else value,
             config=kwargs.pop('config',RunConfig(model='synthetic')),registry=self.registry,**kwargs)
 
@@ -55,7 +55,7 @@ def test_T02_T03_T04_transport_only_no_token_claim(text):
 
 @pytest.mark.parametrize('value',[None,42,False,[],{}, {'prompt':None},{'prompt':3},{'prompt':True},{'prompt':[]},{'prompt':''},{'prompt':' \n '},{'prompt':'x','implementation':'code'},{'prompt':'x','code':'x'}])
 def test_T03_T05_T06_T42_input_rejected_before_load(value):
-    from laya_context_router.building_blocks.questions.requested_action.block import run
+    from building_blocks.questions.requested_action.block import run
     h=Harness()
     with pytest.raises(BlockInputError):run(value,config=RunConfig(),registry=h.registry)
     assert not h.calls and not h.loads
@@ -67,8 +67,8 @@ def test_T03_T05_T06_T42_input_rejected_before_load(value):
  ((.499,.300,.201),.0,None),
  ((.44,.341,.219),.9,'below_threshold:probability_gap'),((.50,.50,0),.5,'below_threshold:probability_gap')])
 def test_T14_T20_T43_policy_boundaries(probs,confidence,reason):
-    from laya_context_router.answers.enrich import enrich_prediction
-    from laya_context_router.answers.rules import accepts
+    from answers.enrich import enrich_prediction
+    from answers.rules import accepts
     raw=response(probs=probs,confidence=confidence);h=Harness(raw);r=h.run()
     accepted,actual=accepts(enrich_prediction(raw['answers']['requested_action']),Catalog().rule('requested_action_default'))
     assert actual==reason and r.reason is None and r.status=='completed'
@@ -78,8 +78,8 @@ def test_T14_T20_T43_policy_boundaries(probs,confidence,reason):
 
 
 def test_T08_T09_T11_T12_T21_T22(monkeypatch):
-    from laya_context_router.building_blocks.questions.requested_action import block
-    import laya_context_router.block_runtime.runtime as runtime
+    from building_blocks.questions.requested_action import block
+    import block_runtime.runtime as runtime
     spy=Mock(wraps=runtime.enrich_prediction);monkeypatch.setattr(runtime,'enrich_prediction',spy)
     h=Harness(); value={'prompt':'x'}; before=deepcopy(h.raw); overrides={'requested_action':Catalog().question('requested_action')}; saved=deepcopy(overrides)
     # Catalog construction/import is lazy; no loader has run.
@@ -96,7 +96,7 @@ def test_T08_T09_T11_T12_T21_T22(monkeypatch):
 
 
 def test_T10_invalid_output():
-    from laya_context_router.building_blocks.questions.requested_action.block import validate_output
+    from building_blocks.questions.requested_action.block import validate_output
     for value in ({'action':'other'}, {}, {'action':'explain','extra':1}, [], {'action':[]}):
         with pytest.raises(ValueError):validate_output(value)
 

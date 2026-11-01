@@ -11,7 +11,7 @@ import sys
 REPO_SRC = Path(__file__).resolve().parents[1] / "src"
 if str(REPO_SRC) not in sys.path:
     sys.path.insert(0, str(REPO_SRC))
-from laya_context_router.log_utils import LOG_PATH, log
+from log_utils import LOG_PATH, log
 
 
 class ObservingRegistry:

@@ -1,7 +1,7 @@
 from copy import deepcopy
 from dataclasses import replace
 import pytest
-from laya_context_router.flows.first_method_context_utils import SelectedMethod, build_enrichment_event, decide_enrichment
+from flows.first_method_context_utils import SelectedMethod, build_enrichment_event, decide_enrichment
 
 S = SelectedMethod('/project/Unicode Ω/orders.ts', 'calculate', 'calculate(): number', 20, 45)
 C = {'source': {'kind': 'hook', 'name': 'PostCompact'}, 'type': 'PostCompact', 'payload': {}}

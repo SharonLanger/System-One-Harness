@@ -4,7 +4,7 @@ import sys
 
 import pytest
 
-from laya_context_router.building_blocks.typescript import TypeScriptError, outline, collect_project_context
+from building_blocks.typescript import TypeScriptError, outline, collect_project_context
 
 
 def fixture(tmp_path):

@@ -18,13 +18,13 @@ import importlib.abc, json, os, sys, time
 class BlockWork(importlib.abc.MetaPathFinder):
     def find_spec(self, fullname, *args):
         if fullname.startswith(('laya_mlx', 'mlx', 'torch',
-            'laya_context_router.hooks.dispatcher',
-            'laya_context_router.hooks.user_prompt_submit',
-            'laya_context_router.laya', 'laya_context_router.flows',
-            'laya_context_router.building_blocks')):
+            'hooks.dispatcher',
+            'hooks.user_prompt_submit',
+            'laya', 'flows',
+            'building_blocks')):
             raise AssertionError('observation imported work: ' + fullname)
 sys.meta_path.insert(0, BlockWork())
-from laya_context_router.hooks.gateway import main
+from hooks.gateway import main
 records = []
 def dispatch(*args):
     raise AssertionError('dispatcher was invoked')
@@ -112,7 +112,7 @@ def test_alternating_projects_and_sessions_in_same_process(tmp_path):
     a = tmp_path / 'A'; b = tmp_path / 'B'; a.mkdir(); b.mkdir()
     script = '''
 import io, json, os, sys
-from laya_context_router.hooks.gateway import main
+from hooks.gateway import main
 rows=[]
 for index, project in enumerate(PROJECTS):
     os.environ['CLAUDE_PROJECT_DIR']=project
@@ -192,9 +192,9 @@ def test_default_sink_records_complete_observation(tmp_path):
     path = tmp_path / 'debug.jsonl'
     script = '''
 from pathlib import Path
-from laya_context_router import log_utils
+import log_utils
 log_utils.LOG_PATH=Path(__LOG_FILE__)
-from laya_context_router.hooks.gateway import main
+from hooks.gateway import main
 raise SystemExit(main(['--hook','UserPromptSubmit','--observe-only']))
 '''.replace('__LOG_FILE__', repr(str(path)))
     raw = '{ "hook_event_name": "UserPromptSubmit", "extra": "hello" }'
@@ -213,9 +213,9 @@ def test_default_sink_unwritable_path_is_visible_without_protocol_output(tmp_pat
     path = blocker / 'debug.jsonl'
     script = '''
 from pathlib import Path
-from laya_context_router import log_utils
+import log_utils
 log_utils.LOG_PATH=Path(__LOG_FILE__)
-from laya_context_router.hooks.gateway import main
+from hooks.gateway import main
 raise SystemExit(main(['--hook','UserPromptSubmit','--observe-only']))
 '''.replace('__LOG_FILE__', repr(str(path)))
     proc = subprocess.run([sys.executable, '-c', script],

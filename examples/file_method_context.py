@@ -4,10 +4,10 @@ from _plumbing_inspection import plumbing_provider
 import json
 from pathlib import Path
 
-from laya_context_router.building_blocks.typescript import outline
-from laya_context_router.flows.file_method_context import run
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from building_blocks.typescript import outline
+from flows.file_method_context import run
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 
 root = Path(__file__).resolve().parents[1]
 source = root / 'tests/fixtures/typescript/basic.ts'

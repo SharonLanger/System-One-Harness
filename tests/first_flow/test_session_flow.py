@@ -3,11 +3,11 @@ from time import monotonic
 import json
 import pytest
 from .conftest import PROMPT
-from laya_context_router.flows import first_method_context as flow
-from laya_context_router.flows.first_method_context_utils import EnrichmentDecision
-from laya_context_router.hooks import session_state
-from laya_context_router.hooks.contracts import Context, Noop
-from laya_context_router.hooks.gateway import serialize_response
+from flows import first_method_context as flow
+from flows.first_method_context_utils import EnrichmentDecision
+from hooks import session_state
+from hooks.contracts import Context, Noop
+from hooks.gateway import serialize_response
 
 
 def test_final_decision_metadata_and_skip(h, golden):

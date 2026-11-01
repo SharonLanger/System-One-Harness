@@ -14,8 +14,8 @@ ENV={**os.environ,'PYTHONPATH':str(ROOT/'src')}
 def test_deadline_covers_final_and_error_logging(tmp_path,stage):
     path=tmp_path/'records.jsonl'
     code='''import json,time
-from laya_context_router.hooks.gateway import main
-from laya_context_router.hooks.contracts import Context
+from hooks.gateway import main
+from hooks.contracts import Context
 calls=[]
 processing_started=False
 def logger(level,event,**details):
@@ -44,8 +44,8 @@ main(['--hook','X','--deadline','.15'],dispatcher=dispatch,logger=logger)
 def test_undrained_output_pipe_times_out_without_retrying_delivery(tmp_path):
     path=tmp_path/'records.jsonl'
     code='''import json
-from laya_context_router.hooks.gateway import main
-from laya_context_router.hooks.contracts import Context
+from hooks.gateway import main
+from hooks.contracts import Context
 def logger(level,event,**details):
     with open(LOG,'a') as f:f.write(json.dumps({'event':event,**details})+'\\n')
 main(['--hook','X','--deadline','.15'],dispatcher=lambda *a:Context('x'*2000000),logger=logger)
@@ -69,7 +69,7 @@ main(['--hook','X','--deadline','.15'],dispatcher=lambda *a:Context('x'*2000000)
 
 def test_invalid_cli_does_not_read_stdin_or_call_logger(monkeypatch,capsys):
     import io
-    from laya_context_router.hooks.gateway import main
+    from hooks.gateway import main
     class Unreadable(io.StringIO):
         def read(self,*a):pytest.fail('read before valid CLI')
     monkeypatch.setattr(sys,'stdin',Unreadable())

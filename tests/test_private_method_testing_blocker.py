@@ -10,13 +10,13 @@ from unittest.mock import Mock
 
 import pytest
 
-from laya_context_router.block_runtime import (
+from block_runtime import (
     BlockConfigurationError, BlockExecutionError, BlockInputError, Catalog, PreparedInput, SkipBlock,
 )
-from laya_context_router.building_blocks.questions.private_method_testing_blocker import block
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.laya.predict import ResponseError
+from building_blocks.questions.private_method_testing_blocker import block
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from laya.predict import ResponseError
 
 QUESTION = block.QUESTION
 
@@ -199,13 +199,13 @@ def test_block_resources_and_execution_in_installed_wheel(tmp_path):
     ]
     with zipfile.ZipFile(wheel) as archive:
         for item in files:
-            path = 'laya_context_router/' + item
+            path = '' + item
             assert archive.read(path) == (root / 'src' / path).read_bytes()
         archive.extractall(installed)
     code = '''
-from laya_context_router.building_blocks.questions.private_method_testing_blocker.block import run
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
+from building_blocks.questions.private_method_testing_blocker.block import run
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
 class Agent:
  def predict(self, text, questions, **kwargs):
   assert set(questions) == {'private_method_testing_blocker'}

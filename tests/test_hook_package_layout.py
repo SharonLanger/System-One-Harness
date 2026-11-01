@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_outer_launcher_forwards_arguments_once(monkeypatch):
-    from laya_context_router.hooks import gateway
+    from hooks import gateway
     spec = importlib.util.spec_from_file_location('outer_hook_launcher', ROOT / 'hooks/user_prompt_submit.py')
     launcher = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(launcher)
@@ -22,7 +22,7 @@ def test_outer_launcher_forwards_arguments_once(monkeypatch):
 
 
 @pytest.mark.parametrize('command', [
-    ['-m', 'laya_context_router.hooks.gateway', '--hook', 'UserPromptSubmit'],
+    ['-m', 'hooks.gateway', '--hook', 'UserPromptSubmit'],
     [str(ROOT / 'hooks/user_prompt_submit.py')],
 ])
 def test_package_and_outer_launcher_keep_empty_failure_protocol(command):

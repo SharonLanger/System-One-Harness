@@ -4,7 +4,7 @@ from itertools import product
 
 import pytest
 
-from laya_context_router.context_format import format_context, _GAP_NOTES
+from context_format import format_context, _GAP_NOTES
 
 
 def context(code='function chosen() {}', line=4):

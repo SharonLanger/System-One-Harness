@@ -38,7 +38,7 @@ def main(argv=None):
     parser.add_argument("--config", type=Path, help="optional RunConfig JSON passed to the real hook")
     args = parser.parse_args(argv)
     stamp, started = datetime.now().astimezone(), datetime.now().astimezone()
-    details = {"run": start_record("hook_user_prompt_submit.py", "laya_context_router.hooks.gateway subprocess", "real"),
+    details = {"run": start_record("hook_user_prompt_submit.py", "hooks.gateway subprocess", "real"),
                "input_path": str(args.input), "event": None, "exit_code": None,
                "stdout": "", "stderr": "", "parsed_output": None, "observed_status": "technical_error",
                "deadline_seconds": args.deadline, "error": None, "hook_pid": None,
@@ -53,7 +53,7 @@ def main(argv=None):
         details["event"] = event
         env = dict(os.environ)
         env["PYTHONPATH"] = os.pathsep.join([str(ROOT / "src"), env.get("PYTHONPATH", "")]).rstrip(os.pathsep)
-        command = [sys.executable, "-m", "laya_context_router.hooks.gateway", "--hook", "UserPromptSubmit",
+        command = [sys.executable, "-m", "hooks.gateway", "--hook", "UserPromptSubmit",
                    "--repository-root", str(ROOT), "--real", "--deadline", str(args.deadline)]
         if args.config:
             command.extend(["--config", str(args.config.resolve())])

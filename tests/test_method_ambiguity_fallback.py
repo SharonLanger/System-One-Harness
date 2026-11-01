@@ -1,8 +1,8 @@
 """Reusable method-selection block refuses indistinguishable candidates."""
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.building_blocks.typescript import outline
-from laya_context_router.building_blocks.questions.method_selection.block import run as select_method
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from building_blocks.typescript import outline
+from building_blocks.questions.method_selection.block import run as select_method
 
 
 

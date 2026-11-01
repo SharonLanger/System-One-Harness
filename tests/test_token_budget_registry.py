@@ -1,9 +1,9 @@
 import inspect
 from types import SimpleNamespace
 import pytest
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.registry import AgentRegistry
-from laya_context_router.laya.predict import predict
+from laya.config import RunConfig
+from laya.registry import AgentRegistry
+from laya.predict import predict
 from test_predict import RAW,REQUEST,Agent
 
 
@@ -54,7 +54,7 @@ def test_invalid_capability_never_cached():
     capability();calls=[]
     def provider(*a):calls.append(1);return object()
     registry=AgentRegistry(loader=lambda *a:Agent(),inspection_provider=provider)
-    from laya_context_router.laya.budget import InspectionUnavailable
+    from laya.budget import InspectionUnavailable
     for _ in range(2):
         with pytest.raises(InspectionUnavailable):registry.get_inspector(RunConfig())
     assert len(calls)==2

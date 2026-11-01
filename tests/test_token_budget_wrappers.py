@@ -1,7 +1,7 @@
 """Opaque observation wrappers retain the ordinary prediction contract."""
 from copy import deepcopy
 from types import SimpleNamespace
-from laya_context_router.laya.predict import predict
+from laya.predict import predict
 from test_predict import REQUEST, RAW
 
 

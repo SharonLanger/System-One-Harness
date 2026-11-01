@@ -1,8 +1,8 @@
 from types import SimpleNamespace
 import pytest
-from laya_context_router.laya import budget_profiles as api
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.laya.budget import InspectionUnavailable
+from laya import budget_profiles as api
+from laya.config import RunConfig
+from laya.budget import InspectionUnavailable
 from test_token_budget_profiles import observation
 
 

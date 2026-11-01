@@ -7,7 +7,7 @@ from copy import deepcopy
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 import engine
 from schema import load
-from laya_context_router.laya.config import RunConfig
+from laya.config import RunConfig
 
 class ReplayContracts(unittest.TestCase):
     def test_each_supported_adapter_type(self):
@@ -18,7 +18,7 @@ class ReplayContracts(unittest.TestCase):
                 if kind=='choice': definition['criteria']={'fruit':'Fruit','other':'Other'}
                 input_value='An apple'
             else:
-                definition=load(engine.ROOT/'src/laya_context_router/defaults/questions'/f"{adapter.replace('-','_')}.json")
+                definition=load(engine.ROOT/'src/defaults/questions'/f"{adapter.replace('-','_')}.json")
                 input_value={'prompt':'Explain this method'}
             name=definition['name'];suite={'adapter':adapter,'question_type':kind};q={'id':'q','definition':definition}
             field='distance_from_boundary' if kind=='noul' else 'probability_gap'

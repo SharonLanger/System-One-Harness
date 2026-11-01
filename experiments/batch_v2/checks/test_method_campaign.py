@@ -30,7 +30,7 @@ class CampaignTests(unittest.TestCase):
     b={k:0 for k in COUNTS};b.update(correct_selection=1,wrong_selection=8)
     self.assertEqual(aggregate([a,b])['selection_precision'],.2)
  def test_engine_replay_and_reports(self):
-    from laya_context_router.laya.config import RunConfig
+    from laya.config import RunConfig
     cases=copy.deepcopy(self.cases);cases['cases']=[cases['cases'][0],next(c for c in cases['cases'] if 'multiple' in c['tags'])]
     for c in cases['cases']:c['split']='development'
     suite=copy.deepcopy(self.suite);suite['experiment_id']='method-fixture-check'

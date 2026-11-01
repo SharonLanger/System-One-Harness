@@ -2,11 +2,11 @@
 from copy import deepcopy
 from pathlib import Path
 import json
-from laya_context_router.block_runtime import PreparedInput
-from laya_context_router.block_runtime.catalog import Catalog, TypedRule
-from laya_context_router.building_blocks.questions.method_selection_v2 import block
-from laya_context_router.laya.config import RunConfig
-from laya_context_router.questions.models import Question
+from block_runtime import PreparedInput
+from block_runtime.catalog import Catalog, TypedRule
+from building_blocks.questions.method_selection_v2 import block
+from laya.config import RunConfig
+from questions.models import Question
 
 
 def execute(value, question, rule, suite, config, registry):
@@ -48,7 +48,7 @@ def validate(cases, suite):
         RunConfig.from_dict({k:v for k,v in cfg.items() if k!='id'})
     _check(not suite.get('exclusions'), 'method campaign has no exclusions')
     families={}; ids=set()
-    from laya_context_router.building_blocks.typescript import _validate_outline
+    from building_blocks.typescript import _validate_outline
     for case in cases['cases']:
         _object(case['input'], ('text','source_outline'))
         _check(case['id'] not in ids, 'duplicate case'); ids.add(case['id'])

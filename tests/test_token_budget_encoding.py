@@ -1,7 +1,7 @@
 """Rendering and normalization against a mocked encoding boundary, not real token IDs."""
 import json
 import pytest
-from laya_context_router.laya import budget_adapters as api
+from laya import budget_adapters as api
 from token_budget_support import tokenizer
 
 @pytest.mark.parametrize('state',['','hello','  hello\n\tworld','literal <mask>',

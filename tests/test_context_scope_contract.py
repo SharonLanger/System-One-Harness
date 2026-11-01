@@ -2,9 +2,9 @@
 from copy import deepcopy
 import pytest
 from test_context_scope_block import LABELS, response, run, registry
-from laya_context_router.block_runtime import Catalog, PreparedInput, SkipBlock
-from laya_context_router.block_runtime.catalog import TypedRule
-from laya_context_router.building_blocks.questions.context_scope import block
+from block_runtime import Catalog, PreparedInput, SkipBlock
+from block_runtime.catalog import TypedRule
+from building_blocks.questions.context_scope import block
 
 class OverrideCatalog(Catalog):
     def question(self,name):

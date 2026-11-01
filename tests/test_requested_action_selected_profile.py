@@ -5,8 +5,8 @@ from pathlib import Path
 import pytest
 
 from test_requested_action_block import Harness, response
-from laya_context_router.block_runtime import Catalog
-from laya_context_router.laya.config import RunConfig
+from block_runtime import Catalog
+from laya.config import RunConfig
 
 ROOT = Path(__file__).resolve().parents[1]
 SUITE = ROOT / 'experiments/batch_v2/experiments/requested-action-500/rounds/001-broad/suite.json'
@@ -66,10 +66,10 @@ def test_unclear_is_non_actionable_and_remains_distinguishable_in_decisions(prob
 
 
 def test_accepted_unclear_uses_existing_flow_fallback_before_outline(monkeypatch):
-    from laya_context_router.building_blocks import typescript
-    from laya_context_router.building_blocks.questions.method_selection_v2 import block as selection
-    from laya_context_router.flows.first_method_context import run
-    from laya_context_router.hooks.contracts import Noop
+    from building_blocks import typescript
+    from building_blocks.questions.method_selection_v2 import block as selection
+    from flows.first_method_context import run
+    from hooks.contracts import Noop
 
     def forbidden(*args, **kwargs):
         pytest.fail('unclear must stop before source outline or method selection')

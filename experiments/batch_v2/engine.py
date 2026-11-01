@@ -13,7 +13,7 @@ from dataclasses import asdict
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
 sys.path.insert(0,str(ROOT/'src'))
-from laya_context_router import log_utils
+import log_utils
 log_utils.LOG_PATH=HERE/'checks/output/runtime.jsonl'
 from schema import load, validate, hash_value
 from run_paths import allocate
@@ -76,10 +76,10 @@ def case_path(root,q,r,c,case): return Path(root)/'batches'/f"{q['id']}__{r['id'
 def inference_id(q,r,c,case,rule_mode): return hash_value([q['id'],r['id'] if rule_mode=='direct' else None,c['id'],case['id']])[:32]
 
 def execute(input_data,question,rule,suite,config,registry):
-    from laya_context_router.block_runtime import Block, PreparedInput
-    from laya_context_router.answers.rules import RulesConfig
-    from laya_context_router.block_runtime.catalog import Catalog, TypedRule
-    from laya_context_router.questions.models import Question
+    from block_runtime import Block, PreparedInput
+    from answers.rules import RulesConfig
+    from block_runtime.catalog import Catalog, TypedRule
+    from questions.models import Question
     if suite["adapter"] == "method-selection":
         from method_adapter import execute as execute_method
         return execute_method(input_data, question, rule, suite, config, registry)
@@ -99,7 +99,7 @@ def execute(input_data,question,rule,suite,config,registry):
         return block.run(input_data,config=config,registry=registry)
     module='requested_action' if suite['adapter']=='requested-action' else 'context_scope'
     import importlib
-    run=importlib.import_module('laya_context_router.building_blocks.questions.'+module+'.block').run
+    run=importlib.import_module('building_blocks.questions.'+module+'.block').run
     return run(input_data,config=config,registry=registry,catalog=catalog,question_overrides={name:question['definition']},rule_overrides={name:'experiment-rule'})
 
 class Boundary:
@@ -126,10 +126,10 @@ def worker(root,config_id):
         return _worker(root, config_id, diagnostics)
 
 def _worker(root,config_id,diagnostics):
-    from laya_context_router.laya.config import RunConfig
-    from laya_context_router.laya.registry import AgentRegistry
-    from laya_context_router.answers.interpret import extract_answer
-    from laya_context_router.answers.enrich import enrich_prediction
+    from laya.config import RunConfig
+    from laya.registry import AgentRegistry
+    from answers.interpret import extract_answer
+    from answers.enrich import enrich_prediction
     root=Path(root); m=load(root/'manifest.json'); suite=m['suite']; cfg=next(c for c in suite['configurations'] if c['id']==config_id)
     config=RunConfig.from_dict({k:v for k,v in cfg.items() if k!='id'})
     diagnostics.context={'config_id':config_id}
