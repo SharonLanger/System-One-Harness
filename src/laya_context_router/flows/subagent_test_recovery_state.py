@@ -137,3 +137,20 @@ def has_enrichment(history, *, session_id, agent_id):
     events = list(_events(history, session_id))
     return any(kind == ENRICHMENT and assignment.agent_id == agent_id
                for _, kind, assignment in events)
+
+
+def decide_enrichment(history, assignment, *, agent_id):
+    if not isinstance(assignment, TrackedAssignment):
+        raise RecoveryStateError('invalid_assignment')
+    build_enrichment_event(assignment, agent_id=agent_id)
+    current = find_assignment(history, session_id=assignment.session_id,
+                              tool_use_id=assignment.tool_use_id, agent_id=agent_id)
+    if current is None:
+        return RecoveryStateDecision(False, 'assignment_missing'), None
+    if current.target != assignment.target:
+        raise RecoveryStateError('stale_assignment')
+    if has_enrichment(history, session_id=assignment.session_id, agent_id=agent_id):
+        index = next(index for index, kind, stored in _events(history, assignment.session_id)
+                     if kind == ENRICHMENT and stored.agent_id == agent_id)
+        return RecoveryStateDecision(False, 'already_enriched', index), None
+    return RecoveryStateDecision(True, 'enrich'), build_enrichment_event(current, agent_id=agent_id)

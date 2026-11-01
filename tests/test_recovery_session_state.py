@@ -105,3 +105,30 @@ def test_unrelated_events_ignored_and_empty_history():
              {'source':{'kind':'flow','name':'subagent_test_recovery'},'type':'future_event'}]
     assert lookup(history) is None
     assert not has_enrichment([],session_id='session-1',agent_id='child')
+
+from laya_context_router.flows.subagent_test_recovery_state import decide_enrichment
+
+
+def test_decision_first_replay_resume_and_missing():
+    a=assignment(); history=[build_assignment_event(a)]
+    decision,event=decide_enrichment(history,a,agent_id='child')
+    assert decision.allow is True and decision.reason=='enrich'
+    history.append(event)
+    history.append(build_assignment_event(assignment(tool='resumed',name='other')))
+    decision,event=decide_enrichment(history,assignment(tool='resumed',name='other'),agent_id='child')
+    assert decision.allow is False and decision.reason=='already_enriched'
+    assert decision.matched_event_index==1 and event is None
+    decision,event=decide_enrichment([],a,agent_id='child')
+    assert not decision.allow and event is None and decision.reason=='assignment_missing'
+
+
+def test_stale_assessment():
+    with pytest.raises(RecoveryStateError,match='stale_assignment'):
+        decide_enrichment([build_assignment_event(assignment(name='changed'))],assignment(),agent_id='child')
+
+
+def test_all_history_validated_even_after_match():
+    history=[build_assignment_event(assignment()),build_enrichment_event(assignment(),agent_id='child')]
+    broken=build_assignment_event(assignment(tool='other')); broken['payload']['schemaVersion']=2
+    history.append(broken)
+    with pytest.raises(RecoveryStateError): decide_enrichment(history,assignment(),agent_id='child')
