@@ -1,0 +1,8 @@
+{
+  "name": "task_completion_default",
+  "question_type": "choice",
+  "conditions": [
+    {"field": "answer_confidence", "op": "gte", "value": 0.5},
+    {"field": "probability_gap", "op": "gte", "value": 0.15}
+  ]
+}
