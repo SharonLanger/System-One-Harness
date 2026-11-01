@@ -1,0 +1,9 @@
+{
+  "name": "private_method_testing_blocker",
+  "questions": {
+    "private_method_testing_blocker": {
+      "question_ref": "private_method_testing_blocker",
+      "rule_ref": "private_method_testing_blocker_default"
+    }
+  }
+}
