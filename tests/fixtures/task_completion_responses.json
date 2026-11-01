@@ -1,0 +1,17 @@
+{
+  "question": "task_completion",
+  "model_labels": ["yes", "no"],
+  "semantic_evaluation_only": true,
+  "cases": [
+    {"id": "TC-S01", "category": "complete", "response": "Completed all five requested tests; they pass.", "expected": "yes", "reason": "Explicit complete outcome."},
+    {"id": "TC-S02", "category": "complete", "response": "Done.", "expected": "yes", "reason": "Unqualified final completion report."},
+    {"id": "TC-S03", "category": "blocked", "response": "I could not write the tests because the method is private.", "expected": "no", "reason": "Unresolved blocker."},
+    {"id": "TC-S04", "category": "partial", "response": "I wrote three of five tests; two remain.", "expected": "no", "reason": "Required work remains."},
+    {"id": "TC-S05", "category": "future", "response": "I will write the tests tomorrow.", "expected": "no", "reason": "Future intent."},
+    {"id": "TC-S06", "category": "resolved", "response": "The method was private, but I used our technique and wrote all five tests.", "expected": "yes", "reason": "Earlier blocker resolved."},
+    {"id": "TC-S07", "category": "validation", "response": "I wrote all five requested tests, but I could not run them.", "expected": "yes", "reason": "Running is not identified as required."},
+    {"id": "TC-S08", "category": "validation", "response": "I wrote all five tests but the required test run remains incomplete.", "expected": "no", "reason": "Explicitly required validation unfinished."},
+    {"id": "TC-S09", "category": "ambiguous", "response": "I looked at the code and found an approach.", "expected": "no", "reason": "No affirmative completion report."},
+    {"id": "TC-S10", "category": "correction", "response": "I created five tests. Correction: only three were added.", "expected": "no", "reason": "Latest correction controls."}
+  ]
+}
