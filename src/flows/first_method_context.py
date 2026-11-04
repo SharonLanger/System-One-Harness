@@ -103,7 +103,7 @@ def _block_data(result):
     return result.data
 
 
-def handle_prompt(request, logger, *, registry=None):
+def handle_prompt(request, logger, *, registry=None, session_store=None):
     """Adapt existing hook setup without allowing cwd-based configuration reads."""
     try:
         root = _root(getattr(request.config, 'repository_root', None))
@@ -125,10 +125,11 @@ def handle_prompt(request, logger, *, registry=None):
     return run(request.prompt, project_root=root, config=prepared['model_config'],
                registry=registry, logger=logger,
                max_context_chars=getattr(args, 'max_context_chars', _CAP),
-               finalize_enrichment=lambda selected: finalize_enrichment(request, logger, selected))
+               finalize_enrichment=lambda selected: finalize_enrichment(request, logger, selected,
+                                                                        session_store=session_store))
 
 
-def finalize_enrichment(request, logger, selected):
+def finalize_enrichment(request, logger, selected, *, session_store=None):
     """Commit the final state decision; ordinary persistence errors preserve context."""
     common = getattr(getattr(request, 'envelope', None), 'common', {})
     session_id = common.get('session_id') if isinstance(common, dict) else None
@@ -141,7 +142,9 @@ def finalize_enrichment(request, logger, selected):
         deadline = getattr(request.config, 'deadline_at', None)
         if deadline is None or session_id is None:
             raise ValueError('session_state_metadata_missing')
-        decision = inspect_and_save_event(session_id, decide, deadline=deadline)
+        transaction = (session_store.inspect_and_save_event if session_store is not None
+                       else inspect_and_save_event)
+        decision = transaction(session_id, decide, deadline=deadline)
     except TimeoutError:
         raise
     except Exception as exc:

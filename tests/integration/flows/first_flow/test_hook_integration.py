@@ -14,7 +14,7 @@ from hooks.dispatcher import dispatch_hook
 from hooks.gateway import serialize_response
 from hooks.user_prompt_submit.dispatcher import dispatch_user_prompt_submit
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[4]
 
 # Executed only by these tests. Both block calls are replaced before gateway use;
 # registry tripwires fail closed if either replacement is accidentally removed.
