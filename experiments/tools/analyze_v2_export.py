@@ -43,6 +43,41 @@ def native_decision(raw, question, rule):
             'decided':accepted, 'reason':reason}
 
 
+def final_plan(partitions, finalists, questions, configs, rules, exclusions):
+    """Validate the entire frozen scope before any prediction is evaluated."""
+    candidates = finalists['candidate_ids']
+    definitions = finalists.get('definitions', {})
+    require(len(candidates) == len(set(candidates)) and set(candidates) == set(definitions),
+            'Frozen candidate IDs and definitions must match uniquely')
+    plan = []
+    for candidate in candidates:
+        parts = candidate.split('|')
+        require(len(parts) == 2, 'Invalid frozen candidate: '+candidate)
+        qid, cfgid = parts
+        require(qid in questions and cfgid in configs, 'Missing frozen candidate configuration: '+candidate)
+        frozen = definitions[candidate]
+        require(frozen['question'] == questions[qid] and frozen['config'] == configs[cfgid],
+                'Frozen finalist settings changed: '+candidate)
+        if questions[qid]['definition']['type'] == 'choice':
+            require(list(frozen['question']['definition']['criteria']) ==
+                    list(questions[qid]['definition']['criteria']),
+                    'Frozen finalist choice order changed: '+candidate)
+        policies = frozen.get('policies')
+        require(isinstance(policies, list) and policies, 'Missing frozen policies: '+candidate)
+        require(all(p.get('kind') == 'native' for p in policies),
+                'Only frozen native policies supported: '+candidate)
+        selected = [p['rule'] for p in policies]
+        require(len({r['id'] for r in selected}) == len(selected), 'Duplicate frozen rule: '+candidate)
+        for rule in selected:
+            require(rules.get(rule['id']) == rule, 'Frozen native rule changed: '+candidate+'|'+rule['id'])
+            require((qid, rule['id'], cfgid) not in exclusions,
+                    'Excluded frozen policy: '+candidate+'|'+rule['id'])
+        matches = [p for p in partitions if (p['question_id'], p['config_id']) == (qid, cfgid)]
+        require(len(matches) == 1, 'Expected exactly one frozen candidate partition: '+candidate)
+        plan.append((matches[0], selected))
+    return plan
+
+
 def analyze_export(export_folder, report_folder, *, stage='development', finalists=None):
     from research.protocol import allowed_ids
     from research.records import manifest_identity
@@ -66,26 +101,16 @@ def analyze_export(export_folder, report_folder, *, stage='development', finalis
     cases, questions, configs, rules = (catalog(items) for items in
         (m['cases']['cases'], suite['questions'], suite['configurations'], suite['rules']))
     exclusions = {(e['question_id'],e['rule_id'],e['config_id']) for e in suite.get('exclusions',[])}
+    if stage == 'final':
+        plan = final_plan(export['partitions'], finalists, questions, configs, rules, exclusions)
+    else:
+        plan = [(part, [r for r in rules.values() if
+                 (part['question_id'], r['id'], part['config_id']) not in exclusions])
+                for part in export['partitions']]
     vectors = []
-    for part in export['partitions']:
+    for part, selected_rules in plan:
         qid, cfgid = part['question_id'], part['config_id']
         require(qid in questions and cfgid in configs, 'Unknown partition definitions')
-        selected_rules = list(rules.values())
-        if stage=='final':
-            candidate = qid+'|'+cfgid
-            if candidate not in finalists['candidate_ids']:
-                continue
-            frozen = finalists['definitions'][candidate]
-            require(frozen['question']==questions[qid] and frozen['config']==configs[cfgid],
-                    'Frozen finalist settings changed')
-            if questions[qid]['definition']['type']=='choice':
-                require(list(frozen['question']['definition']['criteria'])==list(questions[qid]['definition']['criteria']),
-                        'Frozen finalist choice order changed')
-            policies = frozen['policies']
-            require(all(p.get('kind')=='native' for p in policies), 'Only frozen native policies supported')
-            selected_rules = [p['rule'] for p in policies]
-            require(all(rules.get(r['id'])==r for r in selected_rules), 'Frozen native rule changed')
-        selected_rules = [r for r in selected_rules if (qid,r['id'],cfgid) not in exclusions]
         path = (root/part['path']).resolve()
         require(root in path.parents and path.is_file() and not (root/part['path']).is_symlink(), 'Unsafe partition path')
         require(digest(path)==part['sha256'], 'Partition checksum mismatch')
@@ -164,3 +189,4 @@ if __name__=='__main__':
         raise SystemExit('Set EXPORT_FOLDER and REPORT_FOLDER in this file before Run.')
     analyze_export(EXPORT_FOLDER, REPORT_FOLDER, stage=STAGE,
                    finalists=read(FINALISTS_FILE,lossless=False) if FINALISTS_FILE else None)
+
