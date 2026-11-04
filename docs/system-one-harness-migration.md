@@ -8,4 +8,4 @@ The plugin still reads `LAYA_CONTEXT_ROUTER_CLI`. Its value may name either exec
 
 Intentional older names remain in the compatibility executable and environment key, the upstream GitHub repository URL until Sharon renames it, historical research material and previous design documents, and LAYA SDK/model identifiers. Source imports and active module invocations use the flat packages.
 
-See [the implementation design](system-one-harness-rename-design.md) and [plugin setup](../plugins/README.md).
+See the implementation design (historical material; see docs/cleanup-local-files.md) and [plugin setup](../plugins/README.md).

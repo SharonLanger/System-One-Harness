@@ -9,7 +9,7 @@ Status: implementation ready for review; **not ready for a live campaign**. No n
 - Provenance mutation, missing inference, held-out checkpoint open trap, role exclusivity, model asset/config-ID normalization, cumulative identity, incomplete selection denominators and exact frozen gate tests pass.
 - Broad→refined→combined→fine proposals, repeated baseline exclusion provenance, cross-campaign rejection, flat/tied/boundary/cap stopping, SDK-default carry with numeric baseline, unsettled operational cases and missing final channels pass.
 - Proposed suite JSON passes the actual RV2 schema/runtime validator; direct/replay parity and annotation isolation pass the existing RV2 checks. No SDK/model package was installed or upgraded.
-- Exercised `python -B checks/demo_research.py`, `python -B -m research analyze`, `export`, `mark-published`, and `python -B -m research.probe --help` from the runner directory. See [mechanical demo](../checks/fixtures/research-demo/README.md).
+- Exercised `python -B checks/demo_research.py`, `python -B -m research analyze`, `export`, `mark-published`, and `python -B -m research.probe --help` from the runner directory. See [mechanical demo](../../../tests/fixtures/deferred/batch_v2/research-demo/README.md).
 - Static HTML checks confirm viewport/wrapping and exposed group/policy/paired sections. This is not browser acceptance.
 
 ## Pending environment checks

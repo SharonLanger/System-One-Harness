@@ -1,0 +1,1 @@
+Frozen selected-profile expectations copied byte-for-byte from campaign suite.json on main a66982b. Production tests use these independently of manual experiment folders. Update deliberately when adopting a new profile.

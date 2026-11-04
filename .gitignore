@@ -1,14 +1,30 @@
+# Local environments and generated builds
 __pycache__/
+*.py[cod]
 .pytest_cache/
 *.egg-info/
 .venv/
-node_modules/
-dist/
-build/
-experiments/inputs/captured_*
-node_modules/
-typescript-helper/dist/
-.idea
-# Local diagnostic logs (may contain prompts and source code).
-logs/
+node_modules
+/build/
+/dist/
+/typescript-helper/dist/
+# IDE and machine-local state
+.idea/
+*.iml
+.DS_Store
 /backup/
+# Generated evidence; authored campaign cases and docs stay tracked
+/logs/
+/results/
+/experiments/**/results/
+/experiments/exports/
+/experiments/reports/
+/experiments/**/checks/output/
+/experiments/inputs/captured_*
+/tests/.output/
+/typescript-helper/test/.output/
+/coverage/
+/htmlcov/
+.coverage*
+/docs/local/
+/src/building_blocks/questions/method_selection_v2/research/evidence/

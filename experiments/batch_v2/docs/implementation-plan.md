@@ -9,7 +9,7 @@ Read [README](README.md), [workflow](workflow.md), [scoring](scoring.md) and [re
 
 Complete A1–A7 in a separate implementation PR before authoring and running the first full research campaign. The documentation and synthetic fixture checks can be completed without choosing the first real classification question.
 
-Runner V2 already exists on main: PR #21 merged at 83211fd88d10e4c0854797dec47df33ce8d04ea5. It supplies matrix execution, raw response capture, replay, checkpoints, collection and noise/tag/split reports. Its fixture/regression results are recorded in [verification.md](../verification.md); they are not new results produced by this handbook.
+Runner V2 already exists on main: PR #21 merged at 83211fd88d10e4c0854797dec47df33ce8d04ea5. It supplies matrix execution, raw response capture, replay, checkpoints, collection and noise/tag/split reports. Its fixture/regression results are recorded in verification.md (historical material; see docs/cleanup-local-files.md); they are not new results produced by this handbook.
 
 Recheck the current code before implementation. At the reviewed version:
 - Generic-question takes a nonblank string; existing block adapters take objects.

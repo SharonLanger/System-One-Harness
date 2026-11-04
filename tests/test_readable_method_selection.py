@@ -28,7 +28,7 @@ def test_model_sees_readable_labels_and_selection_maps_back_to_source_id(tmp_pat
 
 def test_default_invoice_has_exact_readable_method_identifiers():
     from pathlib import Path
-    path = Path(__file__).resolve().parents[1] / 'experiments/fixtures/connected_project/src/billing/invoice-service.ts'
+    path = Path(__file__).resolve().parents[1] / 'tests/fixtures/first_flow_project/src/billing/invoice-service.ts'
     source = outline(path)
     class Agent:
         def predict(self, text, questions, **kwargs):

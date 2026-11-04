@@ -18,7 +18,7 @@ This report records the exact five-combination results discussed with Sharon. It
 
 ### Design documents
 
-- [Requested-action building-block design](requested-action-block-plan.md).
+- Requested-action building-block design (historical material; see docs/cleanup-local-files.md).
 - [500-case campaign overview](../../experiments/batch_v2/docs/campaigns/requested-action-500/README.md).
 - [Task definition and label meaning](../../experiments/batch_v2/docs/campaigns/requested-action-500/task-definition.md).
 - [Dataset summary](../../experiments/batch_v2/docs/campaigns/requested-action-500/dataset-summary.md).

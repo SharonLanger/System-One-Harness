@@ -113,7 +113,7 @@ def test_root_normalization_and_portable_display():
 
 def test_inventory_fixture_retains_independently_specified_spans():
     from pathlib import Path
-    fixture=Path(__file__).resolve().parents[1]/'experiments/fixtures/connected_project/src/fulfillment/inventory.ts'
+    fixture=Path(__file__).resolve().parents[1]/'tests/fixtures/first_flow_project/src/fulfillment/inventory.ts'
     lines=fixture.read_text().splitlines(keepends=True)
     method=''.join(lines[45:56]).removesuffix('\n')
     interface=''.join(lines[8:12]).removesuffix('\n')

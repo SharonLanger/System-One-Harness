@@ -14,7 +14,7 @@ from test_method_selection import questions_for, raw_for
 from test_v2_blocks import source
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITE = json.loads((ROOT / 'experiments/batch_v2/experiments/method-selection-200/rounds/001-small/suite.json').read_text())
+SUITE = json.loads((ROOT / 'tests/fixtures/selected_profiles/method-selection-200.json').read_text())
 
 
 class Harness:
@@ -92,17 +92,3 @@ def test_explicit_question_rule_and_temperature_overrides():
     assert h.calls[0][1]['method']['instructions'] == question['instructions']
     assert h.loads == [('custom', {'lang_temperatures': {'he': {'temperature': [0] * 3}}})]
     assert h.calls[0][2] == {'lang':'he'}
-
-
-@pytest.mark.parametrize('temperature', [0, .8, 1.1])
-def test_experiment_adapter_preserves_configuration_and_overrides(temperature):
-    spec = importlib.util.spec_from_file_location('selected_method_adapter', ROOT / 'experiments/batch_v2/method_adapter.py')
-    adapter = importlib.util.module_from_spec(spec); spec.loader.exec_module(adapter)
-    h = Harness(raw_for(questions_for(source()), 'sum@1:1', confidence=.6))
-    result = adapter.execute({'text':'Explain sum','source_outline':source()},
-        SUITE['questions'][1], SUITE['rules'][0], SUITE,
-        RunConfig(model='experiment',temperature=temperature), h.registry)
-    expected = {} if temperature is None else {'lang_temperatures': {'en': {'temperature': [temperature] * 3}}}
-    assert h.loads == [('experiment',expected)]
-    assert h.calls[0][1]['method']['instructions'] == SUITE['questions'][1]['definition']['instructions']
-    assert result.data['selected_id'] is not None

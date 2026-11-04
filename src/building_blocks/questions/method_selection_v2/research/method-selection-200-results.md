@@ -176,10 +176,10 @@ All 80 vectors' totals reconcile with each of their noise, difficulty and candid
 
 All numbers above derive from the downloaded development exports committed beside this report. The source manifest records their Drive locations and SHA-256 checksums. `raw-answers.csv` is an aggregate answer summary, not per-input raw model evidence.
 
-- [Vectors — all 80 configurations](evidence/vectors.csv)
-- [Group results — all noise, difficulty and candidate-count breakdowns](evidence/groups.csv)
-- [Raw-answer aggregate summary](evidence/raw-answers.csv), [totals](evidence/totals.json), [decision reasons](evidence/reasons.json), [baseline differences](evidence/baseline-differences.json)
-- [Evidence provenance and checksums](evidence/source-manifest.json)
+- Vectors — all 80 configurations (historical material; see docs/cleanup-local-files.md)
+- Group results — all noise, difficulty and candidate-count breakdowns (historical material; see docs/cleanup-local-files.md)
+- Raw-answer aggregate summary (historical material; see docs/cleanup-local-files.md), totals (historical material; see docs/cleanup-local-files.md), decision reasons (historical material; see docs/cleanup-local-files.md), baseline differences (historical material; see docs/cleanup-local-files.md)
+- Evidence provenance and checksums (historical material; see docs/cleanup-local-files.md)
 - [Original development folder](https://drive.google.com/drive/folders/1lSb1YXL5VRbGqkoAgOVoNUBuP5pXCJqY)
 - [Original experiment summary](https://drive.google.com/file/d/1hHjUISHT4Xa0vSXGfUOD0vcpYTTTadYw/view)
 - [Experiment design and execution guide](../../../../../../experiments/batch_v2/docs/campaigns/method-selection-200/README.md)
