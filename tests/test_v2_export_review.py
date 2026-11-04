@@ -110,3 +110,29 @@ class ExportReviewTests(unittest.TestCase):
         self.assertEqual({(v['question_id'],v['rule_id']) for v in summary['vectors']},
                          {('q0','r0'),('q0','r1'),('q1','r0'),('q1','r1')})
         self.assertTrue(all(v['missing']==1 and v['partial'] for v in summary['vectors'] if v['question_id']=='q1'))
+
+    def test_class_support(self):
+        for scenario in ('complete','missing','error','unsettled','empty'):
+            with self.subTest(scenario=scenario):
+                root=self.export(); info=e.read(root/'export.json',False)
+                for part in info['partitions']:
+                    path=root/part['path']; records=[json.loads(line) for line in path.read_text().splitlines()]
+                    if scenario=='missing': records=[r for r in records if r['case_id']!='c1']
+                    if scenario=='empty': records=[]
+                    if scenario=='error':
+                        for r in records:
+                            if r['case_id']=='c1': r['status']='error'
+                    path.write_text(''.join(json.dumps(r)+'\n' for r in records))
+                    part['found']=len(records);part['sha256']=e.digest(path)
+                e.write(root/'export.json',info)
+                if scenario=='unsettled':
+                    definitions=e.read(root/'definitions.json',False)
+                    definitions['source_manifest']['cases']['cases'][1].update(label_status='taxonomy_pending',expected=None)
+                    e.write(root/'definitions.json',definitions)
+                    info['definitions_sha256']=e.digest(root/'definitions.json');e.write(root/'export.json',info)
+                row=a.analyze_export(root,self.base/('metrics-'+scenario))['vectors'][0]
+                self.assertEqual(row['balanced_accuracy'],row['balanced_accuracy_present_classes'])
+                self.assertEqual(row['comparable_all_classes'],scenario=='complete')
+                self.assertEqual(row['support'],{'explain':int(scenario=='complete'),'unclear':int(scenario!='empty')})
+                self.assertEqual(row['missing_classes'],[] if scenario=='complete' else ['explain','unclear'] if scenario=='empty' else ['explain'])
+                self.assertEqual(row['balanced_accuracy_present_classes'],None if scenario=='empty' else 1.0)

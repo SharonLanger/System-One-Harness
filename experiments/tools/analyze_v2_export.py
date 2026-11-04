@@ -166,7 +166,11 @@ def analyze_export(export_folder, report_folder, *, stage='development', finalis
             c['actionable_coverage'] = c['actionable']/c['planned'] if c['planned'] else None
             c['actionable_error'] = c['wrong_actionable']/c['scored_actionable'] if c['scored_actionable'] else None
             recalls = [row.get(label,0)/sum(row.values()) for label,row in c['confusion'].items() if sum(row.values())]
-            c['balanced_accuracy'] = sum(recalls)/len(recalls) if recalls else None
+            c['balanced_accuracy_present_classes'] = sum(recalls)/len(recalls) if recalls else None
+            c['balanced_accuracy'] = c['balanced_accuracy_present_classes']  # compatibility alias
+            c['support'] = {label:sum(c['confusion'].get(label, {}).values()) for label in suite['labels']}
+            c['missing_classes'] = [label for label, count in c['support'].items() if not count]
+            c['comparable_all_classes'] = not c['missing_classes']
             vectors.append(c)
     summary = {'stage':stage,'source_run_id':m['run_id'],'evaluator_source_hash':m['source_hash'],
         'export_manifest_sha256':digest(root/'export.json'),'vectors':vectors,
