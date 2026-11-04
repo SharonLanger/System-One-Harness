@@ -136,3 +136,35 @@ class ExportReviewTests(unittest.TestCase):
                 self.assertEqual(row['support'],{'explain':int(scenario=='complete'),'unclear':int(scenario!='empty')})
                 self.assertEqual(row['missing_classes'],[] if scenario=='complete' else ['explain','unclear'] if scenario=='empty' else ['explain'])
                 self.assertEqual(row['balanced_accuracy_present_classes'],None if scenario=='empty' else 1.0)
+
+    def test_real_fixture_worker_to_analyzer(self):
+        import engine
+        from laya_context_router import log_utils
+        worker_home=self.base/'worker';worker_home.mkdir()
+        fixture_folder=worker_home/'examples/generic-choice';fixture_folder.mkdir(parents=True)
+        responses={}
+        for q in self.m['suite']['questions']:
+            for case in self.m['cases']['cases']:
+                responses['|'.join([q['id'],'t0',case['id']])]={'answers':{'action':{
+                    'type':'choice','choice':case['expected'],'probabilities':{'explain':0.6,'unclear':0.4}}}}
+        e.write(fixture_folder/'responses.json',{'responses':responses})
+        e.write(worker_home/'source-snapshot.json',{'revision':'offline-test'})
+        with patch.object(engine,'HERE',worker_home), patch.object(log_utils,'LOG_PATH',worker_home/'debug.jsonl'), \
+             patch.dict(sys.modules,{'laya_mlx':None,'mlx':None}), \
+             patch('laya_context_router.laya.predict.real_loader',side_effect=AssertionError('loader called')), \
+             patch('laya_context_router.laya.registry.AgentRegistry.get_agent',side_effect=AssertionError('registry called')):
+            source=engine.create(self.m['cases'],self.m['suite'],'fixture','replay',{})
+            engine.worker(source,'t0')
+            before={p.relative_to(source):p.read_bytes() for p in source.rglob('*') if p.is_file()}
+            with patch.object(e,'expected_payload',wraps=e.expected_payload):
+                root=e.export_run(source,self.base/'worker-exports',source_stopped=True,roles_file=self.rolefile)
+            info=e.read(root/'export.json',False)
+            self.assertEqual((info['planned'],info['found'],info['success'],info['error']),(6,6,6,0))
+            for part in info['partitions']:
+                records=[json.loads(line) for line in (root/part['path']).read_text().splitlines()]
+                self.assertEqual({r['inference_id'] for r in records},
+                    {e.legacy_hash([part['question_id'],None,'t0',c['id']])[:32] for c in self.m['cases']['cases']})
+            summary=a.analyze_export(root,self.base/'worker-report')
+            self.assertEqual(len(summary['vectors']),4)
+            self.assertTrue(all(v['found']==2 and v['accuracy']==1.0 for v in summary['vectors']))
+            self.assertEqual(before,{p.relative_to(source):p.read_bytes() for p in source.rglob('*') if p.is_file()})

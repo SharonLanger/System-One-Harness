@@ -84,3 +84,25 @@ conversion 8.416 seconds, peak process RSS 72,720 KiB including fixture creation
 These fixture measurements are not estimates of Sharon's actual run. Exporter and
 analyzer checks additionally cover long small-fixture responses, payload/choice
 order conflicts, errors, partial evidence, role boundaries and native-rule parity.
+
+
+## Finalist completeness and class support
+
+Final analysis validates every frozen candidate and native policy before evaluating
+predictions. Missing or duplicate partitions, absent configurations, changed
+settings and excluded frozen rules are structural incompatibilities: analysis
+fails without creating a report. Missing inference records inside an otherwise
+valid partition remain supported and are counted as missing/partial.
+
+Summary vectors expose `balanced_accuracy_present_classes`, `support`,
+`missing_classes` and `comparable_all_classes`. Support counts successfully
+evaluated, settled labels only; technical errors, missing records and unsettled
+labels are counted separately. `balanced_accuracy` remains a compatibility alias
+with the same present-class value. An absent class has no observed recall; it
+is not assigned a zero recall. Zero scored cases yield a null average.
+
+Run review regressions from repository root with
+`python -B -m unittest discover -s tests -p test_v2_export_review.py -v`.
+These tests generate temporary evidence, including a real fixture-worker → export
+→ analyzer integration, with model/SDK access blocked. They use no experiment
+fixture files and never convert an actual experiment.
