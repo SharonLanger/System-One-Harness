@@ -16,7 +16,7 @@ On the 120-input development split, this profile selected **65 correct methods a
 
 This is a five-profile decision shortlist, including the previous baseline; it is not a pure accuracy ranking. Missed percentages use 84 selectable inputs, precision uses actual selections, and overall correctness uses all 120 inputs.
 
-**[Read the full research report →](research/method-selection-200-results.md)** for the same five profiles by noise level, harder request types and candidate count; exact question wording and rules; the accuracy leaders; limitations; and links to experiment design and original summaries. [Downloadable evidence](research/evidence/source-manifest.json) preserves provenance and all 80 configurations.
+**[Read the full research report →](research/method-selection-200-results.md)** for the same five profiles by noise level, harder request types and candidate count; exact question wording and rules; the accuracy leaders; limitations; and links to experiment design and original summaries. Downloadable evidence (historical material; see docs/cleanup-local-files.md) preserves provenance and all 80 configurations.
 
 The block uses 0.5 when no temperature is supplied; explicit runtime overrides remain supported. The reported results apply to the exact selected settings. See the report before changing the guard or interpreting “ungated” as always selecting a method.
 

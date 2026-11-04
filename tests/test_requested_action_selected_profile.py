@@ -9,7 +9,7 @@ from block_runtime import Catalog
 from laya.config import RunConfig
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITE = ROOT / 'experiments/batch_v2/experiments/requested-action-500/rounds/001-broad/suite.json'
+SUITE = ROOT / 'tests/fixtures/selected_profiles/requested-action-500.json'
 
 
 def test_defaults_match_frozen_experiment_combination_three():

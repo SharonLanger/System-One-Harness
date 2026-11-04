@@ -1,9 +1,0 @@
-question_id,config_id,temperature,evaluated,planned,method_correct,multiple_correct
-q0-baseline,t-050,0.5,120,120,105,104
-q1-explicit-target,t-050,0.5,120,120,103,104
-q0-baseline,t-080,0.8,120,120,105,104
-q1-explicit-target,t-080,0.8,120,120,103,104
-q0-baseline,t-100,1.0,120,120,105,104
-q1-explicit-target,t-100,1.0,120,120,103,104
-q0-baseline,t-110,1.1,120,120,105,104
-q1-explicit-target,t-110,1.1,120,120,103,104

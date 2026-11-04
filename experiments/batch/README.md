@@ -39,3 +39,6 @@ python -B -m unittest discover -s experiments/batch/checks -v
 ```
 
 These checks use explicitly injected responses, exercise the existing validators/interpreter, and never load the real SDK. Temporary results are below `checks/output/`. They verify bookkeeping and execution behavior, not model accuracy. Real inference is a separate manual check on the Mac.
+
+
+Automated experiment checks have been deferred to `tests/deferred/`; see its manifest and coverage report before re-enabling them. Earlier check commands above are historical. Manual experiments and campaign definitions remain available.

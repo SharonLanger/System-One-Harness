@@ -99,7 +99,7 @@ The current context formatter uses plain text and paths relative to the hook
 configured project root (`--repository-root`), independent of the event cwd. It keeps the same code, supporting declarations, line ranges and
 notes. Report files remain Markdown for viewing; the `additionalContext` string
 has no formatter-added headings, fences or bullet prefixes. See the separate
-[future helper plan](../docs/call-navigation-plan.md) for outgoing/incoming
+future helper plan (historical material; see docs/cleanup-local-files.md) for outgoing/incoming
 navigation methods that are not yet implemented or used by a flow.
 
 **Try the other four files with the same hook:**
@@ -211,7 +211,7 @@ for five ready replay inputs and how to identify a run that never reached Laya.
 
 Direct adapter experiments are implemented for choice, noul, score, multiple
 named questions, and configuration comparison. No live Laya execution is
-verified here. See [the implementation plan](../docs/experiments-plan.md). A mock
+verified here. See the implementation plan (historical material; see docs/cleanup-local-files.md). A mock
 run does not count as a completed real experiment.
 
 The first building-block experiment is `block_method_selection.py`. It passes a

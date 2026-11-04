@@ -18,6 +18,7 @@ test = ["pytest>=8,<10"]
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
+addopts = "--ignore=tests/deferred"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

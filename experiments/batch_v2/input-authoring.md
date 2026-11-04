@@ -1,6 +1,6 @@
 # Authoring RV2 experiment inputs
 
-Status: RV2 input schema and authoring instructions, aligned with [the runner design](runner-v2-plan.md). See [README](README.md) for commands and [verification](verification.md) for tested behavior and remaining live/browser checks.
+Status: RV2 input schema and authoring instructions, aligned with the runner design (historical material; see docs/cleanup-local-files.md). See [README](README.md) for commands and verification (historical material; see docs/cleanup-local-files.md) for tested behavior and remaining live/browser checks.
 
 ## 1. Define the classification task first
 

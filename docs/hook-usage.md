@@ -76,4 +76,4 @@ The old implementation is `flows.sandbox_file_method_context`. `flows.file_metho
 
 The reusable `context_format.format_context` utility and dependency collectors remain available to their existing callers. Their supporting-body format is not the active hook format. The new flow's presentation is in `flows/first_method_context.py`, and it uses the existing outgoing navigation utility.
 
-See [the design](first-flow/design.md), [test plan](first-flow/test-plan.md) and [sandbox retirement](first-flow/sandbox-retirement.md) for implementation scope and coverage. Live Claude delivery remains a separate check.
+See the design (historical material; see docs/cleanup-local-files.md), test plan (historical material; see docs/cleanup-local-files.md) and sandbox retirement (historical material; see docs/cleanup-local-files.md) for implementation scope and coverage. Live Claude delivery remains a separate check.

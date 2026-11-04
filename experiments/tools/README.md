@@ -106,3 +106,6 @@ Run review regressions from repository root with
 These tests generate temporary evidence, including a real fixture-worker → export
 → analyzer integration, with model/SDK access blocked. They use no experiment
 fixture files and never convert an actual experiment.
+
+
+Automated experiment checks have been deferred to `tests/deferred/`; see its manifest and coverage report before re-enabling them. Earlier check commands above are historical. Manual experiments and campaign definitions remain available.

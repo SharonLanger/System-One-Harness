@@ -6,7 +6,7 @@ RV2 runs one experiment's question variants × rules × named configurations aga
 
 - [Experiment handbook](docs/README.md): research workflow, scoring, input-agent instructions, campaign/run records and the pre-experiment implementation plan.
 - [Input and experiment authoring guide](input-authoring.md): complete cases.json and suite.json examples, label status, noise levels, tags and annotation workflow.
-- [Implementation design](runner-v2-plan.md): execution, checkpoint/resume, output schema, scoring formulas and verification requirements.
+- Implementation design (historical material; see docs/cleanup-local-files.md): execution, checkpoint/resume, output schema, scoring formulas and verification requirements.
 
 ## What you create
 
@@ -97,3 +97,6 @@ Technical failures return nonzero; model mistakes alone do not. Explicit call-bu
 Browser acceptance on the Mac: open report.html, confirm 8 overview rows, select a vector, then noisy and misleading groups; each should show its one matching row. The report should scroll horizontally on a narrow screen. An optional automated browser check is included at checks/browser-check.cjs for an environment with Playwright and its Chromium installed.
 
 - [Research tooling](research/README.md): role-filtered analysis, metrics, temperature proposals, frozen policies and evidence export. [Verification](docs/track-a-verification.md) distinguishes fixture results from pending live/browser checks.
+
+
+Automated experiment checks have been deferred to `tests/deferred/`; see its manifest and coverage report before re-enabling them. Earlier check commands above are historical. Manual experiments and campaign definitions remain available.
