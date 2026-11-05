@@ -8,7 +8,7 @@ import sys
 import pytest
 
 from building_blocks.typescript import outline
-from first_flow.test_hook_integration import BOOTSTRAP
+from tests.integration.flows.first_flow.test_hook_integration import BOOTSTRAP
 
 ROOT = Path(__file__).resolve().parents[1]
 HOOK = ROOT / 'hooks/user_prompt_submit.py'

@@ -74,7 +74,11 @@ def test_root_mode_ambiguity_absolute_and_prefix_collision(tmp_path):
 def test_wrapper_and_shared_entry_return_identical_context(tmp_path):
     from test_prompt_hook import invoke
     case=hook_case(tmp_path)
-    direct=invoke_gateway(case);compat=invoke(case)
+    direct=invoke_gateway(case)
+    # Both entry points persist enrichment; use a fresh session to compare their
+    # first-invocation output rather than testing duplicate suppression here.
+    case['event']['session_id']='compat-entry'
+    compat=invoke(case)
     assert direct.returncode==compat.returncode==0
     assert direct.stdout==compat.stdout and json.loads(direct.stdout)
 

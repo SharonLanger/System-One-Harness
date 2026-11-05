@@ -174,7 +174,7 @@ def test_reused_registry_and_isolated_results():
 
 
 def test_semantic_fixtures_are_reviewable_data_not_mocked_accuracy():
-    path = Path(__file__).parent / 'fixtures/private_method_testing_blocker_responses.json'
+    path = Path(__file__).resolve().parents[3] / 'fixtures/private_method_testing_blocker_responses.json'
     data = json.loads(path.read_text(encoding='utf-8'))
     assert data['synthetic'] is False
     cases = data['cases']
@@ -184,7 +184,7 @@ def test_semantic_fixtures_are_reviewable_data_not_mocked_accuracy():
 
 
 def test_block_resources_and_execution_in_installed_wheel(tmp_path):
-    root = Path(__file__).resolve().parents[1]
+    root = Path(__file__).resolve().parents[4]
     wheel_dir = tmp_path / 'wheels'
     subprocess.run([sys.executable, '-m', 'pip', 'wheel', '--no-build-isolation', '--no-deps',
                     '--wheel-dir', str(wheel_dir), str(root)], check=True, capture_output=True, text=True)

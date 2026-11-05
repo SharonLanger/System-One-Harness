@@ -14,7 +14,7 @@ from hooks.dispatcher import ingest_common
 from hooks.user_prompt_submit.dispatcher import PromptRequest
 from laya.config import RunConfig
 
-FIXTURES = Path(__file__).resolve().parents[1] / 'fixtures'
+FIXTURES = Path(__file__).resolve().parents[3] / 'fixtures'
 SELECTED = 'src/billing/invoice-service.ts'
 METHOD = 'calculateInvoiceTotalWithAdjustment'
 PROMPT = f'Explain `{SELECTED}`: {METHOD}'
