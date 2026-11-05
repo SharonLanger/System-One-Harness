@@ -2,25 +2,34 @@
 
 # System One Harness
 
-### Give Claude Code focused TypeScript method context from a local Laya decision.
+### Turn local Laya decisions and deterministic tools into focused Claude Code flows.
 
 [![Offline tests](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml/badge.svg?branch=main)](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml)
 [![Repository hygiene](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml/badge.svg?branch=main)](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2da44e)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2da44e)](pyproject.toml)
 [![Claude Code hook plugin](https://img.shields.io/badge/Claude%20Code-hook%20plugin-2da44e)](plugins/hook-laya/README.md)
+[![Experimental](https://img.shields.io/badge/status-experimental-f0ad4e)](#project-status-and-community)
+[![Laya-MLX runtime](https://img.shields.io/badge/Laya--MLX-runtime-2da44e)](https://github.com/mizorewww/laya-mlx)
+[![Laya model](https://img.shields.io/badge/Laya-typed%20decisions%20model-2da44e)](https://huggingface.co/aac6fef/laya-typed-decisions-mlx)
 
 **[Set up](#set-up-a-development-checkout)** · **[Run tests](#run-tests)** · **[How it works](#how-it-works)**
 
 </div>
 
-System One Harness (SOH) is an experimental Python tool that chooses relevant TypeScript method context for a Claude Code `UserPromptSubmit` hook. It asks a local Laya model structured questions, applies explicit rules, and uses a Node/TypeScript helper to inspect source code. It can return context for a request such as:
+System One Harness (SOH) is a personal experiment I built for fun: a set of reusable Laya question blocks, explicit decision rules, and deterministic code tools that you can compose into Python flows. The included flow uses a local Laya model and a Node/TypeScript helper to choose relevant method context for a Claude Code `UserPromptSubmit` hook. For example, it can return context for a request such as:
 
 ```text
 Explain `src/service.ts`: how does calculate work?
 ```
 
 The hook emits a `hookSpecificOutput` JSON response with the selected method context, or emits no context when the request is ineligible. It does not install or enable itself in Claude Code. The project is evolving; the offline tests use scripted model responses and do not prove live model quality or compatibility with every Laya runtime.
+
+## Build a flow
+
+Start with one or more [question blocks](src/building_blocks/questions/) that turn model answers into typed decisions. Combine them with deterministic tools, such as the [TypeScript source helper](typescript-helper/README.md), in an ordinary [Python flow](src/flows/). The included [Claude Code hook plugin](plugins/hook-laya/README.md) shows how to expose a selected flow to Claude Code; it requires manual setup.
+
+Before adding your own Laya question as a reusable block, test it in an experiment project. I use [System One Experiments](https://github.com/SharonLanger/system-one-experiments), a separate repository that is currently private, to try questions and rules. Bringing a successful experiment into SOH is a deliberate code change, not an automatic import.
 
 ## Requirements
 
@@ -72,6 +81,6 @@ For the gateway contract and manual registration, see [hook usage](docs/hook-usa
 
 ## Project status and community
 
-SOH is a research prototype, not a stable published package or hosted service. Real inference currently requires local setup. Tests exercise the harness with controlled responses; they do not establish the model's answer quality. Some historical experiment checks remain deferred, and the experiments are planned for a separately reviewed move to another repository. No experiments are moved or removed by the documentation work here.
+SOH is an experimental research prototype made for fun, not a stable published package or hosted service. Real inference currently requires local setup. Tests exercise the harness with controlled responses; they do not establish the model's answer quality. Some historical experiment checks remain deferred.
 
 For bugs and changes, read [CONTRIBUTING.md](CONTRIBUTING.md). To report a vulnerability privately, read [SECURITY.md](SECURITY.md). Project-owned source is offered under [Apache License 2.0](LICENSE); separately obtained runtimes and model weights have their own terms.
