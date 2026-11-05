@@ -1,7 +1,18 @@
+<div align="center">
+
 # System One Harness
 
-[![Offline tests](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml/badge.svg)](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml)
-[![Repository hygiene](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml/badge.svg)](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml)
+### Give Claude Code focused TypeScript method context from a local Laya decision.
+
+[![Offline tests](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml/badge.svg?branch=main)](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml)
+[![Repository hygiene](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml/badge.svg?branch=main)](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2da44e)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2da44e)](pyproject.toml)
+[![Claude Code hook plugin](https://img.shields.io/badge/Claude%20Code-hook%20plugin-2da44e)](plugins/hook-laya/README.md)
+
+**[Set up](#set-up-a-development-checkout)** · **[Run tests](#run-tests)** · **[How it works](#how-it-works)**
+
+</div>
 
 System One Harness (SOH) is an experimental Python tool that chooses relevant TypeScript method context for a Claude Code `UserPromptSubmit` hook. It asks a local Laya model structured questions, applies explicit rules, and uses a Node/TypeScript helper to inspect source code. It can return context for a request such as:
 
