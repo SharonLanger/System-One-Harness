@@ -96,7 +96,9 @@ Explain `src/service.ts`: how does calculate work?
 
 Laya question blocks classify the request and select a callable. Deterministic TypeScript tools extract the selected source and, where available and within budget, its direct outgoing call locations. Session history suppresses repeated enrichment until compaction.
 
-![Current method-context flow: validate hook input, resolve a TypeScript file, classify the action, outline source, select a method, extract and verify it, check session history, and return context to Claude Code.](docs/readme-assets/method-context.svg)
+![Animated decisions inside the current flow: explain and generate-tests requests can enrich context; modification, missing-file, and unclear-method scenarios return no added context.](docs/readme-assets/method-context.svg)
+
+The animation cycles through five examples: explain a method, generate tests, request a modification, ask about an unclear method, and reference a missing file. Green paths add context; amber paths return no added context and Claude continues. Timing is illustrative.
 
 The gateway returns `hookSpecificOutput.additionalContext`, or no added context for a skip or failure. The offline tests script Laya responses while exercising harness behavior; they do not establish live model quality or verify a real Claude Code session.
 

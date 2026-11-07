@@ -4,7 +4,9 @@
 
 This flow demonstrates reusable Laya blocks working with deterministic TypeScript tools. It accepts a prompt referencing one eligible production TypeScript file and can add the selected method's context to Claude Code.
 
-![Successful method-context route from hook input to context returned to Claude Code.](../readme-assets/method-context.svg)
+![Animated successful and skipped method-context decisions inside the flow.](../readme-assets/method-context.svg)
+
+The animation shows five representative cases, including two successful actions and three paths that add no context. The final preparation box groups source verification, output budgets, and session deduplication; the numbered steps below give the details. It is an illustration of current control flow, not a live trace or a latency measurement.
 
 ## Current execution
 
