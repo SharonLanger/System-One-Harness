@@ -5,13 +5,9 @@
 ### Turn local Laya decisions and deterministic tools into focused Claude Code flows.
 
 [![Offline tests](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml/badge.svg?branch=main)](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml)
-[![Repository hygiene](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml/badge.svg?branch=main)](https://github.com/SharonLanger/system-one-harness/actions/workflows/repository-hygiene.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2da44e)](LICENSE)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-2da44e)](pyproject.toml)
-[![Claude Code hook plugin](https://img.shields.io/badge/Claude%20Code-hook%20plugin-2da44e)](plugins/hook-laya/README.md)
 [![Experimental](https://img.shields.io/badge/status-experimental-f0ad4e)](#project-status-and-community)
-[![Laya-MLX runtime](https://img.shields.io/badge/Laya--MLX-runtime-2da44e)](https://github.com/mizorewww/laya-mlx)
-[![Laya model](https://img.shields.io/badge/Laya-typed%20decisions%20model-2da44e)](https://huggingface.co/aac6fef/laya-typed-decisions-mlx)
+[![Claude Code hook plugin](https://img.shields.io/badge/Claude%20Code-hook%20plugin-2da44e)](plugins/hook-laya/README.md)
 
 **[Set up](#set-up-a-development-checkout)** · **[Run tests](#run-tests)** · **[How it works](#how-it-works)**
 
@@ -35,7 +31,7 @@ Before adding your own Laya question as a reusable block, test it in an experime
 
 - Python 3.11 or newer on macOS or Linux. The hook gateway uses POSIX timer APIs.
 - Node.js and npm to build the TypeScript source helper. CI uses Node 24.
-- For real inference: a separately configured `laya_mlx`/MLX environment, model access, and an Apple Silicon Mac. Installing SOH does not install Laya or download model weights. Their licenses and support terms are separate from this repository's [Apache-2.0 license](LICENSE).
+- For real inference: the [Laya-MLX runtime](https://github.com/mizorewww/laya-mlx), access to the [default Laya model](https://huggingface.co/aac6fef/laya-typed-decisions-mlx), and an Apple Silicon Mac. Installing SOH does not install Laya or download model weights. Their licenses and support terms are separate from this repository's [Apache-2.0 license](LICENSE).
 
 ## Set up a development checkout
 
