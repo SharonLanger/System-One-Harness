@@ -9,13 +9,13 @@
 [![Experimental](https://img.shields.io/badge/status-experimental-f0ad4e)](#project-status-and-community)
 [![Claude Code hook plugin](https://img.shields.io/badge/Claude%20Code-hook%20plugin-2da44e)](plugins/hook-laya/README.md)
 
+![Animated composition: Laya question blocks and deterministic tools combine into a Python flow connected through a Claude Code plugin.](docs/readme-assets/build-with-blocks.svg)
+
 **[Set up](#set-up-a-development-checkout)** · **[Run tests](#run-tests)** · **[How it works](#how-it-works)**
 
 </div>
 
 System One Harness (SOH) is a personal experimental project I built for fun. Compose reusable Laya question blocks, explicit decision rules, and deterministic tools into Python flows, then connect those flows to Claude Code through a plugin.
-
-![Laya question blocks and deterministic tools compose into Python flows, packaged behind a Claude Code plugin.](docs/readme-assets/build-with-blocks.svg)
 
 ## Build once, reuse across flows
 
