@@ -2,7 +2,7 @@
 
 # System One Harness
 
-### Turn local Laya decisions and deterministic tools into focused Claude Code flows.
+### Small decisions. Reusable blocks. Your own flows.
 
 [![Offline tests](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml/badge.svg?branch=main)](https://github.com/SharonLanger/system-one-harness/actions/workflows/offline-tests.yml)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-2da44e)](LICENSE)
@@ -13,19 +13,34 @@
 
 </div>
 
-System One Harness (SOH) is a personal experiment I built for fun: a set of reusable Laya question blocks, explicit decision rules, and deterministic code tools that you can compose into Python flows. The included flow uses a local Laya model and a Node/TypeScript helper to choose relevant method context for a Claude Code `UserPromptSubmit` hook. For example, it can return context for a request such as:
+System One Harness (SOH) is a personal experimental project I built for fun. Compose reusable Laya question blocks, explicit decision rules, and deterministic tools into Python flows, then connect those flows to Claude Code through a plugin.
 
-```text
-Explain `src/service.ts`: how does calculate work?
-```
+![Laya question blocks and deterministic tools compose into Python flows, packaged behind a Claude Code plugin.](docs/readme-assets/build-with-blocks.svg)
 
-The hook emits a `hookSpecificOutput` JSON response with the selected method context, or emits no context when the request is ineligible. It does not install or enable itself in Claude Code. The project is evolving; the offline tests use scripted model responses and do not prove live model quality or compatibility with every Laya runtime.
+## Build once, reuse across flows
 
-## Build a flow
+A question block packages a focused model decision behind a defined input and output contract. A flow combines those blocks with ordinary code and tools. Reuse a block in another flow, or adapt its questions, rules, and input preparation through its supported overrides.
 
-Start with one or more [question blocks](src/building_blocks/questions/) that turn model answers into typed decisions. Combine them with deterministic tools, such as the [TypeScript source helper](typescript-helper/README.md), in an ordinary [Python flow](src/flows/). The included [Claude Code hook plugin](plugins/hook-laya/README.md) shows how to expose a selected flow to Claude Code; it requires manual setup.
+| Piece | What you can inspect and reuse |
+| --- | --- |
+| [Question blocks](src/building_blocks/questions/) | Structured inputs, decisions, domain outputs, and reasons for skipping or declining a selection. |
+| [Block runtime](src/block_runtime/README.md) | Input/output validation, question and rule overrides, preparation, and result reduction. |
+| [Deterministic tools](typescript-helper/README.md) | TypeScript outlines, source extraction, and navigation without a model decision. |
+| [Method-selection evaluation](src/building_blocks/questions/method_selection_v2/README.md) | Compared question/rule profiles, correct and incorrect selections, and missed targets. Development results are documented; held-out validation is pending. |
 
-Before adding your own Laya question as a reusable block, test it in an experiment project. I use [System One Experiments](https://github.com/SharonLanger/system-one-experiments), a separate repository that is currently private, to try questions and rules. Bringing a successful experiment into SOH is a deliberate code change, not an automatic import.
+A block result exposes its status, decisions, and domain data. Those outputs explain what happened in a call; evaluation results describe how well a particular configuration performed on a particular dataset. Changing questions or rules requires checking the new configuration rather than assuming the old measurements still apply.
+
+Before promoting a new question into a block, try it in an experiment project. I use [System One Experiments](https://github.com/SharonLanger/system-one-experiments), a separate repository that is currently private, for this work.
+
+## Package flows into a plugin
+
+The [included Claude Code plugin](plugins/hook-laya/README.md) connects hook events to SOH. Flows are ordinary Python code; handlers and routing are wired explicitly. The current integration handles `UserPromptSubmit` and `PostCompact` synchronously.
+
+The diagram below shows the **planned routing model**: Event 1 invokes Flow A, Event 2 invokes Flow B, and Event 3 invokes both concurrently. Repeated A/B labels refer to the same reusable flows. Automatic multi-flow routing, concurrent execution, and combining their results are future work.
+
+![Planned routing: hook events enter the gateway and dispatcher. Event 1 invokes A, Event 2 invokes B, and Event 3 branches to A and B concurrently.](docs/readme-assets/event-routing.svg)
+
+Flow results return through the hook integration to the host harness, such as Claude Code. Installing the plugin connects it to Claude Code; real Laya inference currently runs locally on an Apple Silicon Mac.
 
 ## Requirements
 
@@ -71,9 +86,23 @@ The Python suite includes unit, integration, system, and existing active tests. 
 
 ## How it works
 
-The public hook gateway reads one JSON event from stdin. It validates the hook name and event, dispatches `UserPromptSubmit` or `PostCompact`, and writes only the hook protocol response to stdout. The current prompt flow resolves one production TypeScript file, asks the model to classify the requested action and choose a callable, then extracts bounded method context. A session store suppresses repeated enrichment until compaction. Diagnostics go to stderr and `logs/debug.jsonl`; session state uses files under `logs/session-state/` for now. Logs may contain prompts, model responses, or source code, so handle them as potentially sensitive.
+### First proof of concept: method context
 
-For the gateway contract and manual registration, see [hook usage](docs/hook-usage.md). [Configuration conventions](docs/configuration-conventions.md) explain the question and policy JSON formats. [TypeScript helper documentation](typescript-helper/README.md) covers source parsing and extraction. [Plugin documentation](plugins/README.md) describes the optional Claude Code integration.
+The first flow demonstrates the pieces working together. For a request such as:
+
+```text
+Explain `src/service.ts`: how does calculate work?
+```
+
+Laya question blocks classify the request and select a callable. Deterministic TypeScript tools extract the selected source and, where available and within budget, its direct outgoing call locations. Session history suppresses repeated enrichment until compaction.
+
+![Current method-context flow: validate hook input, resolve a TypeScript file, classify the action, outline source, select a method, extract and verify it, check session history, and return context to Claude Code.](docs/readme-assets/method-context.svg)
+
+The gateway returns `hookSpecificOutput.additionalContext`, or no added context for a skip or failure. The offline tests script Laya responses while exercising harness behavior; they do not establish live model quality or verify a real Claude Code session.
+
+**[Explore the flow, results, and source →](docs/flows/method-context.md)**
+
+For manual registration, see [hook usage](docs/hook-usage.md). [Configuration conventions](docs/configuration-conventions.md) explain question and policy JSON formats.
 
 ## Project status and community
 
