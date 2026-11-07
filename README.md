@@ -36,9 +36,9 @@ Before promoting a new question into a block, try it in an experiment project. I
 
 The [included Claude Code plugin](plugins/hook-laya/README.md) connects hook events to SOH. Flows are ordinary Python code; handlers and routing are wired explicitly. The current integration handles `UserPromptSubmit` and `PostCompact` synchronously.
 
-The diagram below shows the **planned routing model**: Event 1 invokes Flow A, Event 2 invokes Flow B, and Event 3 invokes both concurrently. Repeated A/B labels refer to the same reusable flows. Automatic multi-flow routing, concurrent execution, and combining their results are future work.
+The diagram below shows the **planned routing model**: Event 1 invokes Flow A, Event 2 invokes Flow B, and Event 3 invokes both concurrently. The animation cycles through the three routes; only the selected paths light up. Automatic multi-flow routing, concurrent execution, and combining their results are future work.
 
-![Planned routing: hook events enter the gateway and dispatcher. Event 1 invokes A, Event 2 invokes B, and Event 3 branches to A and B concurrently.](docs/readme-assets/event-routing.svg)
+![Animated planned routing: gray paths light up as Event 1 invokes A, Event 2 invokes B, and Event 3 invokes both concurrently.](docs/readme-assets/event-routing.svg)
 
 Flow results return through the hook integration to the host harness, such as Claude Code. Installing the plugin connects it to Claude Code; real Laya inference currently runs locally on an Apple Silicon Mac.
 
