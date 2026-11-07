@@ -28,3 +28,4 @@ node_modules
 .coverage*
 /docs/local/
 /src/building_blocks/questions/method_selection_v2/research/evidence/
+/test-results/
